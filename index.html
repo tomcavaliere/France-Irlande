@@ -236,9 +236,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
   font-size:16px;color:#ccc;cursor:pointer;padding:2px 6px}
 .comment-del:active{color:#e74c3c}
 .comment-empty{text-align:center;color:var(--text-light);font-size:13px;padding:24px 0}
-.notif-badge{background:#e74c3c;color:#fff;border-radius:50%;width:16px;height:16px;
-  font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;
-  margin-left:4px;vertical-align:middle}
 </style>
 </head>
 <body>
@@ -309,23 +306,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
     <div class="spacer"></div>
   </div>
 
-  <div class="page" id="page-messages">
-    <div class="sec-title">Messages</div>
-    <div class="comment-form">
-      <input type="text" id="cmtName" placeholder="Ton prénom" maxlength="30">
-      <textarea id="cmtText" placeholder="Laisse un message à Tom..."></textarea>
-      <button class="btn btn-p comment-send" onclick="postComment()">Envoyer &#x1f4e8;</button>
-    </div>
-    <div id="commentsList"></div>
-    <div class="spacer"></div>
-  </div>
 </div>
 
 <div class="tab-bar">
   <button class="tab active" data-page="map" onclick="switchTab('map')"><span class="tab-icon">&#x1f5fa;&#xfe0f;</span><span>Carte</span></button>
   <button class="tab" data-page="stages" onclick="switchTab('stages')"><span class="tab-icon">&#x1f4cb;</span><span>Etapes</span></button>
   <button class="tab" data-page="journal" onclick="switchTab('journal')"><span class="tab-icon">&#x1f4d3;</span><span>Journal</span></button>
-  <button class="tab" data-page="messages" onclick="switchTab('messages')"><span class="tab-icon">&#x1f4ac;</span><span id="msgTabLabel">Messages</span></button>
   <button class="tab" data-page="info" onclick="switchTab('info')"><span class="tab-icon">&#x2139;&#xfe0f;</span><span>Infos</span></button>
 </div>
 
@@ -488,11 +474,6 @@ function switchTab(t){
   document.querySelectorAll('.tab').forEach(function(e){e.classList.toggle('active',e.dataset.page===t)});
   document.querySelectorAll('.page').forEach(function(e){e.classList.toggle('active',e.id==='page-'+t)});
   if(t==='map'&&map)setTimeout(function(){map.invalidateSize()},100);
-  if(t==='messages'){
-    var ids=Object.keys(comments).sort(function(a,b){return (comments[b].ts||0)-(comments[a].ts||0);});
-    if(ids.length){lastSeenComment=ids[0];localStorage.setItem('lastSeenComment',ids[0]);}
-    var label=document.getElementById('msgTabLabel');if(label)label.textContent='Messages';
-  }
 }
 
 // ==== STAGES ====
@@ -670,79 +651,79 @@ function patchPhotos(i){
   container.replaceWith(tmp.firstChild);
 }
 
-// ==== COMMENTAIRES ====
-var comments={};
-var lastSeenComment=localStorage.getItem('lastSeenComment')||'';
-
-function formatTime(ts){
-  var d=new Date(ts);
-  return d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' '+
-    d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
-}
-
-function renderComments(){
-  var list=document.getElementById('commentsList');
-  if(!list)return;
-  var ids=Object.keys(comments).sort(function(a,b){
-    return (comments[b].ts||0)-(comments[a].ts||0);
-  });
-  if(ids.length===0){
-    list.innerHTML='<div class="comment-empty">Aucun message pour l\'instant.<br>Sois le premier !</div>';
-    return;
-  }
-  list.innerHTML=ids.map(function(id){
-    var c=comments[id];
-    return '<div class="comment-card">'+
-      '<span class="comment-name">'+escHtml(c.name)+'</span>'+
-      '<span class="comment-time">'+formatTime(c.ts)+'</span>'+
-      (isAdmin?'<button class="comment-del" onclick="deleteComment(\''+id+'\')">&#x1f5d1;</button>':'')+
-      '<div class="comment-text">'+escHtml(c.text)+'</div>'+
-      '</div>';
-  }).join('');
-}
+// ==== COMMENTAIRES PAR ETAPE ====
+var comments={};  // {stageIndex: {commentId: {name, text, ts}}}
 
 function escHtml(s){
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function postComment(){
-  var name=document.getElementById('cmtName').value.trim();
-  var text=document.getElementById('cmtText').value.trim();
-  if(!name){document.getElementById('cmtName').focus();return;}
-  if(!text){document.getElementById('cmtText').focus();return;}
-  var id='c'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
-  var c={name:name,text:text,ts:Date.now()};
-  window._fbSet(window._fbRef(window._fbDb,'comments/'+id),c).then(function(){
-    document.getElementById('cmtText').value='';
-    localStorage.setItem('cmtName',name);
-  });
+function formatTime(ts){
+  var d=new Date(ts);
+  return d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' à '+
+    d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
 }
 
-function deleteComment(id){
-  if(!isAdmin)return;
-  window._fbRemove(window._fbRef(window._fbDb,'comments/'+id));
-}
-
-function updateMsgBadge(ids){
-  var newest=ids.length?ids.sort(function(a,b){return (comments[b].ts||0)-(comments[a].ts||0);})[0]:'';
-  var label=document.getElementById('msgTabLabel');
-  if(!label)return;
-  if(newest&&newest!==lastSeenComment){
-    label.innerHTML='Messages<span class="notif-badge">!</span>';
-  } else {
-    label.textContent='Messages';
+function renderStageCommentsHtml(i){
+  var stageCmts=comments[i]||{};
+  var ids=Object.keys(stageCmts).sort(function(a,b){return (stageCmts[a].ts||0)-(stageCmts[b].ts||0);});
+  var html='<div class="stage-comments" id="scmts-'+i+'">';
+  if(ids.length){
+    html+='<div class="m-sec-t" style="margin:10px 0 6px">&#x1f4ac; Commentaires</div>';
+    ids.forEach(function(id){
+      var c=stageCmts[id];
+      html+='<div class="comment-card">'+
+        '<span class="comment-name">'+escHtml(c.name)+'</span>'+
+        '<span class="comment-time">'+formatTime(c.ts)+'</span>'+
+        (isAdmin?'<button class="comment-del" onclick="deleteComment('+i+',\''+id+'\')">&#x1f5d1;</button>':'')+
+        '<div class="comment-text">'+escHtml(c.text)+'</div>'+
+        '</div>';
+    });
   }
+  // Formulaire toujours visible pour les non-admin
+  if(!isAdmin){
+    html+='<div class="comment-form" style="margin-top:10px">'+
+      '<input type="text" id="cname-'+i+'" placeholder="Ton prénom" maxlength="30" value="'+(localStorage.getItem('cmtName')||'')+'">'+
+      '<textarea id="ctxt-'+i+'" placeholder="Laisse un commentaire..."></textarea>'+
+      '<button class="btn btn-p comment-send" onclick="postComment('+i+')">Envoyer &#x1f4e8;</button>'+
+      '</div>';
+  }
+  html+='</div>';
+  return html;
+}
+
+function postComment(i){
+  var nameEl=document.getElementById('cname-'+i);
+  var txtEl=document.getElementById('ctxt-'+i);
+  var name=nameEl?nameEl.value.trim():'';
+  var text=txtEl?txtEl.value.trim():'';
+  if(!name){if(nameEl)nameEl.focus();return;}
+  if(!text){if(txtEl)txtEl.focus();return;}
+  var id='c'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+  window._fbSet(window._fbRef(window._fbDb,'comments/'+i+'/'+id),{name:name,text:text,ts:Date.now()})
+    .then(function(){
+      if(txtEl)txtEl.value='';
+      localStorage.setItem('cmtName',name);
+    });
+}
+
+function deleteComment(i,id){
+  if(!isAdmin)return;
+  window._fbRemove(window._fbRef(window._fbDb,'comments/'+i+'/'+id));
+}
+
+function patchStageComments(i){
+  var container=document.getElementById('scmts-'+i);
+  if(!container)return;
+  var tmp=document.createElement('div');
+  tmp.innerHTML=renderStageCommentsHtml(i);
+  container.replaceWith(tmp.firstChild);
 }
 
 function initComments(){
-  // Pré-remplir le prénom si déjà utilisé
-  var saved=localStorage.getItem('cmtName');
-  if(saved){var el=document.getElementById('cmtName');if(el)el.value=saved;}
-
   window._fbOnValue(window._fbRef(window._fbDb,'comments'),function(snap){
     comments=snap.val()||{};
-    renderComments();
-    updateMsgBadge(Object.keys(comments));
+    Object.keys(comments).forEach(function(i){patchStageComments(parseInt(i));});
   });
 }
 
@@ -758,7 +739,10 @@ function initPhotos(){
 function renderJournal(){
   var c=document.getElementById('journalList');c.innerHTML='';
   var tags=['Beau temps','Pluie','Vent','Dur','Genial','Pub','Camping','Bivouac','Photos'];
+  var hasAny=false;
   STAGES.forEach(function(s,i){
+    if(!state.completed[i])return;
+    hasAny=true;
     var entry=document.createElement('div');entry.className='journal-entry';
     var txt=state.journal[i]||'';
     var rating=state.ratings[i]||0;
@@ -773,9 +757,14 @@ function renderJournal(){
       '<textarea class="j-ta" placeholder="'+placeholder+'"'+(isAdmin?' oninput="state.journal['+i+']=this.value;save()"':' readonly')+'>'+txt+'</textarea>'+
       renderPhotosHtml(i)+
       '<div class="j-rating" id="rat'+i+'">'+starsHtml+'</div>'+
-      '<div class="j-meta" id="jt'+i+'">'+tagsHtml+'</div>';
+      '<div class="j-meta" id="jt'+i+'">'+tagsHtml+'</div>'+
+      renderStageCommentsHtml(i);
     c.appendChild(entry);
   });
+  if(!hasAny){
+    c.innerHTML='<div style="text-align:center;color:var(--text-light);font-size:13px;padding:32px 0">'+
+      'Les etapes complétées apparaîtront ici.</div>';
+  }
 }
 function setRat(i,n){
   if(!isAdmin)return;
