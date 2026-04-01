@@ -334,9 +334,28 @@ const TOTAL_LOSS=11100;
 // ==== STATE ====
 // ==== ADMIN ====
 const ADMIN_PW = 'velo2025';
-let isAdmin = false;
+let isAdmin = sessionStorage.getItem('adminActive')==='1';
+let inactivityTimer=null;
+const INACTIVITY_MS=3*60*1000;
+
+function setAdminUI(on){
+  document.getElementById('adminBtn').classList.toggle('on',on);
+  document.getElementById('adminBtn').textContent=on?'🔓 Admin':'🔒 Admin';
+}
+function logoutAdmin(){
+  isAdmin=false;
+  sessionStorage.removeItem('adminActive');
+  clearTimeout(inactivityTimer);
+  setAdminUI(false);
+  renderStages();renderJournal();
+}
+function resetInactivity(){
+  if(!isAdmin)return;
+  clearTimeout(inactivityTimer);
+  inactivityTimer=setTimeout(logoutAdmin,INACTIVITY_MS);
+}
 function toggleAdmin(){
-  if(isAdmin){isAdmin=false;document.getElementById('adminBtn').classList.remove('on');document.getElementById('adminBtn').textContent='🔒 Admin';renderStages();renderJournal();return;}
+  if(isAdmin){logoutAdmin();return;}
   document.getElementById('pwInput').value='';
   document.getElementById('pwErr').style.display='none';
   document.getElementById('pwModal').classList.add('vis');
@@ -345,15 +364,22 @@ function toggleAdmin(){
 function checkPw(){
   if(document.getElementById('pwInput').value===ADMIN_PW){
     isAdmin=true;
+    sessionStorage.setItem('adminActive','1');
     document.getElementById('pwModal').classList.remove('vis');
-    document.getElementById('adminBtn').classList.add('on');
-    document.getElementById('adminBtn').textContent='🔓 Admin';
+    setAdminUI(true);
+    resetInactivity();
     renderStages();renderJournal();
   } else {
     document.getElementById('pwErr').style.display='block';
     document.getElementById('pwInput').value='';
   }
 }
+// Réinitialise le timer sur toute interaction
+['touchstart','mousedown','keydown'].forEach(function(ev){
+  document.addEventListener(ev,resetInactivity,{passive:true});
+});
+// Restaurer l'UI admin si session active au chargement
+if(isAdmin){setAdminUI(true);resetInactivity();}
 
 // ==== STATE + FIREBASE ====
 let state={completed:{},journal:{},ratings:{},tags:{}};
@@ -379,15 +405,21 @@ function patchJournal(){
 }
 
 let fbInitialized=false;
+let lastCompletedCount=0;
 function initFirebase(){
   if(!window._fbDb)return;
   document.getElementById('syncDot').style.display='inline-block';
   window._fbOnValue(window._fbRef(window._fbDb,'state'),function(snapshot){
     var data=snapshot.val();
     if(data){state={completed:{},journal:{},ratings:{},tags:{},...data};}
+    var completedCount=Object.values(state.completed).filter(Boolean).length;
     renderStages();updateMap();
-    if(!fbInitialized){renderJournal();fbInitialized=true;}
-    else{patchJournal();}
+    if(!fbInitialized||completedCount!==lastCompletedCount){
+      renderJournal();fbInitialized=true;
+    } else {
+      patchJournal();
+    }
+    lastCompletedCount=completedCount;
   });
 }
 
