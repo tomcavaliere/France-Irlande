@@ -314,7 +314,7 @@ function save(){
   clearTimeout(saveTimer);
   saveTimer=setTimeout(function(){
     window._fbSet(window._fbRef(window._fbDb,'state'),state);
-  },800);
+  },60000);
 }
 function patchJournal(){
   // Met à jour les textareas sans recréer le DOM (évite la perte de focus)
@@ -556,9 +556,14 @@ function togTag(i,t){
 }
 
 // ==== INIT ====
+window.addEventListener('beforeunload',function(){
+  if(window._fbDb&&isAdmin&&saveTimer){
+    clearTimeout(saveTimer);
+    window._fbSet(window._fbRef(window._fbDb,'state'),state);
+  }
+});
 document.addEventListener('DOMContentLoaded',function(){
   initMap();renderStages();renderJournal();
-  // Firebase se connecte une fois le module chargé
   setTimeout(function(){initFirebase();},800);
 });
 </script>
