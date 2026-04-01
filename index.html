@@ -216,6 +216,29 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .lightbox img{max-width:95vw;max-height:90vh;border-radius:8px;object-fit:contain}
 .lightbox-close{position:absolute;top:16px;right:16px;color:#fff;font-size:28px;
   cursor:pointer;background:none;border:none;line-height:1}
+
+/* Commentaires */
+.comment-form{background:var(--card);border-radius:var(--radius);padding:14px;
+  margin-bottom:14px;box-shadow:var(--shadow)}
+.comment-form input{width:100%;border:1px solid #e0e0e0;border-radius:10px;padding:10px;
+  font-family:inherit;font-size:14px;margin-bottom:8px;outline:none}
+.comment-form input:focus{border-color:var(--green)}
+.comment-form textarea{width:100%;border:1px solid #e0e0e0;border-radius:10px;padding:10px;
+  font-family:inherit;font-size:14px;resize:none;height:80px;outline:none;line-height:1.5}
+.comment-form textarea:focus{border-color:var(--green)}
+.comment-send{width:100%;margin-top:8px}
+.comment-card{background:var(--card);border-radius:var(--radius);padding:12px 14px;
+  margin-bottom:8px;box-shadow:var(--shadow);position:relative}
+.comment-name{font-size:13px;font-weight:700;color:var(--green)}
+.comment-time{font-size:10px;color:var(--text-light);margin-left:6px}
+.comment-text{font-size:14px;color:var(--text);margin-top:4px;line-height:1.5}
+.comment-del{position:absolute;top:10px;right:10px;background:none;border:none;
+  font-size:16px;color:#ccc;cursor:pointer;padding:2px 6px}
+.comment-del:active{color:#e74c3c}
+.comment-empty{text-align:center;color:var(--text-light);font-size:13px;padding:24px 0}
+.notif-badge{background:#e74c3c;color:#fff;border-radius:50%;width:16px;height:16px;
+  font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;
+  margin-left:4px;vertical-align:middle}
 </style>
 </head>
 <body>
@@ -285,12 +308,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
     <div class="info-card"><h3>Installer sur iPhone</h3><p>1. Ouvrir dans Safari — 2. Bouton partager — 3. "Sur l'ecran d'accueil"</p></div>
     <div class="spacer"></div>
   </div>
+
+  <div class="page" id="page-messages">
+    <div class="sec-title">Messages</div>
+    <div class="comment-form">
+      <input type="text" id="cmtName" placeholder="Ton prénom" maxlength="30">
+      <textarea id="cmtText" placeholder="Laisse un message à Tom..."></textarea>
+      <button class="btn btn-p comment-send" onclick="postComment()">Envoyer &#x1f4e8;</button>
+    </div>
+    <div id="commentsList"></div>
+    <div class="spacer"></div>
+  </div>
 </div>
 
 <div class="tab-bar">
   <button class="tab active" data-page="map" onclick="switchTab('map')"><span class="tab-icon">&#x1f5fa;&#xfe0f;</span><span>Carte</span></button>
   <button class="tab" data-page="stages" onclick="switchTab('stages')"><span class="tab-icon">&#x1f4cb;</span><span>Etapes</span></button>
   <button class="tab" data-page="journal" onclick="switchTab('journal')"><span class="tab-icon">&#x1f4d3;</span><span>Journal</span></button>
+  <button class="tab" data-page="messages" onclick="switchTab('messages')"><span class="tab-icon">&#x1f4ac;</span><span id="msgTabLabel">Messages</span></button>
   <button class="tab" data-page="info" onclick="switchTab('info')"><span class="tab-icon">&#x2139;&#xfe0f;</span><span>Infos</span></button>
 </div>
 
@@ -453,6 +488,11 @@ function switchTab(t){
   document.querySelectorAll('.tab').forEach(function(e){e.classList.toggle('active',e.dataset.page===t)});
   document.querySelectorAll('.page').forEach(function(e){e.classList.toggle('active',e.id==='page-'+t)});
   if(t==='map'&&map)setTimeout(function(){map.invalidateSize()},100);
+  if(t==='messages'){
+    var ids=Object.keys(comments).sort(function(a,b){return (comments[b].ts||0)-(comments[a].ts||0);});
+    if(ids.length){lastSeenComment=ids[0];localStorage.setItem('lastSeenComment',ids[0]);}
+    var label=document.getElementById('msgTabLabel');if(label)label.textContent='Messages';
+  }
 }
 
 // ==== STAGES ====
@@ -630,6 +670,82 @@ function patchPhotos(i){
   container.replaceWith(tmp.firstChild);
 }
 
+// ==== COMMENTAIRES ====
+var comments={};
+var lastSeenComment=localStorage.getItem('lastSeenComment')||'';
+
+function formatTime(ts){
+  var d=new Date(ts);
+  return d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' '+
+    d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+}
+
+function renderComments(){
+  var list=document.getElementById('commentsList');
+  if(!list)return;
+  var ids=Object.keys(comments).sort(function(a,b){
+    return (comments[b].ts||0)-(comments[a].ts||0);
+  });
+  if(ids.length===0){
+    list.innerHTML='<div class="comment-empty">Aucun message pour l\'instant.<br>Sois le premier !</div>';
+    return;
+  }
+  list.innerHTML=ids.map(function(id){
+    var c=comments[id];
+    return '<div class="comment-card">'+
+      '<span class="comment-name">'+escHtml(c.name)+'</span>'+
+      '<span class="comment-time">'+formatTime(c.ts)+'</span>'+
+      (isAdmin?'<button class="comment-del" onclick="deleteComment(\''+id+'\')">&#x1f5d1;</button>':'')+
+      '<div class="comment-text">'+escHtml(c.text)+'</div>'+
+      '</div>';
+  }).join('');
+}
+
+function escHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function postComment(){
+  var name=document.getElementById('cmtName').value.trim();
+  var text=document.getElementById('cmtText').value.trim();
+  if(!name){document.getElementById('cmtName').focus();return;}
+  if(!text){document.getElementById('cmtText').focus();return;}
+  var id='c'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+  var c={name:name,text:text,ts:Date.now()};
+  window._fbSet(window._fbRef(window._fbDb,'comments/'+id),c).then(function(){
+    document.getElementById('cmtText').value='';
+    localStorage.setItem('cmtName',name);
+  });
+}
+
+function deleteComment(id){
+  if(!isAdmin)return;
+  window._fbRemove(window._fbRef(window._fbDb,'comments/'+id));
+}
+
+function updateMsgBadge(ids){
+  var newest=ids.length?ids.sort(function(a,b){return (comments[b].ts||0)-(comments[a].ts||0);})[0]:'';
+  var label=document.getElementById('msgTabLabel');
+  if(!label)return;
+  if(newest&&newest!==lastSeenComment){
+    label.innerHTML='Messages<span class="notif-badge">!</span>';
+  } else {
+    label.textContent='Messages';
+  }
+}
+
+function initComments(){
+  // Pré-remplir le prénom si déjà utilisé
+  var saved=localStorage.getItem('cmtName');
+  if(saved){var el=document.getElementById('cmtName');if(el)el.value=saved;}
+
+  window._fbOnValue(window._fbRef(window._fbDb,'comments'),function(snap){
+    comments=snap.val()||{};
+    renderComments();
+    updateMsgBadge(Object.keys(comments));
+  });
+}
+
 function initPhotos(){
   window._fbOnValue(window._fbRef(window._fbDb,'photos'),function(snap){
     photos=snap.val()||{};
@@ -685,7 +801,7 @@ window.addEventListener('beforeunload',function(){
 });
 document.addEventListener('DOMContentLoaded',function(){
   initMap();renderStages();renderJournal();
-  setTimeout(function(){initFirebase();initPhotos();},800);
+  setTimeout(function(){initFirebase();initPhotos();initComments();},800);
 });
 </script>
 </body>
