@@ -11,7 +11,7 @@
 <title>EuroVelo 1 — Cork → Sligo</title>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
   const firebaseConfig = {
     apiKey: "AIzaSyA_1xAPK0D5_Mc_cuzJiKT04i9KzrEEDRc",
     authDomain: "france-irlande-bike.firebaseapp.com",
@@ -26,6 +26,7 @@
   window._fbDb = db;
   window._fbRef = ref;
   window._fbSet = set;
+  window._fbRemove = remove;
   window._fbOnValue = onValue;
 </script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -193,6 +194,28 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
   margin-left:6px;vertical-align:middle;animation:blink 2s ease infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 .readonly-overlay{pointer-events:none;opacity:.7}
+
+/* Photos journal */
+.j-photos{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.j-photo-wrap{position:relative;width:90px;height:90px;border-radius:10px;overflow:hidden;flex-shrink:0}
+.j-photo-wrap img{width:100%;height:100%;object-fit:cover;cursor:pointer}
+.j-photo-del{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);color:#fff;
+  border:none;border-radius:50%;width:20px;height:20px;font-size:12px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;line-height:1}
+.j-photo-add{width:90px;height:90px;border-radius:10px;border:2px dashed #ccc;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:4px;font-size:10px;color:#999;cursor:pointer;flex-shrink:0;background:#fafafa}
+.j-photo-add:active{background:#f0f0f0}
+.j-photo-add-icon{font-size:24px}
+.j-uploading{opacity:.5;pointer-events:none}
+
+/* Lightbox */
+.lightbox{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);
+  z-index:4000;display:none;align-items:center;justify-content:center}
+.lightbox.vis{display:flex}
+.lightbox img{max-width:95vw;max-height:90vh;border-radius:8px;object-fit:contain}
+.lightbox-close{position:absolute;top:16px;right:16px;color:#fff;font-size:28px;
+  cursor:pointer;background:none;border:none;line-height:1}
 </style>
 </head>
 <body>
@@ -271,6 +294,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
   <button class="tab" data-page="info" onclick="switchTab('info')"><span class="tab-icon">&#x2139;&#xfe0f;</span><span>Infos</span></button>
 </div>
 
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">&#x2715;</button>
+  <img id="lightboxImg" src="" alt="">
+</div>
+
 <div class="modal-overlay" id="stageModal" onclick="if(event.target===this)closeModal()">
   <div class="modal"><div class="modal-h"></div><div id="modalBody"></div></div>
 </div>
@@ -317,7 +345,6 @@ function save(){
   },60000);
 }
 function patchJournal(){
-  // Met à jour les textareas sans recréer le DOM (évite la perte de focus)
   var entries=document.querySelectorAll('#journalList .journal-entry');
   entries.forEach(function(entry,i){
     var ta=entry.querySelector('.j-ta');
@@ -326,6 +353,7 @@ function patchJournal(){
     stars.forEach(function(s,idx){s.classList.toggle('on',idx<(state.ratings[i]||0));});
     var jtags=entry.querySelectorAll('.j-tag');
     jtags.forEach(function(el){el.classList.toggle('sel',(state.tags[i]||[]).indexOf(el.textContent)>=0);});
+    patchPhotos(i);
   });
 }
 
@@ -518,6 +546,98 @@ function openModal(i){
 }
 function closeModal(){document.getElementById('stageModal').classList.remove('vis')}
 
+// ==== PHOTOS ====
+var photos={};  // {stageIndex: {photoId: base64}}
+
+function openLightbox(id,i){
+  var src=(photos[i]&&photos[i][id])||id;
+  document.getElementById('lightboxImg').src=src;
+  document.getElementById('lightbox').classList.add('vis');
+}
+function closeLightbox(){document.getElementById('lightbox').classList.remove('vis');}
+
+function compressImage(file,cb){
+  var img=new Image();
+  var url=URL.createObjectURL(file);
+  img.onload=function(){
+    var MAX=1200;
+    var w=img.width,h=img.height;
+    if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
+    if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}
+    var canvas=document.createElement('canvas');
+    canvas.width=w;canvas.height=h;
+    canvas.getContext('2d').drawImage(img,0,0,w,h);
+    URL.revokeObjectURL(url);
+    cb(canvas.toDataURL('image/jpeg',0.72));
+  };
+  img.src=url;
+}
+
+function uploadPhoto(i){
+  if(!isAdmin)return;
+  var input=document.createElement('input');
+  input.type='file';input.accept='image/*';input.multiple=true;
+  input.onchange=function(){
+    Array.from(input.files).forEach(function(file){
+      var addBtn=document.getElementById('photos-add-'+i);
+      if(addBtn)addBtn.classList.add('j-uploading');
+      compressImage(file,function(b64){
+        var id='p'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+        window._fbSet(window._fbRef(window._fbDb,'photos/'+i+'/'+id),b64)
+          .then(function(){
+            if(!photos[i])photos[i]={};
+            photos[i][id]=b64;
+            patchPhotos(i);
+            if(addBtn)addBtn.classList.remove('j-uploading');
+          });
+      });
+    });
+  };
+  input.click();
+}
+
+function deletePhoto(i,id){
+  if(!isAdmin)return;
+  window._fbRemove(window._fbRef(window._fbDb,'photos/'+i+'/'+id));
+  if(photos[i])delete photos[i][id];
+  patchPhotos(i);
+}
+
+function renderPhotosHtml(i){
+  var stagePhotos=photos[i]||{};
+  var ids=Object.keys(stagePhotos);
+  var html='<div class="j-photos" id="photos-'+i+'">';
+  ids.forEach(function(id){
+    var src=stagePhotos[id];
+    html+='<div class="j-photo-wrap">'+
+      '<img src="'+src+'" onclick="openLightbox(\''+id+'\','+i+')">'+
+      (isAdmin?'<button class="j-photo-del" onclick="deletePhoto('+i+',\''+id+'\')">&#x2715;</button>':'')+
+      '</div>';
+  });
+  if(isAdmin){
+    html+='<div class="j-photo-add" id="photos-add-'+i+'" onclick="uploadPhoto('+i+')">'+
+      '<span class="j-photo-add-icon">&#x1f4f7;</span><span>Ajouter</span></div>';
+  }
+  html+='</div>';
+  return html;
+}
+
+function patchPhotos(i){
+  var container=document.getElementById('photos-'+i);
+  if(!container)return;
+  var tmp=document.createElement('div');
+  tmp.innerHTML=renderPhotosHtml(i);
+  container.replaceWith(tmp.firstChild);
+}
+
+function initPhotos(){
+  window._fbOnValue(window._fbRef(window._fbDb,'photos'),function(snap){
+    photos=snap.val()||{};
+    // Patcher uniquement les entrées déjà rendues
+    Object.keys(photos).forEach(function(i){patchPhotos(parseInt(i));});
+  });
+}
+
 // ==== JOURNAL ====
 function renderJournal(){
   var c=document.getElementById('journalList');c.innerHTML='';
@@ -535,6 +655,7 @@ function renderJournal(){
     entry.innerHTML='<div class="j-date">Etape '+s.day+'</div>'+
       '<div class="j-stage">'+s.title+' ('+s.km+' km)</div>'+
       '<textarea class="j-ta" placeholder="'+placeholder+'"'+(isAdmin?' oninput="state.journal['+i+']=this.value;save()"':' readonly')+'>'+txt+'</textarea>'+
+      renderPhotosHtml(i)+
       '<div class="j-rating" id="rat'+i+'">'+starsHtml+'</div>'+
       '<div class="j-meta" id="jt'+i+'">'+tagsHtml+'</div>';
     c.appendChild(entry);
@@ -564,7 +685,7 @@ window.addEventListener('beforeunload',function(){
 });
 document.addEventListener('DOMContentLoaded',function(){
   initMap();renderStages();renderJournal();
-  setTimeout(function(){initFirebase();},800);
+  setTimeout(function(){initFirebase();initPhotos();},800);
 });
 </script>
 </body>
