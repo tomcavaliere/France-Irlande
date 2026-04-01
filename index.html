@@ -236,6 +236,37 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
   font-size:16px;color:#ccc;cursor:pointer;padding:2px 6px}
 .comment-del:active{color:#e74c3c}
 .comment-empty{text-align:center;color:var(--text-light);font-size:13px;padding:24px 0}
+
+/* Dépenses */
+.dep-summary{background:linear-gradient(135deg,var(--green),var(--green-light));border-radius:var(--radius);
+  padding:16px;color:#fff;margin-bottom:14px;box-shadow:var(--shadow)}
+.dep-summary-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}
+.dep-sum-item{text-align:center}
+.dep-sum-v{font-size:20px;font-weight:700}
+.dep-sum-l{font-size:9px;opacity:.8;text-transform:uppercase;letter-spacing:.3px}
+.dep-form{background:var(--card);border-radius:var(--radius);padding:14px;
+  margin-bottom:14px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:8px}
+.dep-form select,.dep-form input{border:1px solid #e0e0e0;border-radius:10px;padding:10px;
+  font-family:inherit;font-size:14px;outline:none;background:#fff;width:100%}
+.dep-form select:focus,.dep-form input:focus{border-color:var(--green)}
+.dep-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dep-card{background:var(--card);border-radius:12px;padding:12px 14px;margin-bottom:8px;
+  box-shadow:var(--shadow);display:flex;align-items:center;gap:12px}
+.dep-cat-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.dep-info{flex:1;min-width:0}
+.dep-info-top{display:flex;justify-content:space-between;align-items:baseline}
+.dep-desc{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dep-amount{font-size:15px;font-weight:700;color:var(--green);white-space:nowrap;margin-left:8px}
+.dep-meta{font-size:11px;color:var(--text-light);margin-top:2px}
+.dep-del{background:none;border:none;font-size:16px;color:#ccc;cursor:pointer;padding:4px;flex-shrink:0}
+.dep-day-header{font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;
+  letter-spacing:.5px;margin:14px 0 6px;padding-left:2px}
+.dep-cat-bar{margin-top:12px}
+.dep-cat-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.dep-cat-label{font-size:11px;width:90px;flex-shrink:0;opacity:.9}
+.dep-cat-track{flex:1;height:6px;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden}
+.dep-cat-fill{height:100%;border-radius:3px;background:rgba(255,255,255,.8)}
+.dep-cat-val{font-size:11px;width:42px;text-align:right;flex-shrink:0;opacity:.9}
 </style>
 </head>
 <body>
@@ -308,10 +339,37 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 
 </div>
 
+  <div class="page" id="page-depenses">
+    <div class="sec-title">Dépenses</div>
+    <div id="depSummary"></div>
+    <div class="dep-form">
+      <div class="dep-row">
+        <input type="date" id="depDate">
+        <select id="depCat">
+          <option value="Hébergement">🏕 Hébergement</option>
+          <option value="Nourriture">🍔 Nourriture</option>
+          <option value="Transport">🚢 Transport</option>
+          <option value="Équipement">🔧 Équipement</option>
+          <option value="Loisirs">🍺 Loisirs</option>
+          <option value="Autre">📦 Autre</option>
+        </select>
+      </div>
+      <div class="dep-row">
+        <input type="number" id="depAmount" placeholder="Montant (€)" min="0" step="0.01">
+        <input type="text" id="depDesc" placeholder="Description" maxlength="50">
+      </div>
+      <button class="btn btn-p" style="width:100%" onclick="addExpense()">+ Ajouter</button>
+    </div>
+    <div id="depList"></div>
+    <div class="spacer"></div>
+  </div>
+</div>
+
 <div class="tab-bar">
   <button class="tab active" data-page="map" onclick="switchTab('map')"><span class="tab-icon">&#x1f5fa;&#xfe0f;</span><span>Carte</span></button>
   <button class="tab" data-page="stages" onclick="switchTab('stages')"><span class="tab-icon">&#x1f4cb;</span><span>Etapes</span></button>
   <button class="tab" data-page="journal" onclick="switchTab('journal')"><span class="tab-icon">&#x1f4d3;</span><span>Journal</span></button>
+  <button class="tab" data-page="depenses" id="tabDepenses" onclick="switchTab('depenses')" style="display:none"><span class="tab-icon">&#x1f4b6;</span><span>Dépenses</span></button>
   <button class="tab" data-page="info" onclick="switchTab('info')"><span class="tab-icon">&#x2139;&#xfe0f;</span><span>Infos</span></button>
 </div>
 
@@ -341,6 +399,9 @@ const INACTIVITY_MS=3*60*1000;
 function setAdminUI(on){
   document.getElementById('adminBtn').classList.toggle('on',on);
   document.getElementById('adminBtn').textContent=on?'🔓 Admin':'🔒 Admin';
+  var tab=document.getElementById('tabDepenses');
+  if(tab)tab.style.display=on?'':'none';
+  if(!on&&activeTab()==='depenses')switchTab('map');
 }
 function logoutAdmin(){
   isAdmin=false;
@@ -525,6 +586,7 @@ function switchTab(t){
   document.querySelectorAll('.page').forEach(function(e){e.classList.toggle('active',e.id==='page-'+t)});
   if(t==='map'&&map)setTimeout(function(){map.invalidateSize()},100);
   if(t==='journal'&&journalDirty){renderJournal();journalDirty=false;}
+  if(t==='depenses')renderExpenses();
 }
 
 // ==== STAGES ====
@@ -771,6 +833,99 @@ function patchStageComments(i){
   container.replaceWith(tmp.firstChild);
 }
 
+// ==== DÉPENSES ====
+var expenses={};
+var DEP_COLORS={
+  'Hébergement':'#1a5e1f','Nourriture':'#e8772e','Transport':'#3498db',
+  'Équipement':'#8e44ad','Loisirs':'#e67e22','Autre':'#7f8c8d'
+};
+
+function addExpense(){
+  var date=document.getElementById('depDate').value;
+  var cat=document.getElementById('depCat').value;
+  var amount=parseFloat(document.getElementById('depAmount').value);
+  var desc=document.getElementById('depDesc').value.trim();
+  if(!date||isNaN(amount)||amount<=0){return;}
+  var id='d'+Date.now()+'_'+Math.random().toString(36).slice(2,5);
+  var exp={date:date,cat:cat,amount:amount,desc:desc||cat,ts:Date.now()};
+  window._fbSet(window._fbRef(window._fbDb,'expenses/'+id),exp).then(function(){
+    document.getElementById('depAmount').value='';
+    document.getElementById('depDesc').value='';
+  });
+}
+
+function deleteExpense(id){
+  if(!isAdmin)return;
+  window._fbRemove(window._fbRef(window._fbDb,'expenses/'+id));
+}
+
+function renderExpenses(){
+  var ids=Object.keys(expenses).sort(function(a,b){
+    return (expenses[b].date||'').localeCompare(expenses[a].date||'');
+  });
+  var total=0,byDate={},byCat={};
+  ids.forEach(function(id){
+    var e=expenses[id];total+=e.amount;
+    if(!byDate[e.date])byDate[e.date]=[];byDate[e.date].push({id:id,e:e});
+    byCat[e.cat]=(byCat[e.cat]||0)+e.amount;
+  });
+  var days=Object.keys(byDate).length||1;
+  // Summary
+  var catBarHtml=Object.keys(DEP_COLORS).map(function(cat){
+    if(!byCat[cat])return '';
+    var pct=Math.round((byCat[cat]/total)*100);
+    return '<div class="dep-cat-row">'+
+      '<div class="dep-cat-label">'+cat+'</div>'+
+      '<div class="dep-cat-track"><div class="dep-cat-fill" style="width:'+pct+'%"></div></div>'+
+      '<div class="dep-cat-val">'+byCat[cat].toFixed(0)+'€</div></div>';
+  }).join('');
+  document.getElementById('depSummary').innerHTML=
+    '<div class="dep-summary">'+
+      '<div style="font-size:13px;font-weight:600;opacity:.85">Résumé</div>'+
+      '<div class="dep-summary-grid">'+
+        '<div class="dep-sum-item"><div class="dep-sum-v">'+total.toFixed(0)+'€</div><div class="dep-sum-l">Total</div></div>'+
+        '<div class="dep-sum-item"><div class="dep-sum-v">'+days+'</div><div class="dep-sum-l">Jours</div></div>'+
+        '<div class="dep-sum-item"><div class="dep-sum-v">'+(total/days).toFixed(0)+'€</div><div class="dep-sum-l">/ jour</div></div>'+
+      '</div>'+
+      (catBarHtml?'<div class="dep-cat-bar">'+catBarHtml+'</div>':'')+
+    '</div>';
+  // List by date
+  var listHtml='';
+  Object.keys(byDate).sort(function(a,b){return b.localeCompare(a);}).forEach(function(date){
+    var d=new Date(date+'T12:00:00');
+    var label=d.toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'long'});
+    var dayTotal=byDate[date].reduce(function(s,x){return s+x.e.amount;},0);
+    listHtml+='<div class="dep-day-header">'+label+' — '+dayTotal.toFixed(0)+'€</div>';
+    byDate[date].forEach(function(item){
+      var color=DEP_COLORS[item.e.cat]||'#999';
+      listHtml+='<div class="dep-card">'+
+        '<div class="dep-cat-dot" style="background:'+color+'"></div>'+
+        '<div class="dep-info">'+
+          '<div class="dep-info-top">'+
+            '<div class="dep-desc">'+escHtml(item.e.desc)+'</div>'+
+            '<div class="dep-amount">'+item.e.amount.toFixed(2)+'€</div>'+
+          '</div>'+
+          '<div class="dep-meta">'+item.e.cat+'</div>'+
+        '</div>'+
+        '<button class="dep-del" onclick="deleteExpense(\''+item.id+'\')">🗑</button>'+
+        '</div>';
+    });
+  });
+  document.getElementById('depList').innerHTML=listHtml||
+    '<div style="text-align:center;color:var(--text-light);font-size:13px;padding:24px 0">Aucune dépense enregistrée.</div>';
+}
+
+function initExpenses(){
+  // Pré-remplir la date du jour
+  var today=new Date().toISOString().slice(0,10);
+  var el=document.getElementById('depDate');if(el)el.value=today;
+
+  window._fbOnValue(window._fbRef(window._fbDb,'expenses'),function(snap){
+    expenses=snap.val()||{};
+    if(activeTab()==='depenses')renderExpenses();
+  });
+}
+
 function initComments(){
   window._fbOnValue(window._fbRef(window._fbDb,'comments'),function(snap){
     comments=snap.val()||{};
@@ -841,7 +996,7 @@ window.addEventListener('beforeunload',function(){
 });
 document.addEventListener('DOMContentLoaded',function(){
   initMap();renderStages();renderJournal();
-  setTimeout(function(){initFirebase();initPhotos();initComments();},800);
+  setTimeout(function(){initFirebase();initPhotos();initComments();initExpenses();},800);
 });
 </script>
 </body>
