@@ -391,9 +391,16 @@ function save(){
     window._fbSet(window._fbRef(window._fbDb,'state'),state);
   },60000);
 }
+function saveNow(){
+  if(!window._fbDb||!isAdmin)return;
+  clearTimeout(saveTimer);
+  window._fbSet(window._fbRef(window._fbDb,'state'),state);
+}
 function patchJournal(){
   var entries=document.querySelectorAll('#journalList .journal-entry');
-  entries.forEach(function(entry,i){
+  entries.forEach(function(entry){
+    var i=parseInt(entry.dataset.stage);
+    if(isNaN(i))return;
     var ta=entry.querySelector('.j-ta');
     if(ta&&document.activeElement!==ta){ta.value=state.journal[i]||'';}
     var stars=entry.querySelectorAll('.j-star');
@@ -406,6 +413,13 @@ function patchJournal(){
 
 let fbInitialized=false;
 let lastCompletedCount=0;
+let journalDirty=false;
+
+function activeTab(){
+  var p=document.querySelector('.page.active');
+  return p?p.id.replace('page-',''):'';
+}
+
 function initFirebase(){
   if(!window._fbDb)return;
   document.getElementById('syncDot').style.display='inline-block';
@@ -413,9 +427,13 @@ function initFirebase(){
     var data=snapshot.val();
     if(data){state={completed:{},journal:{},ratings:{},tags:{},...data};}
     var completedCount=Object.values(state.completed).filter(Boolean).length;
+    var countChanged=completedCount!==lastCompletedCount;
     renderStages();updateMap();
-    if(!fbInitialized||completedCount!==lastCompletedCount){
-      renderJournal();fbInitialized=true;
+    if(!fbInitialized){
+      renderJournal();fbInitialized=true;journalDirty=false;
+    } else if(countChanged){
+      if(activeTab()==='journal'){renderJournal();journalDirty=false;}
+      else{journalDirty=true;patchJournal();}
     } else {
       patchJournal();
     }
@@ -506,6 +524,7 @@ function switchTab(t){
   document.querySelectorAll('.tab').forEach(function(e){e.classList.toggle('active',e.dataset.page===t)});
   document.querySelectorAll('.page').forEach(function(e){e.classList.toggle('active',e.id==='page-'+t)});
   if(t==='map'&&map)setTimeout(function(){map.invalidateSize()},100);
+  if(t==='journal'&&journalDirty){renderJournal();journalDirty=false;}
 }
 
 // ==== STAGES ====
@@ -543,9 +562,9 @@ function renderStages(){
 function toggleStage(i){
   if(!isAdmin)return;
   state.completed[i]=!state.completed[i];
-  if(!state.completed[i]){for(var j=i;j<STAGES.length;j++)state.completed[j]=false}
-  if(state.completed[i]){for(var j=0;j<=i;j++)state.completed[j]=true}
-  save();renderStages();updateMap();
+  if(!state.completed[i]){for(var j=i;j<STAGES.length;j++)state.completed[j]=false;}
+  if(state.completed[i]){for(var j=0;j<=i;j++)state.completed[j]=true;}
+  saveNow();renderStages();updateMap();journalDirty=true;
 }
 
 function updateRecap(){
@@ -775,7 +794,7 @@ function renderJournal(){
   STAGES.forEach(function(s,i){
     if(!state.completed[i])return;
     hasAny=true;
-    var entry=document.createElement('div');entry.className='journal-entry';
+    var entry=document.createElement('div');entry.className='journal-entry';entry.dataset.stage=i;
     var txt=state.journal[i]||'';
     var rating=state.ratings[i]||0;
     var stags=state.tags[i]||[];
