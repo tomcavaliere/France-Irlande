@@ -9,6 +9,25 @@
 <meta name="theme-color" content="#1a5e1f">
 <link rel="manifest" href="manifest.json">
 <title>EuroVelo 1 — Cork → Sligo</title>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyA_1xAPK0D5_Mc_cuzJiKT04i9KzrEEDRc",
+    authDomain: "france-irlande-bike.firebaseapp.com",
+    databaseURL: "https://france-irlande-bike-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "france-irlande-bike",
+    storageBucket: "france-irlande-bike.firebasestorage.app",
+    messagingSenderId: "803737104785",
+    appId: "1:803737104785:web:b2770a4d862ab90ee06a30"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  window._fbDb = db;
+  window._fbRef = ref;
+  window._fbSet = set;
+  window._fbOnValue = onValue;
+</script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
@@ -154,13 +173,44 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
   border:3px solid #fff;box-shadow:0 0 12px rgba(232,119,46,.6);animation:pulse 2s ease infinite}
 @keyframes pulse{0%,100%{box-shadow:0 0 8px rgba(232,119,46,.4)}50%{box-shadow:0 0 20px rgba(232,119,46,.8)}}
 .spacer{height:20px}
+
+/* Admin */
+.admin-btn{position:fixed;top:calc(env(safe-area-inset-top,0) + 10px);right:12px;
+  z-index:1100;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.5);
+  color:#fff;border-radius:20px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer}
+.admin-btn.on{background:var(--orange);border-color:var(--orange)}
+.pw-modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);
+  z-index:3000;display:none;align-items:center;justify-content:center}
+.pw-modal.vis{display:flex}
+.pw-box{background:#fff;border-radius:16px;padding:24px;width:280px;text-align:center}
+.pw-box h3{font-size:16px;font-weight:700;margin-bottom:6px}
+.pw-box p{font-size:12px;color:var(--text-light);margin-bottom:14px}
+.pw-input{width:100%;border:1.5px solid #e0e0e0;border-radius:10px;padding:10px;
+  font-size:16px;text-align:center;letter-spacing:3px;outline:none;margin-bottom:10px}
+.pw-input:focus{border-color:var(--green)}
+.pw-err{color:#e74c3c;font-size:12px;margin-bottom:8px;display:none}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#4caf50;display:inline-block;
+  margin-left:6px;vertical-align:middle;animation:blink 2s ease infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.readonly-overlay{pointer-events:none;opacity:.7}
 </style>
 </head>
 <body>
 <div class="header">
   <div class="header-c">
-    <h1>EuroVelo 1 — Irlande</h1>
+    <h1>EuroVelo 1 — Irlande<span class="sync-dot" id="syncDot" style="display:none"></span></h1>
     <div class="header-sub">Cork → Sligo | 1734.3 km | +11041m</div>
+  </div>
+</div>
+<button class="admin-btn" id="adminBtn" onclick="toggleAdmin()">&#x1f512; Admin</button>
+
+<div class="pw-modal" id="pwModal">
+  <div class="pw-box">
+    <h3>Mode admin</h3>
+    <p>Entre le mot de passe pour modifier le journal et les etapes</p>
+    <input type="password" class="pw-input" id="pwInput" placeholder="••••••" onkeydown="if(event.key==='Enter')checkPw()">
+    <div class="pw-err" id="pwErr">Mot de passe incorrect</div>
+    <button class="btn btn-p" style="width:100%" onclick="checkPw()">Deverrouiller</button>
   </div>
 </div>
 
@@ -233,9 +283,44 @@ const TOTAL_GAIN=11041;
 const TOTAL_LOSS=11100;
 
 // ==== STATE ====
+// ==== ADMIN ====
+const ADMIN_PW = 'velo2025';
+let isAdmin = false;
+function toggleAdmin(){
+  if(isAdmin){isAdmin=false;document.getElementById('adminBtn').classList.remove('on');document.getElementById('adminBtn').textContent='🔒 Admin';renderStages();renderJournal();return;}
+  document.getElementById('pwInput').value='';
+  document.getElementById('pwErr').style.display='none';
+  document.getElementById('pwModal').classList.add('vis');
+  setTimeout(function(){document.getElementById('pwInput').focus()},100);
+}
+function checkPw(){
+  if(document.getElementById('pwInput').value===ADMIN_PW){
+    isAdmin=true;
+    document.getElementById('pwModal').classList.remove('vis');
+    document.getElementById('adminBtn').classList.add('on');
+    document.getElementById('adminBtn').textContent='🔓 Admin';
+    renderStages();renderJournal();
+  } else {
+    document.getElementById('pwErr').style.display='block';
+    document.getElementById('pwInput').value='';
+  }
+}
+
+// ==== STATE + FIREBASE ====
 let state={completed:{},journal:{},ratings:{},tags:{}};
-try{const s=localStorage.getItem('ev1v3');if(s)state={...state,...JSON.parse(s)}}catch(e){}
-function save(){try{localStorage.setItem('ev1v3',JSON.stringify(state))}catch(e){}}
+function save(){
+  if(!window._fbDb||!isAdmin)return;
+  window._fbSet(window._fbRef(window._fbDb,'state'),state);
+}
+function initFirebase(){
+  if(!window._fbDb)return;
+  document.getElementById('syncDot').style.display='inline-block';
+  window._fbOnValue(window._fbRef(window._fbDb,'state'),function(snapshot){
+    var data=snapshot.val();
+    if(data){state={completed:{},journal:{},ratings:{},tags:{},...data};}
+    renderStages();renderJournal();updateMap();
+  });
+}
 
 // ==== MAP ====
 let map,completedLayer,posMarker;
@@ -355,6 +440,7 @@ function renderStages(){
 }
 
 function toggleStage(i){
+  if(!isAdmin)return;
   state.completed[i]=!state.completed[i];
   if(!state.completed[i]){for(var j=i;j<STAGES.length;j++)state.completed[j]=false}
   if(state.completed[i]){for(var j=0;j<=i;j++)state.completed[j]=true}
@@ -422,22 +508,25 @@ function renderJournal(){
     var rating=state.ratings[i]||0;
     var stags=state.tags[i]||[];
     var starsHtml='';
-    for(var n=1;n<=5;n++)starsHtml+='<span class="j-star'+(n<=rating?' on':'')+'" onclick="setRat('+i+','+n+')">&#x2B50;</span>';
+    for(var n=1;n<=5;n++)starsHtml+='<span class="j-star'+(n<=rating?' on':'')+'"'+(isAdmin?' onclick="setRat('+i+','+n+')"':'')+'>&#x2B50;</span>';
     var tagsHtml='';
-    tags.forEach(function(t){tagsHtml+='<span class="j-tag'+(stags.indexOf(t)>=0?' sel':'')+'" onclick="togTag('+i+',\''+t+'\')">'+t+'</span>'});
+    tags.forEach(function(t){tagsHtml+='<span class="j-tag'+(stags.indexOf(t)>=0?' sel':'')+'"'+(isAdmin?' onclick="togTag('+i+',\''+t+'\')"':'')+'>'+t+'</span>'});
+    var placeholder=isAdmin?'Raconte ta journee...':'(aucune entree pour cette etape)';
     entry.innerHTML='<div class="j-date">Etape '+s.day+'</div>'+
       '<div class="j-stage">'+s.title+' ('+s.km+' km)</div>'+
-      '<textarea class="j-ta" placeholder="Raconte ta journee..." oninput="state.journal['+i+']=this.value;save()">'+txt+'</textarea>'+
+      '<textarea class="j-ta" placeholder="'+placeholder+'"'+(isAdmin?' oninput="state.journal['+i+']=this.value;save()"':' readonly')+'>'+txt+'</textarea>'+
       '<div class="j-rating" id="rat'+i+'">'+starsHtml+'</div>'+
       '<div class="j-meta" id="jt'+i+'">'+tagsHtml+'</div>';
     c.appendChild(entry);
   });
 }
 function setRat(i,n){
+  if(!isAdmin)return;
   state.ratings[i]=state.ratings[i]===n?0:n;save();
   document.getElementById('rat'+i).querySelectorAll('.j-star').forEach(function(s,idx){s.classList.toggle('on',idx<state.ratings[i])});
 }
 function togTag(i,t){
+  if(!isAdmin)return;
   if(!state.tags[i])state.tags[i]=[];
   var idx=state.tags[i].indexOf(t);
   if(idx>=0)state.tags[i].splice(idx,1);else state.tags[i].push(t);
@@ -447,7 +536,11 @@ function togTag(i,t){
 }
 
 // ==== INIT ====
-document.addEventListener('DOMContentLoaded',function(){initMap();renderStages();renderJournal()});
+document.addEventListener('DOMContentLoaded',function(){
+  initMap();renderStages();renderJournal();
+  // Firebase se connecte une fois le module chargé
+  setTimeout(function(){initFirebase();},800);
+});
 </script>
 </body>
 </html>
