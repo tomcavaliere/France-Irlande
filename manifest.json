@@ -1,0 +1,17 @@
+{
+  "name": "EuroVelo 1 — Irlande",
+  "short_name": "EV1 Irlande",
+  "description": "Application de bikepacking pour EuroVelo 1 en Irlande, de Cork à Sligo",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a5e1f",
+  "theme_color": "#1a5e1f",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%231a5e1f'/><text x='50' y='65' font-size='60' text-anchor='middle' fill='white'>🚴</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}
