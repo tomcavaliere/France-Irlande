@@ -799,7 +799,7 @@ function renderStageCommentsHtml(i){
   // Formulaire toujours visible pour les non-admin
   if(!isAdmin){
     html+='<div class="comment-form" style="margin-top:10px">'+
-      '<input type="text" id="cname-'+i+'" placeholder="Ton prénom" maxlength="30" value="'+(localStorage.getItem('cmtName')||'')+'">'+
+      '<input type="text" id="cname-'+i+'" placeholder="Ton prénom" maxlength="30">'+
       '<textarea id="ctxt-'+i+'" placeholder="Laisse un commentaire..."></textarea>'+
       '<button class="btn btn-p comment-send" onclick="postComment('+i+')">Envoyer &#x1f4e8;</button>'+
       '</div>';
@@ -819,7 +819,6 @@ function postComment(i){
   window._fbSet(window._fbRef(window._fbDb,'comments/'+i+'/'+id),{name:name,text:text,ts:Date.now()})
     .then(function(){
       if(txtEl)txtEl.value='';
-      localStorage.setItem('cmtName',name);
     });
 }
 
