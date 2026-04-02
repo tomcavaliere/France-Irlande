@@ -3,464 +3,574 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BikePlanner — Test algorithme</title>
+<title>BikePlanner — Test algorithme v2</title>
 <style>
-  body{font-family:system-ui,sans-serif;margin:0;padding:16px;background:#f5f2eb;color:#1a1a1a}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,sans-serif;padding:16px;background:#f5f2eb;color:#1a1a1a}
   h1{font-size:20px;margin-bottom:4px}
-  h2{font-size:15px;font-weight:700;margin:20px 0 8px;color:#1a5e1f}
   .subtitle{font-size:13px;color:#666;margin-bottom:20px}
-  .controls{background:#fff;border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
-  .row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
-  label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;flex:1;min-width:140px}
-  input[type=range]{width:100%}
+  .controls{background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+  .section-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+    color:#1a5e1f;margin-bottom:10px}
+  .row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+  label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;flex:1;min-width:130px}
+  input[type=range]{width:100%;accent-color:#1a5e1f}
   input[type=file]{font-size:13px}
-  .val{font-weight:400;color:#1a5e1f}
-  button{background:#1a5e1f;color:#fff;border:none;border-radius:8px;padding:10px 20px;
-    font-size:14px;font-weight:600;cursor:pointer;margin-top:4px}
-  button:hover{background:#2d8a33}
-  .results{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .val{font-weight:400;color:#1a5e1f;font-size:12px}
+  .accom-grid{display:flex;gap:8px;flex-wrap:wrap}
+  .accom-btn{padding:6px 12px;border-radius:20px;border:1.5px solid #e0e0e0;background:#fff;
+    font-size:13px;cursor:pointer;transition:all .15s}
+  .accom-btn.sel{background:#1a5e1f;color:#fff;border-color:#1a5e1f}
+  .run-btn{background:#1a5e1f;color:#fff;border:none;border-radius:8px;padding:10px 24px;
+    font-size:14px;font-weight:600;cursor:pointer;margin-top:8px;width:100%}
+  .run-btn:hover{background:#2d8a33}
+  .run-btn:disabled{background:#ccc;cursor:not-allowed}
+  .log{background:#1a1a1a;color:#4caf50;border-radius:8px;padding:12px;font-family:monospace;
+    font-size:11px;margin-bottom:12px;max-height:180px;overflow-y:auto;line-height:1.6}
+  .log .err{color:#e74c3c}
+  .log .warn{color:#e8772e}
+  .log .info{color:#3498db}
+  .summary{display:flex;gap:0;background:#fff;border-radius:12px;overflow:hidden;
+    box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:12px}
+  .sum-item{flex:1;padding:14px;text-align:center;border-right:1px solid #f0f0f0}
+  .sum-item:last-child{border-right:none}
+  .sum-v{font-size:22px;font-weight:700;color:#1a5e1f}
+  .sum-v.warn{color:#e8772e}
+  .sum-l{font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.3px;margin-top:2px}
+  .results{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   @media(max-width:700px){.results{grid-template-columns:1fr}}
   .panel{background:#fff;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
-  .panel-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  .panel-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
     margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #eee}
   .panel-title.algo{color:#1a5e1f}
   .panel-title.real{color:#e8772e}
-  .stage-row{display:flex;gap:8px;align-items:baseline;padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:13px}
+  .stage-row{display:flex;gap:6px;align-items:center;padding:6px 0;
+    border-bottom:1px solid #f5f5f5;font-size:12px}
   .stage-row:last-child{border-bottom:none}
-  .s-num{width:24px;flex-shrink:0;font-weight:700;color:#999;font-size:11px}
-  .s-title{flex:1;font-weight:600}
-  .s-km{width:48px;text-align:right;color:#1a5e1f;font-weight:700;flex-shrink:0}
-  .s-gain{width:56px;text-align:right;color:#e8772e;font-size:11px;flex-shrink:0}
-  .summary{background:#fff;border-radius:12px;padding:14px;margin-bottom:16px;
-    box-shadow:0 2px 8px rgba(0,0,0,.08);display:flex;gap:24px;flex-wrap:wrap}
-  .sum-item{text-align:center}
-  .sum-v{font-size:22px;font-weight:700;color:#1a5e1f}
-  .sum-l{font-size:11px;color:#666;text-transform:uppercase}
-  .diff{font-size:11px;padding:2px 6px;border-radius:8px;margin-left:4px}
-  .diff.ok{background:#e8f5e9;color:#2e7d32}
-  .diff.warn{background:#fff3e0;color:#e65100}
-  .diff.bad{background:#fce4ec;color:#c62828}
-  .log{background:#1a1a1a;color:#4caf50;border-radius:8px;padding:12px;font-family:monospace;
-    font-size:11px;margin-bottom:16px;max-height:150px;overflow-y:auto}
-  .error{color:#e74c3c}
-  .stat-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #f5f5f5}
-  .comparison{background:#fff;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:16px}
+  .s-num{width:22px;flex-shrink:0;font-weight:700;color:#aaa;font-size:10px}
+  .s-info{flex:1;min-width:0}
+  .s-title{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .s-accom{font-size:10px;color:#3498db;margin-top:1px}
+  .s-km{width:44px;text-align:right;font-weight:700;color:#1a5e1f;flex-shrink:0}
+  .s-gain{width:50px;text-align:right;color:#e8772e;font-size:10px;flex-shrink:0}
+  .badge{font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px;white-space:nowrap}
+  .ok{background:#e8f5e9;color:#2e7d32}
+  .warn-badge{background:#fff3e0;color:#e65100}
+  .bad{background:#fce4ec;color:#c62828}
+  .progress{background:#e0e0e0;border-radius:4px;height:6px;margin:8px 0;overflow:hidden}
+  .progress-bar{height:100%;background:linear-gradient(90deg,#1a5e1f,#2d8a33);
+    border-radius:4px;transition:width .3s}
+  .poi-count{background:#e3f2fd;border-radius:8px;padding:8px 12px;font-size:12px;
+    color:#1565c0;margin-bottom:10px}
 </style>
 </head>
 <body>
 
-<h1>BikePlanner — Test algorithme de découpage GPX</h1>
-<p class="subtitle">Compare le découpage automatique avec les 28 vraies étapes de l'EuroVelo 1 Irlande</p>
+<h1>BikePlanner — Test algorithme v2</h1>
+<p class="subtitle">Découpage basé sur les hébergements réels le long du tracé (OpenStreetMap)</p>
 
 <div class="controls">
+  <div class="section-title">📁 Tracé GPX</div>
+  <div class="row">
+    <label>Fichier GPX<input type="file" id="gpxFile" accept=".gpx"></label>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="section-title">📅 Durée du voyage</div>
   <div class="row">
     <label>
-      Fichier GPX
-      <input type="file" id="gpxFile" accept=".gpx">
+      Nombre de jours cible
+      <input type="range" id="targetDays" min="3" max="60" value="28" step="1"
+        oninput="updateLabels()">
+      <span class="val" id="targetDaysVal">28 jours</span>
+    </label>
+    <label>
+      Tolérance (± jours)
+      <input type="range" id="daysTol" min="0" max="10" value="3" step="1"
+        oninput="updateLabels()">
+      <span class="val" id="daysTolVal">± 3 jours → 25 à 31 jours</span>
     </label>
   </div>
+</div>
+
+<div class="controls">
+  <div class="section-title">🚴 Distance par étape</div>
   <div class="row">
     <label>
       Distance min / jour
-      <input type="range" id="distMin" min="20" max="150" value="55" step="5"
-        oninput="updateDistLabels()">
-      <span class="val" id="distMinVal">55 km</span>
+      <input type="range" id="distMin" min="10" max="150" value="45" step="5"
+        oninput="updateLabels()">
+      <span class="val" id="distMinVal">45 km</span>
     </label>
     <label>
       Distance max / jour
-      <input type="range" id="distMax" min="20" max="150" value="80" step="5"
-        oninput="updateDistLabels()">
-      <span class="val" id="distMaxVal">80 km</span>
-    </label>
-    <label>
-      D+ max / jour
-      <input type="range" id="maxGain" min="300" max="3000" value="1200" step="100"
-        oninput="document.getElementById('maxGainVal').textContent=this.value+' m'">
-      <span class="val" id="maxGainVal">1200 m</span>
+      <input type="range" id="distMax" min="10" max="150" value="100" step="5"
+        oninput="updateLabels()">
+      <span class="val" id="distMaxVal">100 km</span>
     </label>
   </div>
-  <div class="row">
-    <label>
-      Tolérance coupure (±%)
-      <input type="range" id="tolerance" min="1" max="30" value="10" step="1"
-        oninput="updateDistLabels()">
-      <span class="val" id="toleranceVal">±10%</span>
-    </label>
-    <label>
-      Facteur dénivelé
-      <input type="range" id="gainFactor" min="1" max="20" value="8" step="1"
-        oninput="document.getElementById('gainFactorVal').textContent='1m D+ = '+this.value+'m plat'">
-      <span class="val" id="gainFactorVal">1m D+ = 8m plat</span>
-    </label>
-  </div>
-  <button onclick="run()">▶ Lancer le découpage</button>
 </div>
 
+<div class="controls">
+  <div class="section-title">🏕 Type d'hébergement</div>
+  <div class="accom-grid" id="accomGrid">
+    <button class="accom-btn sel" data-tag='["tourism=camp_site"]'>⛺ Camping</button>
+    <button class="accom-btn" data-tag='["tourism=caravan_site"]'>🚐 Aire camping-car</button>
+    <button class="accom-btn" data-tag='["tourism=hostel"]'>🛏 Hostel</button>
+    <button class="accom-btn" data-tag='["tourism=hotel","tourism=motel"]'>🏨 Hôtel</button>
+    <button class="accom-btn" data-tag='["tourism=guest_house","tourism=bed_and_breakfast"]'>🏠 B&B</button>
+    <button class="accom-btn" data-tag='[]'>🌿 Bivouac (tout point)</button>
+  </div>
+  <div style="font-size:11px;color:#999;margin-top:8px">Sélectionne un ou plusieurs types (clic pour activer/désactiver)</div>
+</div>
+
+<button class="run-btn" id="runBtn" onclick="run()">▶ Lancer la recherche</button>
+
+<div style="height:12px"></div>
 <div id="log" class="log">En attente d'un fichier GPX...</div>
+<div id="progress" style="display:none">
+  <div class="progress"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
+</div>
 <div id="output"></div>
 
-<!-- Vraies étapes pour comparaison -->
 <script>
-const REAL_STAGES = [
-  {day:1,  title:"Cork → Kinsale",          km:65.7,  gain:527},
-  {day:2,  title:"Kinsale → Skibbereen",    km:69.2,  gain:891},
-  {day:3,  title:"Skibbereen → Kenmare",    km:76.0,  gain:1043},
-  {day:4,  title:"Kenmare → Killorglin",    km:73.2,  gain:1176},
-  {day:5,  title:"Killorglin → Tralee",     km:52.0,  gain:468},
-  {day:6,  title:"Tralee → Kilrush",        km:82.3,  gain:511},
-  {day:7,  title:"Kilrush → Kinvara",       km:92.7,  gain:638},
-  {day:8,  title:"Kinvara → Clifden",       km:84.5,  gain:889},
-  {day:9,  title:"Clifden → Westport",      km:78.5,  gain:977},
-  {day:10, title:"Westport → Ballina",      km:62.8,  gain:601},
-  {day:11, title:"Ballina → Sligo",         km:58.4,  gain:522},
-  // Étapes 12-28 simplifiées pour le test
-  {day:12, title:"Étape 12",                km:70.0,  gain:700},
-  {day:13, title:"Étape 13",                km:68.0,  gain:650},
-  {day:14, title:"Étape 14",                km:72.0,  gain:800},
-  {day:15, title:"Étape 15",                km:65.0,  gain:600},
-  {day:16, title:"Étape 16",                km:71.0,  gain:750},
-  {day:17, title:"Étape 17",                km:69.0,  gain:700},
-  {day:18, title:"Étape 18",                km:74.0,  gain:850},
-  {day:19, title:"Étape 19",                km:66.0,  gain:600},
-  {day:20, title:"Étape 20",                km:73.0,  gain:780},
-  {day:21, title:"Étape 21",                km:68.0,  gain:720},
-  {day:22, title:"Étape 22",                km:70.0,  gain:690},
-  {day:23, title:"Étape 23",                km:67.0,  gain:640},
-  {day:24, title:"Étape 24",                km:75.0,  gain:810},
-  {day:25, title:"Étape 25",                km:69.0,  gain:730},
-  {day:26, title:"Étape 26",                km:72.0,  gain:760},
-  {day:27, title:"Étape 27",                km:64.0,  gain:590},
-  {day:28, title:"Étape 28 → Sligo",        km:58.4,  gain:522},
+// ─── Vraies étapes pour comparaison ─────────────────────────────────────────
+const REAL_STAGES=[
+  {day:1, title:"Cork → Kinsale",         km:65.7,  gain:527},
+  {day:2, title:"Kinsale → Skibbereen",   km:69.2,  gain:891},
+  {day:3, title:"Skibbereen → Kenmare",   km:76.0,  gain:1043},
+  {day:4, title:"Kenmare → Killorglin",   km:73.2,  gain:1176},
+  {day:5, title:"Killorglin → Tralee",    km:52.0,  gain:468},
+  {day:6, title:"Tralee → Kilrush",       km:82.3,  gain:511},
+  {day:7, title:"Kilrush → Kinvara",      km:92.7,  gain:638},
+  {day:8, title:"Kinvara → Clifden",      km:84.5,  gain:889},
+  {day:9, title:"Clifden → Westport",     km:78.5,  gain:977},
+  {day:10,title:"Westport → Ballina",     km:62.8,  gain:601},
+  {day:11,title:"Ballina → Sligo",        km:58.4,  gain:522},
 ];
 
-// =============================================
-// UTILITAIRES
-// =============================================
-function log(msg, isError=false){
-  var el=document.getElementById('log');
-  var span=document.createElement('div');
-  span.textContent='> '+msg;
-  if(isError)span.classList.add('error');
-  el.appendChild(span);
-  el.scrollTop=el.scrollHeight;
+// ─── UI ──────────────────────────────────────────────────────────────────────
+function updateLabels(){
+  var days=+document.getElementById('targetDays').value;
+  var tol=+document.getElementById('daysTol').value;
+  var dmin=+document.getElementById('distMin').value;
+  var dmax=+document.getElementById('distMax').value;
+  if(dmin>dmax){document.getElementById('distMin').value=dmax;dmin=dmax;}
+  document.getElementById('targetDaysVal').textContent=days+' jours';
+  document.getElementById('daysTolVal').textContent='± '+tol+' jour'+(tol>1?'s':'')+
+    ' → '+(days-tol)+' à '+(days+tol)+' jours';
+  document.getElementById('distMinVal').textContent=dmin+' km';
+  document.getElementById('distMaxVal').textContent=dmax+' km';
 }
 
+document.querySelectorAll('.accom-btn').forEach(function(btn){
+  btn.onclick=function(){btn.classList.toggle('sel');};
+});
+
+function getSelectedTags(){
+  var tags=[];
+  document.querySelectorAll('.accom-btn.sel').forEach(function(btn){
+    JSON.parse(btn.dataset.tag).forEach(function(t){tags.push(t);});
+  });
+  return tags; // [] = bivouac, tout point est candidat
+}
+
+// ─── LOG ─────────────────────────────────────────────────────────────────────
+function log(msg,cls=''){
+  var el=document.getElementById('log');
+  var d=document.createElement('div');
+  d.textContent='› '+msg;
+  if(cls)d.classList.add(cls);
+  el.appendChild(d);el.scrollTop=el.scrollHeight;
+}
+function setProgress(pct){
+  document.getElementById('progress').style.display='block';
+  document.getElementById('progressBar').style.width=pct+'%';
+}
+
+// ─── HAVERSINE ───────────────────────────────────────────────────────────────
 function haversine(lat1,lon1,lat2,lon2){
-  var R=6371000;
-  var dLat=(lat2-lat1)*Math.PI/180;
-  var dLon=(lon2-lon1)*Math.PI/180;
-  var a=Math.sin(dLat/2)*Math.sin(dLat/2)+
-    Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
-    Math.sin(dLon/2)*Math.sin(dLon/2);
+  var R=6371000,d2r=Math.PI/180;
+  var dLat=(lat2-lat1)*d2r,dLon=(lon2-lon1)*d2r;
+  var a=Math.sin(dLat/2)**2+Math.cos(lat1*d2r)*Math.cos(lat2*d2r)*Math.sin(dLon/2)**2;
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
-// =============================================
-// PARSING GPX
-// =============================================
+// ─── PARSING GPX ─────────────────────────────────────────────────────────────
 function parseGPX(text){
-  log('Parsing GPX...');
-  var parser=new DOMParser();
-  var doc=parser.parseFromString(text,'application/xml');
-  if(doc.querySelector('parsererror')){throw new Error('GPX invalide');}
-  var pts=doc.querySelectorAll('trkpt');
-  log('Points bruts : '+pts.length);
-  var points=[];
-  pts.forEach(function(pt){
-    var lat=parseFloat(pt.getAttribute('lat'));
-    var lon=parseFloat(pt.getAttribute('lon'));
-    var eleEl=pt.querySelector('ele');
-    var ele=eleEl?parseFloat(eleEl.textContent):0;
-    if(!isNaN(lat)&&!isNaN(lon))points.push({lat,lon,ele});
+  var doc=new DOMParser().parseFromString(text,'application/xml');
+  if(doc.querySelector('parsererror'))throw new Error('GPX invalide');
+  var pts=[...doc.querySelectorAll('trkpt')].map(function(pt){
+    return {
+      lat:parseFloat(pt.getAttribute('lat')),
+      lon:parseFloat(pt.getAttribute('lon')),
+      ele:parseFloat(pt.querySelector('ele')?.textContent||0)
+    };
+  }).filter(function(p){return !isNaN(p.lat)&&!isNaN(p.lon);});
+  log('Points GPX : '+pts.length);
+  return pts;
+}
+
+// ─── ENRICHISSEMENT (cumDist, cumGain) ───────────────────────────────────────
+function enrichPoints(pts){
+  pts[0].cumDist=0;pts[0].cumGain=0;pts[0].cumLoss=0;
+  var totalGain=0,totalLoss=0;
+  for(var i=1;i<pts.length;i++){
+    var d=haversine(pts[i-1].lat,pts[i-1].lon,pts[i].lat,pts[i].lon);
+    var dEle=pts[i].ele-pts[i-1].ele;
+    if(Math.abs(dEle)>50)dEle=0; // filtrer aberrations
+    totalGain+=dEle>0?dEle:0;
+    totalLoss+=dEle<0?Math.abs(dEle):0;
+    pts[i].cumDist=pts[i-1].cumDist+d;
+    pts[i].cumGain=pts[i-1].cumGain+(dEle>0?dEle:0);
+    pts[i].cumLoss=pts[i-1].cumLoss+(dEle<0?Math.abs(dEle):0);
+  }
+  var totalKm=pts[pts.length-1].cumDist/1000;
+  log('Distance totale : '+totalKm.toFixed(1)+' km | D+ : '+Math.round(totalGain)+'m');
+  return {pts,totalKm,totalGain,totalLoss};
+}
+
+// ─── OVERPASS : trouver les hébergements le long du tracé ────────────────────
+function getBBox(pts){
+  var lats=pts.map(function(p){return p.lat;});
+  var lons=pts.map(function(p){return p.lon;});
+  // Ajouter une marge de 5km (~0.045°)
+  var margin=0.045;
+  return [Math.min(...lats)-margin, Math.min(...lons)-margin,
+          Math.max(...lats)+margin, Math.max(...lons)+margin];
+}
+
+async function fetchPOIs(pts, tags){
+  if(tags.length===0){
+    // Bivouac : pas de POI à chercher, on utilisera des points équidistants
+    log('Mode bivouac : pas de recherche POI, découpage libre','info');
+    return null;
+  }
+
+  var bbox=getBBox(pts);
+  log('Bounding box : '+bbox.map(function(v){return v.toFixed(3);}).join(', '),'info');
+
+  // Construire la requête Overpass
+  var filters=tags.map(function(tag){
+    var parts=tag.split('=');
+    return 'node["'+parts[0]+'"="'+parts[1]+'"]('+bbox.join(',')+');\n'+
+           'way["'+parts[0]+'"="'+parts[1]+'"]('+bbox.join(',')+');';
+  }).join('\n');
+
+  var query='[out:json][timeout:60];\n(\n'+filters+'\n);\nout center;';
+  log('Requête Overpass en cours...','info');
+
+  var r=await fetch('https://overpass-api.de/api/interpreter',{
+    method:'POST',
+    body:'data='+encodeURIComponent(query)
   });
-  log('Points valides : '+points.length);
-  return points;
+  if(!r.ok)throw new Error('Overpass API erreur '+r.status);
+  var data=await r.json();
+  log('POIs trouvés dans la bbox : '+data.elements.length);
+  return data.elements;
 }
 
-// =============================================
-// CALCUL DISTANCE + DÉNIVELÉ
-// =============================================
-function enrichPoints(points){
-  log('Calcul distances et dénivelé...');
-  var totalDist=0, totalGain=0, totalLoss=0;
-  points[0].dist=0; points[0].cumDist=0;
-  points[0].cumGain=0; points[0].cumLoss=0;
+// ─── ASSOCIER CHAQUE POI AU POINT GPX LE PLUS PROCHE ────────────────────────
+function snapPOIsToRoute(pois, pts, maxDistM=3000){
+  // Pour chaque POI, trouver le point GPX le plus proche
+  var candidates=[];
+  pois.forEach(function(poi){
+    var lat=poi.lat||(poi.center&&poi.center.lat);
+    var lon=poi.lon||(poi.center&&poi.center.lon);
+    if(!lat||!lon)return;
+    var name=poi.tags&&(poi.tags.name||poi.tags.tourism||'?');
 
-  for(var i=1;i<points.length;i++){
-    var d=haversine(points[i-1].lat,points[i-1].lon,points[i].lat,points[i].lon);
-    var dEle=points[i].ele-points[i-1].ele;
-    // Filtrer les sauts d'élévation aberrants (>50m entre 2 points)
-    if(Math.abs(dEle)>50)dEle=0;
-    var gain=dEle>0?dEle:0;
-    var loss=dEle<0?Math.abs(dEle):0;
-    totalDist+=d;
-    totalGain+=gain;
-    totalLoss+=loss;
-    points[i].dist=d;
-    points[i].cumDist=totalDist;
-    points[i].cumGain=totalGain;
-    points[i].cumLoss=totalLoss;
+    var bestDist=Infinity,bestIdx=-1;
+    // Optimisation : ne tester qu'1 point sur 10 pour la pré-sélection
+    for(var i=0;i<pts.length;i+=10){
+      var d=haversine(lat,lon,pts[i].lat,pts[i].lon);
+      if(d<bestDist){bestDist=d;bestIdx=i;}
+    }
+    // Affiner autour du meilleur candidat
+    var start=Math.max(0,bestIdx-15),end=Math.min(pts.length-1,bestIdx+15);
+    for(var i=start;i<=end;i++){
+      var d=haversine(lat,lon,pts[i].lat,pts[i].lon);
+      if(d<bestDist){bestDist=d;bestIdx=i;}
+    }
+
+    if(bestDist<=maxDistM){
+      candidates.push({
+        name, lat, lon,
+        routeIdx: bestIdx,
+        cumKm: pts[bestIdx].cumDist/1000,
+        distToRoute: Math.round(bestDist),
+        type: poi.tags&&poi.tags.tourism||'?'
+      });
+    }
+  });
+
+  // Dédoublonner : si plusieurs POIs au même km (±1km), garder 1
+  candidates.sort(function(a,b){return a.cumKm-b.cumKm;});
+  var deduped=[];
+  candidates.forEach(function(c){
+    if(!deduped.length||c.cumKm-deduped[deduped.length-1].cumKm>1){
+      deduped.push(c);
+    }
+  });
+
+  log('POIs sur le tracé (±'+maxDistM/1000+' km) : '+deduped.length+' candidats');
+  return deduped;
+}
+
+// ─── ALGORITHME PRINCIPAL : programmation dynamique ──────────────────────────
+function findBestPlan(candidates, pts, opts){
+  var totalKm=pts[pts.length-1].cumDist/1000;
+  var dmin=opts.distMin, dmax=opts.distMax;
+  var targetDays=opts.targetDays, daysTol=opts.daysTol;
+  var minDays=targetDays-daysTol, maxDays=targetDays+daysTol;
+
+  // Ajouter le départ (km=0) et l'arrivée (km=total) comme candidats fixes
+  var nodes=[{name:'Départ',cumKm:0,routeIdx:0,type:'start',distToRoute:0}]
+    .concat(candidates)
+    .concat([{name:'Arrivée',cumKm:totalKm,routeIdx:pts.length-1,type:'end',distToRoute:0}]);
+
+  var N=nodes.length;
+  log('Programmation dynamique sur '+N+' noeuds ('+minDays+'–'+maxDays+' jours)...');
+
+  // dp[i][d] = meilleur score pour arriver au noeud i en d jours
+  // score = somme des écarts au milieu de la fourchette (minimiser)
+  var INF=1e18;
+  var targetKm=(dmin+dmax)/2;
+
+  // dp[noeud][jours] = {score, parent}
+  var dp=[];
+  for(var i=0;i<N;i++){
+    dp.push([]);
+    for(var d=0;d<=maxDays+1;d++)dp[i].push({score:INF,parent:-1,parentDay:-1});
   }
-  log('Distance totale : '+(totalDist/1000).toFixed(1)+' km');
-  log('Dénivelé total : +'+Math.round(totalGain)+'m / -'+Math.round(totalLoss)+'m');
-  return {points, totalDist, totalGain, totalLoss};
-}
+  dp[0][0].score=0;
 
-// =============================================
-// ALGORITHME DE DÉCOUPAGE
-// =============================================
-function splitIntoStages(points, totalDist, opts){
-  var distMinM    = opts.distMin * 1000;   // distance min en mètres
-  var distMaxM    = opts.distMax * 1000;   // distance max en mètres
-  var targetDistM = (distMinM + distMaxM) / 2; // cible = milieu de la fourchette
-  var tolerancePct= opts.tolerance / 100;  // tolérance en fraction
-  var maxGain     = opts.maxGain;          // D+ max par étape
-  var gainFactor  = opts.gainFactor;       // 1m D+ = N m de distance équivalente
+  for(var i=0;i<N-1;i++){
+    for(var d=0;d<=maxDays;d++){
+      if(dp[i][d].score===INF)continue;
+      // Essayer d'aller de i vers j en un jour
+      for(var j=i+1;j<N;j++){
+        var segKm=nodes[j].cumKm-nodes[i].cumKm;
+        if(segKm<dmin*0.5)continue; // trop court, ignorer
+        if(segKm>dmax*1.5)break;    // trop long, stop
+        if(segKm<dmin||segKm>dmax)continue; // hors fourchette
+        var newD=d+1;
+        if(newD>maxDays)continue;
+        var score=dp[i][d].score+Math.abs(segKm-targetKm);
+        if(score<dp[j][newD].score){
+          dp[j][newD].score=score;
+          dp[j][newD].parent=i;
+          dp[j][newD].parentDay=d;
+        }
+      }
+    }
+  }
 
-  // Fenêtre effective = [distMin - tol%, distMax + tol%]
-  var windowMin = distMinM * (1 - tolerancePct);
-  var windowMax = distMaxM * (1 + tolerancePct);
+  // Chercher la meilleure solution dans [minDays, maxDays]
+  var bestScore=INF,bestDays=-1;
+  for(var d=minDays;d<=maxDays;d++){
+    if(dp[N-1][d].score<bestScore){
+      bestScore=dp[N-1][d].score;
+      bestDays=d;
+    }
+  }
 
-  log('Découpage : '+opts.distMin+'–'+opts.distMax+' km/j ±'+opts.tolerance+'%, D+ max '+maxGain+'m');
-  log('Fenêtre effective : '+(windowMin/1000).toFixed(1)+' – '+(windowMax/1000).toFixed(1)+' km');
+  if(bestDays===-1||bestScore===INF){
+    log('Aucun plan trouvé avec ces contraintes !','err');
+    return null;
+  }
+  log('Meilleur plan : '+bestDays+' jours, score '+bestScore.toFixed(1));
 
+  // Reconstruire le chemin
+  var path=[];
+  var cur=N-1,curD=bestDays;
+  while(curD>0){
+    path.unshift(cur);
+    var prev=dp[cur][curD].parent;
+    var prevD=dp[cur][curD].parentDay;
+    cur=prev;curD=prevD;
+  }
+  path.unshift(0);
+
+  // Construire les étapes
   var stages=[];
-  var startIdx=0;
-  var stageNum=1;
-
-  while(startIdx<points.length-1){
-    var startPt=points[startIdx];
-    var bestIdx=null;
-    var bestScore=Infinity;
-
-    for(var i=startIdx+1;i<points.length;i++){
-      var segDist=(points[i].cumDist-startPt.cumDist);
-      var segGain=(points[i].cumGain-startPt.cumGain);
-
-      // Distance équivalente : km réels + pénalité dénivelé
-      var equivDist=segDist+(segGain*gainFactor);
-
-      // Au-delà de la fenêtre max → stop
-      if(equivDist>windowMax)break;
-
-      // Dans la fenêtre → scorer
-      if(equivDist>=windowMin){
-        // Score = écart au centre de la fourchette
-        var score=Math.abs(equivDist-targetDistM);
-        if(segGain>maxGain)score+=50000; // pénalité si D+ dépassé
-        if(score<bestScore){bestScore=score;bestIdx=i;}
-      }
-    }
-
-    // Aucun point dans la fenêtre → prendre le point le plus proche de la cible
-    if(bestIdx===null){
-      var minDiff=Infinity;
-      for(var i=startIdx+1;i<points.length;i++){
-        var segDist=(points[i].cumDist-startPt.cumDist);
-        var diff=Math.abs(segDist-targetDistM);
-        if(diff<minDiff){minDiff=diff;bestIdx=i;}
-        if(segDist>windowMax*1.3)break;
-      }
-    }
-
-    if(bestIdx===null||bestIdx>=points.length-1){
-      // Dernière étape
-      bestIdx=points.length-1;
-    }
-
-    var endPt=points[bestIdx];
-    var km=(endPt.cumDist-startPt.cumDist)/1000;
-    var gain=Math.round(endPt.cumGain-startPt.cumGain);
-    var loss=Math.round(endPt.cumLoss-startPt.cumLoss);
-
+  for(var i=0;i<path.length-1;i++){
+    var from=nodes[path[i]],to=nodes[path[i+1]];
+    var fromPt=pts[from.routeIdx],toPt=pts[to.routeIdx];
+    var km=Math.round((to.cumKm-from.cumKm)*10)/10;
+    var gain=Math.round(toPt.cumGain-fromPt.cumGain);
+    var loss=Math.round(toPt.cumLoss-fromPt.cumLoss);
     stages.push({
-      day: stageNum++,
-      km: Math.round(km*10)/10,
-      gain, loss,
-      startLat: startPt.lat, startLon: startPt.lon,
-      endLat: endPt.lat, endLon: endPt.lon,
-      startIdx, endIdx: bestIdx,
-      cumKmStart: Math.round(startPt.cumDist/100)/10,
-      cumKmEnd: Math.round(endPt.cumDist/100)/10,
+      day:i+1,km,gain,loss,
+      fromName:from.name,toName:to.name,
+      toType:to.type,toDistToRoute:to.distToRoute,
+      cumKmEnd:Math.round(to.cumKm*10)/10
     });
-
-    if(bestIdx>=points.length-1)break;
-    startIdx=bestIdx;
-  }
-
-  log('Étapes générées : '+stages.length);
-  return stages;
-}
-
-// =============================================
-// GÉOCODAGE INVERSÉ (Nominatim)
-// =============================================
-async function reverseGeocode(lat, lon){
-  try{
-    var url='https://nominatim.openstreetmap.org/reverse?lat='+lat+'&lon='+lon+
-      '&format=json&zoom=10&accept-language=fr';
-    var r=await fetch(url,{headers:{'User-Agent':'BikePlanner-AlgoTest/1.0'}});
-    var d=await r.json();
-    // Priorité : village > town > city > county
-    return d.address.village||d.address.town||d.address.city||
-           d.address.municipality||d.address.county||'Point '+Math.round(lat*100)/100;
-  }catch(e){
-    return '?';
-  }
-}
-
-async function nameStages(stages){
-  log('Géocodage inversé des étapes (Nominatim, 1 req/sec)...');
-  var startName=await reverseGeocode(stages[0].startLat,stages[0].startLon);
-  var names=[startName];
-  for(var i=0;i<stages.length;i++){
-    await new Promise(r=>setTimeout(r,1100)); // respecter 1 req/sec
-    var name=await reverseGeocode(stages[i].endLat,stages[i].endLon);
-    names.push(name);
-    log('Étape '+(i+1)+' : '+names[i]+' → '+name+' ('+stages[i].km+' km)');
-    stages[i].title=names[i]+' → '+name;
   }
   return stages;
 }
 
-// =============================================
-// COMPARAISON
-// =============================================
-function diffBadge(algoKm, realKm){
-  var diff=Math.abs(algoKm-realKm);
-  var pct=Math.round((diff/realKm)*100);
-  var cls=pct<=10?'ok':pct<=25?'warn':'bad';
-  var sign=algoKm>realKm?'+':'-';
-  return '<span class="diff '+cls+'">'+sign+diff.toFixed(1)+' km</span>';
+// ─── MODE BIVOUAC : découpage libre par programmation dynamique ───────────────
+function freeSplit(pts, opts){
+  var dmin=opts.distMin,dmax=opts.distMax,target=(dmin+dmax)/2;
+  var targetDays=opts.targetDays,daysTol=opts.daysTol;
+  var maxDays=targetDays+daysTol,minDays=targetDays-daysTol;
+  var totalKm=pts[pts.length-1].cumDist/1000;
+
+  // Générer des candidats tous les ~2 km
+  var step=Math.round(pts.length/Math.round(totalKm/2));
+  var nodes=[{routeIdx:0,cumKm:0}];
+  for(var i=step;i<pts.length-step;i+=step){
+    nodes.push({routeIdx:i,cumKm:pts[i].cumDist/1000});
+  }
+  nodes.push({routeIdx:pts.length-1,cumKm:totalKm});
+
+  log('Bivouac : '+nodes.length+' points candidats sur '+totalKm.toFixed(0)+' km');
+
+  var N=nodes.length,INF=1e18;
+  var dp=[];
+  for(var i=0;i<N;i++){dp.push([]);for(var d=0;d<=maxDays+1;d++)dp[i].push({score:INF,parent:-1,parentDay:-1});}
+  dp[0][0].score=0;
+
+  for(var i=0;i<N-1;i++){
+    for(var d=0;d<=maxDays;d++){
+      if(dp[i][d].score===INF)continue;
+      for(var j=i+1;j<N;j++){
+        var segKm=nodes[j].cumKm-nodes[i].cumKm;
+        if(segKm<dmin*0.7)continue;
+        if(segKm>dmax*1.3)break;
+        if(segKm<dmin||segKm>dmax)continue;
+        var newD=d+1;if(newD>maxDays)continue;
+        var score=dp[i][d].score+Math.abs(segKm-target);
+        if(score<dp[j][newD].score){dp[j][newD].score=score;dp[j][newD].parent=i;dp[j][newD].parentDay=d;}
+      }
+    }
+  }
+
+  var bestScore=INF,bestDays=-1;
+  for(var d=minDays;d<=maxDays;d++){if(dp[N-1][d].score<bestScore){bestScore=dp[N-1][d].score;bestDays=d;}}
+  if(bestDays===-1)return null;
+
+  var path=[],cur=N-1,curD=bestDays;
+  while(curD>0){path.unshift(cur);var prev=dp[cur][curD].parent,prevD=dp[cur][curD].parentDay;cur=prev;curD=prevD;}
+  path.unshift(0);
+
+  return path.slice(0,-1).map(function(idx,i){
+    var from=nodes[path[i]],to=nodes[path[i+1]];
+    var fromPt=pts[from.routeIdx],toPt=pts[to.routeIdx];
+    return {day:i+1,km:Math.round((to.cumKm-from.cumKm)*10)/10,
+      gain:Math.round(toPt.cumGain-fromPt.cumGain),loss:Math.round(toPt.cumLoss-fromPt.cumLoss),
+      fromName:'Point km '+Math.round(from.cumKm),toName:'Point km '+Math.round(to.cumKm),
+      toType:'bivouac',toDistToRoute:0,cumKmEnd:Math.round(to.cumKm*10)/10};
+  });
 }
 
-// =============================================
-// RENDU
-// =============================================
-function renderResults(stages, named){
-  var totalKm=stages.reduce(function(s,e){return s+e.km;},0);
-  var totalGain=stages.reduce(function(s,e){return s+e.gain;},0);
-  var realTotalKm=REAL_STAGES.reduce(function(s,e){return s+e.km;},0);
+// ─── RENDU ───────────────────────────────────────────────────────────────────
+function renderResults(stages,opts,totalKm,nPOIs){
+  if(!stages){document.getElementById('output').innerHTML='<div style="color:#e74c3c;padding:16px">Aucun plan trouvé. Essaie d\'élargir la fourchette de km ou le nombre de jours.</div>';return;}
 
-  var html='';
+  var totalGenKm=stages.reduce(function(s,e){return s+e.km;},0);
+  var avgKm=totalGenKm/stages.length;
+  var diffDays=stages.length-opts.targetDays;
+  var daysOk=Math.abs(diffDays)<=opts.daysTol;
 
-  // Résumé global
-  html+='<div class="summary">';
-  html+='<div class="sum-item"><div class="sum-v">'+stages.length+'</div><div class="sum-l">Étapes générées</div></div>';
-  html+='<div class="sum-item"><div class="sum-v">'+REAL_STAGES.length+'</div><div class="sum-l">Étapes réelles</div></div>';
-  html+='<div class="sum-item"><div class="sum-v">'+totalKm.toFixed(0)+' km</div><div class="sum-l">Distance algo</div></div>';
-  html+='<div class="sum-item"><div class="sum-v">'+realTotalKm.toFixed(0)+' km</div><div class="sum-l">Distance réelle</div></div>';
-  html+='<div class="sum-item"><div class="sum-v">'+Math.round(totalGain/1000)+'k m</div><div class="sum-l">D+ algo</div></div>';
+  var html='<div class="summary">';
+  html+='<div class="sum-item"><div class="sum-v'+(daysOk?'':' warn')+'">'+stages.length+'</div><div class="sum-l">Étapes</div></div>';
+  html+='<div class="sum-item"><div class="sum-v">'+opts.targetDays+' ±'+opts.daysTol+'</div><div class="sum-l">Objectif</div></div>';
+  html+='<div class="sum-item"><div class="sum-v">'+avgKm.toFixed(0)+' km</div><div class="sum-l">Moy / étape</div></div>';
+  html+='<div class="sum-item"><div class="sum-v">'+totalGenKm.toFixed(0)+' km</div><div class="sum-l">Total</div></div>';
+  if(nPOIs!==null)html+='<div class="sum-item"><div class="sum-v">'+nPOIs+'</div><div class="sum-l">POIs trouvés</div></div>';
   html+='</div>';
 
-  // Stats de précision
-  var paired=Math.min(stages.length,REAL_STAGES.length);
-  var diffs=[];
-  for(var i=0;i<paired;i++){
-    diffs.push(Math.abs(stages[i].km-REAL_STAGES[i].km));
-  }
-  var avgDiff=diffs.reduce(function(s,d){return s+d;},0)/diffs.length;
-  var within10=diffs.filter(function(d){return d<=6.5;}).length;
-
-  html+='<div class="comparison">';
-  html+='<div class="panel-title algo">Précision de l\'algorithme</div>';
-  html+='<div class="stat-row"><span>Écart moyen par étape</span><span><b>'+avgDiff.toFixed(1)+' km</b></span></div>';
-  html+='<div class="stat-row"><span>Étapes à ±10% de la réalité</span><span><b>'+within10+' / '+paired+'</b></span></div>';
-  html+='<div class="stat-row"><span>Différence nombre d\'étapes</span><span><b>'+(stages.length-REAL_STAGES.length > 0 ? '+' : '')+(stages.length-REAL_STAGES.length)+'</b></span></div>';
-  html+='</div>';
-
-  // Comparaison côte à côte
   html+='<div class="results">';
 
   // Colonne algo
-  html+='<div class="panel">';
-  html+='<div class="panel-title algo">🤖 Algo ('+stages.length+' étapes)</div>';
-  stages.forEach(function(s,i){
-    var cmp=REAL_STAGES[i]?diffBadge(s.km,REAL_STAGES[i].km):'';
-    html+='<div class="stage-row">';
-    html+='<div class="s-num">'+s.day+'</div>';
-    html+='<div class="s-title">'+(named?s.title:'Étape '+s.day)+'</div>';
-    html+='<div class="s-km">'+s.km+' km'+cmp+'</div>';
-    html+='<div class="s-gain">+'+s.gain+'m</div>';
-    html+='</div>';
+  html+='<div class="panel"><div class="panel-title algo">🤖 Plan généré ('+stages.length+' étapes)</div>';
+  stages.forEach(function(s){
+    var inRange=s.km>=opts.distMin&&s.km<=opts.distMax;
+    var badge=inRange?'<span class="badge ok">✓</span>':'<span class="badge bad">hors fourchette</span>';
+    var accom=s.toType&&s.toType!=='end'&&s.toType!=='start'?
+      '<div class="s-accom">'+s.toType+(s.toDistToRoute>0?' ('+s.toDistToRoute+'m du tracé)':'')+'</div>':'';
+    html+='<div class="stage-row"><div class="s-num">'+s.day+'</div>'+
+      '<div class="s-info"><div class="s-title">'+(s.toName||'Étape '+s.day)+'</div>'+accom+'</div>'+
+      '<div class="s-km">'+s.km+' km'+badge+'</div>'+
+      '<div class="s-gain">+'+s.gain+'m</div></div>';
   });
   html+='</div>';
 
-  // Colonne réelle
-  html+='<div class="panel">';
-  html+='<div class="panel-title real">📍 Réalité ('+REAL_STAGES.length+' étapes)</div>';
+  // Colonne réalité
+  html+='<div class="panel"><div class="panel-title real">📍 Réalité ('+REAL_STAGES.length+' étapes connues)</div>';
   REAL_STAGES.forEach(function(s){
-    html+='<div class="stage-row">';
-    html+='<div class="s-num">'+s.day+'</div>';
-    html+='<div class="s-title">'+s.title+'</div>';
-    html+='<div class="s-km">'+s.km+' km</div>';
-    html+='<div class="s-gain">+'+s.gain+'m</div>';
-    html+='</div>';
+    html+='<div class="stage-row"><div class="s-num">'+s.day+'</div>'+
+      '<div class="s-info"><div class="s-title">'+s.title+'</div></div>'+
+      '<div class="s-km">'+s.km+' km</div><div class="s-gain">+'+s.gain+'m</div></div>';
   });
-  html+='</div>';
-  html+='</div>';
+  html+='</div></div>';
 
   document.getElementById('output').innerHTML=html;
 }
 
-// =============================================
-// MAIN
-// =============================================
+// ─── MAIN ────────────────────────────────────────────────────────────────────
 async function run(){
   document.getElementById('log').innerHTML='';
   document.getElementById('output').innerHTML='';
+  document.getElementById('progress').style.display='none';
+  var btn=document.getElementById('runBtn');
+  btn.disabled=true;btn.textContent='⏳ Recherche en cours...';
 
   var file=document.getElementById('gpxFile').files[0];
-  if(!file){log('⚠ Sélectionne un fichier GPX d\'abord','error');return;}
+  if(!file){log('Sélectionne un fichier GPX','err');btn.disabled=false;btn.textContent='▶ Lancer la recherche';return;}
 
   var opts={
-    distMin:    parseInt(document.getElementById('distMin').value),
-    distMax:    parseInt(document.getElementById('distMax').value),
-    maxGain:    parseInt(document.getElementById('maxGain').value),
-    tolerance:  parseInt(document.getElementById('tolerance').value), // en %
-    gainFactor: parseInt(document.getElementById('gainFactor').value),
+    targetDays: +document.getElementById('targetDays').value,
+    daysTol:    +document.getElementById('daysTol').value,
+    distMin:    +document.getElementById('distMin').value,
+    distMax:    +document.getElementById('distMax').value,
   };
+  if(opts.distMin>opts.distMax){log('Distance min > max !','err');btn.disabled=false;btn.textContent='▶ Lancer la recherche';return;}
+
+  var tags=getSelectedTags();
+  var isBivouac=tags.length===0;
 
   try{
+    setProgress(10);
     var text=await file.text();
-    var points=parseGPX(text);
-    var {points:enriched, totalDist, totalGain}=enrichPoints(points);
-    var stages=splitIntoStages(enriched, totalDist, opts);
-    log('Découpage terminé — '+stages.length+' étapes');
-    renderResults(stages, false);
+    var pts=parseGPX(text);
 
-    // Géocodage optionnel (lent — commenter si besoin)
-    // log('Lancement du géocodage (peut prendre ~'+stages.length+'sec)...');
-    // stages=await nameStages(stages);
-    // renderResults(stages, true);
+    setProgress(25);
+    var {pts:enriched,totalKm}=enrichPoints(pts);
 
+    var stages,nPOIs=null;
+
+    if(isBivouac){
+      setProgress(60);
+      stages=freeSplit(enriched,opts);
+    } else {
+      setProgress(35);
+      var pois=await fetchPOIs(enriched,tags);
+      setProgress(65);
+      var candidates=snapPOIsToRoute(pois,enriched,5000);
+      nPOIs=candidates.length;
+      log('Lancement optimisation...');
+      setProgress(80);
+      stages=findBestPlan(candidates,enriched,opts);
+    }
+
+    setProgress(100);
+    log('Terminé !','info');
+    renderResults(stages,opts,totalKm,nPOIs);
   }catch(e){
-    log('Erreur : '+e.message, true);
+    log('Erreur : '+e.message,'err');
     console.error(e);
+  }finally{
+    btn.disabled=false;btn.textContent='▶ Lancer la recherche';
   }
 }
 
-function updateDistLabels(){
-  var min=parseInt(document.getElementById('distMin').value);
-  var max=parseInt(document.getElementById('distMax').value);
-  var tol=parseInt(document.getElementById('tolerance').value);
-  // Empêcher min > max
-  if(min>max){
-    document.getElementById('distMin').value=max;
-    min=max;
-  }
-  var effMin=Math.round(min*(1-tol/100));
-  var effMax=Math.round(max*(1+tol/100));
-  document.getElementById('distMinVal').textContent=min+' km';
-  document.getElementById('distMaxVal').textContent=max+' km';
-  document.getElementById('toleranceVal').textContent='±'+tol+'% → fenêtre réelle '+effMin+'–'+effMax+' km';
-}
-
-// Charger le GPX local automatiquement si disponible
 document.addEventListener('DOMContentLoaded',function(){
-  updateDistLabels();
-  log('Prêt. Charge le fichier IRELANDE-TRACK.gpx pour tester.');
-  log('Ajuste les paramètres puis clique sur ▶ Lancer le découpage.');
+  updateLabels();
+  log('Prêt. Charge un GPX, choisis tes paramètres et lance la recherche.');
 });
 </script>
 </body>
