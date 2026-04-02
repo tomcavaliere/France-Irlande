@@ -12,6 +12,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   const firebaseConfig = {
     apiKey: "AIzaSyA_1xAPK0D5_Mc_cuzJiKT04i9KzrEEDRc",
     authDomain: "france-irlande-bike.firebaseapp.com",
@@ -23,11 +24,16 @@
   };
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
+  const auth = getAuth(app);
   window._fbDb = db;
   window._fbRef = ref;
   window._fbSet = set;
   window._fbRemove = remove;
   window._fbOnValue = onValue;
+  window._fbAuth = auth;
+  window._fbSignIn = signInWithEmailAndPassword;
+  window._fbSignOut = signOut;
+  window._fbOnAuth = onAuthStateChanged;
 </script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -282,11 +288,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 
 <div class="pw-modal" id="pwModal">
   <div class="pw-box">
-    <h3>Mode admin</h3>
-    <p>Entre le mot de passe pour modifier le journal et les etapes</p>
+    <h3>Connexion admin</h3>
+    <p>Connecte-toi avec ton compte Firebase</p>
+    <input type="email" class="pw-input" id="pwEmail" placeholder="Email" onkeydown="if(event.key==='Enter')document.getElementById('pwInput').focus()" style="letter-spacing:normal;margin-bottom:8px">
     <input type="password" class="pw-input" id="pwInput" placeholder="••••••" onkeydown="if(event.key==='Enter')checkPw()">
-    <div class="pw-err" id="pwErr">Mot de passe incorrect</div>
-    <button class="btn btn-p" style="width:100%" onclick="checkPw()">Deverrouiller</button>
+    <div class="pw-err" id="pwErr">Email ou mot de passe incorrect</div>
+    <button class="btn btn-p" style="width:100%" onclick="checkPw()">Se connecter</button>
   </div>
 </div>
 
@@ -393,8 +400,7 @@ const TOTAL_LOSS=11100;
 
 // ==== STATE ====
 // ==== ADMIN ====
-const ADMIN_PW = 'velo2025';
-let isAdmin = sessionStorage.getItem('adminActive')==='1';
+let isAdmin = false;
 let inactivityTimer=null;
 const INACTIVITY_MS=3*60*1000;
 
@@ -406,11 +412,8 @@ function setAdminUI(on){
   if(!on&&activeTab()==='depenses')switchTab('map');
 }
 function logoutAdmin(){
-  isAdmin=false;
-  sessionStorage.removeItem('adminActive');
   clearTimeout(inactivityTimer);
-  setAdminUI(false);
-  renderStages();renderJournal();
+  if(window._fbAuth)window._fbSignOut(window._fbAuth);
 }
 function resetInactivity(){
   if(!isAdmin)return;
@@ -419,30 +422,45 @@ function resetInactivity(){
 }
 function toggleAdmin(){
   if(isAdmin){logoutAdmin();return;}
+  document.getElementById('pwEmail').value='';
   document.getElementById('pwInput').value='';
   document.getElementById('pwErr').style.display='none';
   document.getElementById('pwModal').classList.add('vis');
-  setTimeout(function(){document.getElementById('pwInput').focus()},100);
+  setTimeout(function(){document.getElementById('pwEmail').focus()},100);
 }
 function checkPw(){
-  if(document.getElementById('pwInput').value===ADMIN_PW){
-    isAdmin=true;
-    sessionStorage.setItem('adminActive','1');
-    document.getElementById('pwModal').classList.remove('vis');
-    setAdminUI(true);
-    resetInactivity();
-    renderStages();renderJournal();
-  } else {
-    document.getElementById('pwErr').style.display='block';
-    document.getElementById('pwInput').value='';
-  }
+  var email=document.getElementById('pwEmail').value.trim();
+  var password=document.getElementById('pwInput').value;
+  var errEl=document.getElementById('pwErr');
+  errEl.style.display='none';
+  if(!email||!password)return;
+  if(!window._fbAuth){errEl.textContent='Firebase non disponible';errEl.style.display='block';return;}
+  window._fbSignIn(window._fbAuth,email,password)
+    .then(function(){
+      document.getElementById('pwModal').classList.remove('vis');
+      document.getElementById('pwInput').value='';
+    })
+    .catch(function(){
+      errEl.textContent='Email ou mot de passe incorrect';
+      errEl.style.display='block';
+      document.getElementById('pwInput').value='';
+    });
 }
 // Réinitialise le timer sur toute interaction
 ['touchstart','mousedown','keydown'].forEach(function(ev){
   document.addEventListener(ev,resetInactivity,{passive:true});
 });
-// Restaurer l'UI admin si session active au chargement
-if(isAdmin){setAdminUI(true);resetInactivity();}
+// Observer l'état d'authentification Firebase
+function initAuth(){
+  if(!window._fbOnAuth||!window._fbAuth)return;
+  window._fbOnAuth(window._fbAuth,function(user){
+    isAdmin=!!user;
+    setAdminUI(isAdmin);
+    if(isAdmin){resetInactivity();}
+    else{clearTimeout(inactivityTimer);}
+    renderStages();renderJournal();
+  });
+}
 
 // ==== STATE + FIREBASE ====
 let state={completed:{},journal:{},ratings:{},tags:{}};
@@ -1089,7 +1107,7 @@ document.addEventListener('DOMContentLoaded',function(){
   setSyncDot(isOnline?'online':'offline');
 
   setTimeout(function(){
-    initFirebase();initPhotos();initComments();initExpenses();
+    initAuth();initFirebase();initPhotos();initComments();initExpenses();
     if(isOnline)flushQueue();
   },800);
 });
