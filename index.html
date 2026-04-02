@@ -1040,16 +1040,54 @@ function initComments(){
   });
 }
 
-function initPhotos(){
-  window._fbOnValue(window._fbRef(window._fbDb,'photos'),function(snap){
-    photos=snap.val()||{};
-    // Patcher uniquement les entrées déjà rendues
-    Object.keys(photos).forEach(function(i){patchPhotos(parseInt(i));});
+var photosLoaded={};   // {stageIndex: true} — étapes déjà chargées
+var photosUnsub={};    // {stageIndex: unsubscribe fn} — listeners actifs
+var photoObserver=null;
+
+function loadPhotosForStage(i){
+  if(photosLoaded[i]||!window._fbDb)return;
+  photosLoaded[i]=true;
+  var unsub=window._fbOnValue(window._fbRef(window._fbDb,'photos/'+i),function(snap){
+    photos[i]=snap.val()||{};
+    patchPhotos(i);
   });
+  photosUnsub[i]=unsub;
+}
+
+function observeJournalEntries(){
+  if(photoObserver)photoObserver.disconnect();
+  if(!('IntersectionObserver' in window)){
+    // Fallback : charger toutes les étapes visibles immédiatement
+    document.querySelectorAll('#journalList .journal-entry').forEach(function(entry){
+      loadPhotosForStage(parseInt(entry.dataset.stage));
+    });
+    return;
+  }
+  photoObserver=new IntersectionObserver(function(entries){
+    entries.forEach(function(obs){
+      if(obs.isIntersecting){
+        var i=parseInt(obs.target.dataset.stage);
+        if(!isNaN(i))loadPhotosForStage(i);
+      }
+    });
+  },{rootMargin:'200px'});  // précharger 200px avant d'arriver à l'entrée
+
+  document.querySelectorAll('#journalList .journal-entry').forEach(function(entry){
+    photoObserver.observe(entry);
+  });
+}
+
+function initPhotos(){
+  // Ne plus charger tout /photos — l'observeur s'en charge étape par étape
+  observeJournalEntries();
 }
 
 // ==== JOURNAL ====
 function renderJournal(){
+  // Réinitialiser les photos chargées pour les étapes qui seraient retirées du DOM
+  photosLoaded={};
+  Object.values(photosUnsub).forEach(function(unsub){if(typeof unsub==='function')unsub();});
+  photosUnsub={};photos={};
   var c=document.getElementById('journalList');c.innerHTML='';
   var tags=['Beau temps','Pluie','Vent','Dur','Genial','Pub','Camping','Bivouac','Photos'];
   var hasAny=false;
@@ -1078,6 +1116,7 @@ function renderJournal(){
     c.innerHTML='<div style="text-align:center;color:var(--text-light);font-size:13px;padding:32px 0">'+
       'Les etapes complétées apparaîtront ici.</div>';
   }
+  observeJournalEntries();
 }
 function setRat(i,n){
   if(!isAdmin)return;
