@@ -275,6 +275,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .dep-cat-track{flex:1;height:6px;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden}
 .dep-cat-fill{height:100%;border-radius:3px;background:rgba(255,255,255,.8)}
 .dep-cat-val{font-size:11px;width:42px;text-align:right;flex-shrink:0;opacity:.9}
+
+/* Météo */
+.weather-card{background:var(--card);border-radius:var(--radius);padding:14px;
+  margin-bottom:14px;box-shadow:var(--shadow)}
+.weather-title{font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;
+  letter-spacing:.5px;margin-bottom:10px}
+.weather-stage{font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.weather-days{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.weather-day{background:#f7f7f7;border-radius:10px;padding:8px 6px;text-align:center}
+.weather-day-label{font-size:10px;color:var(--text-light);text-transform:uppercase;
+  letter-spacing:.3px;margin-bottom:4px}
+.weather-icon{font-size:26px;line-height:1;margin:4px 0}
+.weather-temps{font-size:12px;font-weight:600}
+.weather-temps span{color:var(--text-light);font-weight:400}
+.weather-rain{font-size:10px;color:#3498db;margin-top:3px}
+.weather-wind{font-size:10px;color:var(--text-light);margin-top:1px}
 </style>
 </head>
 <body>
@@ -324,6 +341,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
       </div>
       <div class="recap-bar"><div class="recap-bar-f" id="rBar" style="width:0%"></div></div>
     </div>
+    <div id="weatherBox"></div>
     <div id="stagesList"></div>
     <div class="spacer"></div>
   </div>
@@ -608,6 +626,7 @@ function switchTab(t){
   if(t==='map'&&map)setTimeout(function(){map.invalidateSize()},100);
   if(t==='journal'&&journalDirty){renderJournal();journalDirty=false;}
   if(t==='depenses')renderExpenses();
+  if(t==='stages')fetchWeather();
 }
 
 // ==== STAGES ====
@@ -647,7 +666,7 @@ function toggleStage(i){
   state.completed[i]=!state.completed[i];
   if(!state.completed[i]){for(var j=i;j<STAGES.length;j++)state.completed[j]=false;}
   if(state.completed[i]){for(var j=0;j<=i;j++)state.completed[j]=true;}
-  saveNow();renderStages();updateMap();journalDirty=true;
+  saveNow();renderStages();updateMap();journalDirty=true;fetchWeather();
 }
 
 function updateRecap(){
@@ -946,6 +965,74 @@ function initExpenses(){
   });
 }
 
+// ==== MÉTÉO ====
+var WMO_ICONS={
+  0:'☀️',1:'🌤️',2:'⛅',3:'☁️',
+  45:'🌫️',48:'🌫️',
+  51:'🌦️',53:'🌦️',55:'🌧️',
+  61:'🌧️',63:'🌧️',65:'🌧️',
+  71:'🌨️',73:'🌨️',75:'❄️',
+  77:'❄️',
+  80:'🌦️',81:'🌧️',82:'⛈️',
+  85:'🌨️',86:'🌨️',
+  95:'⛈️',96:'⛈️',99:'⛈️'
+};
+var WMO_DESC={
+  0:'Clair',1:'Peu nuageux',2:'Partiellement nuageux',3:'Couvert',
+  45:'Brouillard',48:'Brouillard givrant',
+  51:'Bruine légère',53:'Bruine',55:'Bruine forte',
+  61:'Pluie légère',63:'Pluie',65:'Pluie forte',
+  71:'Neige légère',73:'Neige',75:'Neige forte',77:'Grésil',
+  80:'Averses légères',81:'Averses',82:'Averses fortes',
+  85:'Averses de neige',86:'Averses de neige fortes',
+  95:'Orage',96:'Orage avec grêle',99:'Orage fort'
+};
+
+function fetchWeather(){
+  var box=document.getElementById('weatherBox');
+  if(!box)return;
+  var next=getLastDone()+1;
+  if(next>=STAGES.length){box.innerHTML='';return;}
+  var stage=STAGES[next];
+  var lat=stage.start.lat,lon=stage.start.lon;
+  var url='https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+
+    '&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum,windspeed_10m_max'+
+    '&timezone=Europe%2FDublin&forecast_days=3';
+  box.innerHTML='<div class="weather-card"><div class="weather-title">☁️ Météo — '+stage.title+'</div>'+
+    '<div style="font-size:12px;color:var(--text-light)">Chargement...</div></div>';
+  fetch(url).then(function(r){return r.json();}).then(function(d){
+    var days=d.daily;
+    var html='<div class="weather-card">'+
+      '<div class="weather-title">☁️ Météo — prochaine étape</div>'+
+      '<div class="weather-stage">'+stage.title+'</div>'+
+      '<div class="weather-days">';
+    for(var i=0;i<3;i++){
+      var date=new Date(days.time[i]+'T12:00:00');
+      var label=i===0?'Aujourd\'hui':i===1?'Demain':
+        date.toLocaleDateString('fr-FR',{weekday:'short'});
+      var code=days.weathercode[i];
+      var icon=WMO_ICONS[code]||'🌡️';
+      var desc=WMO_DESC[code]||'';
+      var tmax=Math.round(days.temperature_2m_max[i]);
+      var tmin=Math.round(days.temperature_2m_min[i]);
+      var rain=days.precipitation_sum[i];
+      var wind=Math.round(days.windspeed_10m_max[i]);
+      html+='<div class="weather-day">'+
+        '<div class="weather-day-label">'+label+'</div>'+
+        '<div class="weather-icon" title="'+desc+'">'+icon+'</div>'+
+        '<div class="weather-temps">'+tmax+'° <span>/ '+tmin+'°</span></div>'+
+        (rain>0?'<div class="weather-rain">💧 '+rain.toFixed(1)+' mm</div>':'<div class="weather-rain" style="color:#ccc">Pas de pluie</div>')+
+        '<div class="weather-wind">💨 '+wind+' km/h</div>'+
+        '</div>';
+    }
+    html+='</div></div>';
+    box.innerHTML=html;
+  }).catch(function(){
+    box.innerHTML='<div class="weather-card" style="text-align:center;color:var(--text-light);font-size:12px">'+
+      'Météo indisponible hors-ligne</div>';
+  });
+}
+
 function initComments(){
   window._fbOnValue(window._fbRef(window._fbDb,'comments'),function(snap){
     comments=snap.val()||{};
@@ -1107,7 +1194,7 @@ document.addEventListener('DOMContentLoaded',function(){
   setSyncDot(isOnline?'online':'offline');
 
   setTimeout(function(){
-    initAuth();initFirebase();initPhotos();initComments();initExpenses();
+    initAuth();initFirebase();initPhotos();initComments();initExpenses();fetchWeather();
     if(isOnline)flushQueue();
   },800);
 });
