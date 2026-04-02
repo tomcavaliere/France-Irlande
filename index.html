@@ -1173,12 +1173,19 @@ saveNow=function(){
 };
 
 // ==== INIT ====
-window.addEventListener('beforeunload',function(){
+function flushState(){
   saveLocalCache();
   if(window._fbDb&&isAdmin&&saveTimer){
     clearTimeout(saveTimer);
+    saveTimer=null;
     window._fbSet(window._fbRef(window._fbDb,'state'),state);
   }
+}
+// beforeunload : fonctionne sur desktop et Android
+window.addEventListener('beforeunload',flushState);
+// visibilitychange : fonctionne sur iOS Safari (beforeunload ignoré)
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='hidden')flushState();
 });
 
 document.addEventListener('DOMContentLoaded',function(){
