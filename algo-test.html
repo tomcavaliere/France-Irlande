@@ -61,10 +61,16 @@
   </div>
   <div class="row">
     <label>
-      Distance cible / jour
-      <input type="range" id="targetDist" min="30" max="150" value="65" step="5"
-        oninput="document.getElementById('targetDistVal').textContent=this.value+' km'">
-      <span class="val" id="targetDistVal">65 km</span>
+      Distance min / jour
+      <input type="range" id="distMin" min="20" max="150" value="55" step="5"
+        oninput="updateDistLabels()">
+      <span class="val" id="distMinVal">55 km</span>
+    </label>
+    <label>
+      Distance max / jour
+      <input type="range" id="distMax" min="20" max="150" value="80" step="5"
+        oninput="updateDistLabels()">
+      <span class="val" id="distMaxVal">80 km</span>
     </label>
     <label>
       D+ max / jour
@@ -75,10 +81,10 @@
   </div>
   <div class="row">
     <label>
-      Tolérance coupure (±km)
-      <input type="range" id="tolerance" min="2" max="20" value="8" step="1"
-        oninput="document.getElementById('toleranceVal').textContent=this.value+' km'">
-      <span class="val" id="toleranceVal">8 km</span>
+      Tolérance coupure (±%)
+      <input type="range" id="tolerance" min="1" max="30" value="10" step="1"
+        oninput="updateDistLabels()">
+      <span class="val" id="toleranceVal">±10%</span>
     </label>
     <label>
       Facteur dénivelé
@@ -204,12 +210,19 @@ function enrichPoints(points){
 // ALGORITHME DE DÉCOUPAGE
 // =============================================
 function splitIntoStages(points, totalDist, opts){
-  var targetKm    = opts.targetDist;       // km/jour cible
+  var distMinM    = opts.distMin * 1000;   // distance min en mètres
+  var distMaxM    = opts.distMax * 1000;   // distance max en mètres
+  var targetDistM = (distMinM + distMaxM) / 2; // cible = milieu de la fourchette
+  var tolerancePct= opts.tolerance / 100;  // tolérance en fraction
   var maxGain     = opts.maxGain;          // D+ max par étape
   var gainFactor  = opts.gainFactor;       // 1m D+ = N m de distance équivalente
-  var toleranceM  = opts.tolerance * 1000; // tolérance en mètres
 
-  log('Découpage : cible '+targetKm+' km/j, D+ max '+maxGain+'m, facteur '+gainFactor);
+  // Fenêtre effective = [distMin - tol%, distMax + tol%]
+  var windowMin = distMinM * (1 - tolerancePct);
+  var windowMax = distMaxM * (1 + tolerancePct);
+
+  log('Découpage : '+opts.distMin+'–'+opts.distMax+' km/j ±'+opts.tolerance+'%, D+ max '+maxGain+'m');
+  log('Fenêtre effective : '+(windowMin/1000).toFixed(1)+' – '+(windowMax/1000).toFixed(1)+' km');
 
   var stages=[];
   var startIdx=0;
@@ -217,11 +230,9 @@ function splitIntoStages(points, totalDist, opts){
 
   while(startIdx<points.length-1){
     var startPt=points[startIdx];
-    var targetDistM=targetKm*1000;
     var bestIdx=null;
     var bestScore=Infinity;
 
-    // Scanner les points dans la fenêtre [target - tolerance, target + tolerance]
     for(var i=startIdx+1;i<points.length;i++){
       var segDist=(points[i].cumDist-startPt.cumDist);
       var segGain=(points[i].cumGain-startPt.cumGain);
@@ -229,30 +240,26 @@ function splitIntoStages(points, totalDist, opts){
       // Distance équivalente : km réels + pénalité dénivelé
       var equivDist=segDist+(segGain*gainFactor);
 
-      // Hors fenêtre de tolérance → stop
-      if(equivDist>targetDistM+toleranceM)break;
+      // Au-delà de la fenêtre max → stop
+      if(equivDist>windowMax)break;
 
-      // Dans la fenêtre → calculer le score (proximité de la cible)
-      if(equivDist>=targetDistM-toleranceM){
+      // Dans la fenêtre → scorer
+      if(equivDist>=windowMin){
+        // Score = écart au centre de la fourchette
         var score=Math.abs(equivDist-targetDistM);
-        // Bonus si le D+ est sous le max
-        if(segGain>maxGain)score+=50000; // pénalité forte si trop de D+
-        if(score<bestScore){
-          bestScore=score;
-          bestIdx=i;
-        }
+        if(segGain>maxGain)score+=50000; // pénalité si D+ dépassé
+        if(score<bestScore){bestScore=score;bestIdx=i;}
       }
     }
 
-    // Si pas de point dans la fenêtre, prendre le dernier point restant
+    // Aucun point dans la fenêtre → prendre le point le plus proche de la cible
     if(bestIdx===null){
-      // Chercher le point le plus proche de la cible
       var minDiff=Infinity;
       for(var i=startIdx+1;i<points.length;i++){
         var segDist=(points[i].cumDist-startPt.cumDist);
         var diff=Math.abs(segDist-targetDistM);
         if(diff<minDiff){minDiff=diff;bestIdx=i;}
-        if(segDist>targetDistM*1.5)break;
+        if(segDist>windowMax*1.3)break;
       }
     }
 
@@ -407,9 +414,10 @@ async function run(){
   if(!file){log('⚠ Sélectionne un fichier GPX d\'abord','error');return;}
 
   var opts={
-    targetDist: parseInt(document.getElementById('targetDist').value),
+    distMin:    parseInt(document.getElementById('distMin').value),
+    distMax:    parseInt(document.getElementById('distMax').value),
     maxGain:    parseInt(document.getElementById('maxGain').value),
-    tolerance:  parseInt(document.getElementById('tolerance').value),
+    tolerance:  parseInt(document.getElementById('tolerance').value), // en %
     gainFactor: parseInt(document.getElementById('gainFactor').value),
   };
 
@@ -432,8 +440,25 @@ async function run(){
   }
 }
 
+function updateDistLabels(){
+  var min=parseInt(document.getElementById('distMin').value);
+  var max=parseInt(document.getElementById('distMax').value);
+  var tol=parseInt(document.getElementById('tolerance').value);
+  // Empêcher min > max
+  if(min>max){
+    document.getElementById('distMin').value=max;
+    min=max;
+  }
+  var effMin=Math.round(min*(1-tol/100));
+  var effMax=Math.round(max*(1+tol/100));
+  document.getElementById('distMinVal').textContent=min+' km';
+  document.getElementById('distMaxVal').textContent=max+' km';
+  document.getElementById('toleranceVal').textContent='±'+tol+'% → fenêtre réelle '+effMin+'–'+effMax+' km';
+}
+
 // Charger le GPX local automatiquement si disponible
 document.addEventListener('DOMContentLoaded',function(){
+  updateDistLabels();
   log('Prêt. Charge le fichier IRELANDE-TRACK.gpx pour tester.');
   log('Ajuste les paramètres puis clique sur ▶ Lancer le découpage.');
 });
