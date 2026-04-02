@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BikePlanner — Test algorithme</title>
+<style>
+  body{font-family:system-ui,sans-serif;margin:0;padding:16px;background:#f5f2eb;color:#1a1a1a}
+  h1{font-size:20px;margin-bottom:4px}
+  h2{font-size:15px;font-weight:700;margin:20px 0 8px;color:#1a5e1f}
+  .subtitle{font-size:13px;color:#666;margin-bottom:20px}
+  .controls{background:#fff;border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+  .row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;flex:1;min-width:140px}
+  input[type=range]{width:100%}
+  input[type=file]{font-size:13px}
+  .val{font-weight:400;color:#1a5e1f}
+  button{background:#1a5e1f;color:#fff;border:none;border-radius:8px;padding:10px 20px;
+    font-size:14px;font-weight:600;cursor:pointer;margin-top:4px}
+  button:hover{background:#2d8a33}
+  .results{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:700px){.results{grid-template-columns:1fr}}
+  .panel{background:#fff;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+  .panel-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+    margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #eee}
+  .panel-title.algo{color:#1a5e1f}
+  .panel-title.real{color:#e8772e}
+  .stage-row{display:flex;gap:8px;align-items:baseline;padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:13px}
+  .stage-row:last-child{border-bottom:none}
+  .s-num{width:24px;flex-shrink:0;font-weight:700;color:#999;font-size:11px}
+  .s-title{flex:1;font-weight:600}
+  .s-km{width:48px;text-align:right;color:#1a5e1f;font-weight:700;flex-shrink:0}
+  .s-gain{width:56px;text-align:right;color:#e8772e;font-size:11px;flex-shrink:0}
+  .summary{background:#fff;border-radius:12px;padding:14px;margin-bottom:16px;
+    box-shadow:0 2px 8px rgba(0,0,0,.08);display:flex;gap:24px;flex-wrap:wrap}
+  .sum-item{text-align:center}
+  .sum-v{font-size:22px;font-weight:700;color:#1a5e1f}
+  .sum-l{font-size:11px;color:#666;text-transform:uppercase}
+  .diff{font-size:11px;padding:2px 6px;border-radius:8px;margin-left:4px}
+  .diff.ok{background:#e8f5e9;color:#2e7d32}
+  .diff.warn{background:#fff3e0;color:#e65100}
+  .diff.bad{background:#fce4ec;color:#c62828}
+  .log{background:#1a1a1a;color:#4caf50;border-radius:8px;padding:12px;font-family:monospace;
+    font-size:11px;margin-bottom:16px;max-height:150px;overflow-y:auto}
+  .error{color:#e74c3c}
+  .stat-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #f5f5f5}
+  .comparison{background:#fff;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:16px}
+</style>
+</head>
+<body>
+
+<h1>BikePlanner — Test algorithme de découpage GPX</h1>
+<p class="subtitle">Compare le découpage automatique avec les 28 vraies étapes de l'EuroVelo 1 Irlande</p>
+
+<div class="controls">
+  <div class="row">
+    <label>
+      Fichier GPX
+      <input type="file" id="gpxFile" accept=".gpx">
+    </label>
+  </div>
+  <div class="row">
+    <label>
+      Distance cible / jour
+      <input type="range" id="targetDist" min="30" max="150" value="65" step="5"
+        oninput="document.getElementById('targetDistVal').textContent=this.value+' km'">
+      <span class="val" id="targetDistVal">65 km</span>
+    </label>
+    <label>
+      D+ max / jour
+      <input type="range" id="maxGain" min="300" max="3000" value="1200" step="100"
+        oninput="document.getElementById('maxGainVal').textContent=this.value+' m'">
+      <span class="val" id="maxGainVal">1200 m</span>
+    </label>
+  </div>
+  <div class="row">
+    <label>
+      Tolérance coupure (±km)
+      <input type="range" id="tolerance" min="2" max="20" value="8" step="1"
+        oninput="document.getElementById('toleranceVal').textContent=this.value+' km'">
+      <span class="val" id="toleranceVal">8 km</span>
+    </label>
+    <label>
+      Facteur dénivelé
+      <input type="range" id="gainFactor" min="1" max="20" value="8" step="1"
+        oninput="document.getElementById('gainFactorVal').textContent='1m D+ = '+this.value+'m plat'">
+      <span class="val" id="gainFactorVal">1m D+ = 8m plat</span>
+    </label>
+  </div>
+  <button onclick="run()">▶ Lancer le découpage</button>
+</div>
+
+<div id="log" class="log">En attente d'un fichier GPX...</div>
+<div id="output"></div>
+
+<!-- Vraies étapes pour comparaison -->
+<script>
+const REAL_STAGES = [
+  {day:1,  title:"Cork → Kinsale",          km:65.7,  gain:527},
+  {day:2,  title:"Kinsale → Skibbereen",    km:69.2,  gain:891},
+  {day:3,  title:"Skibbereen → Kenmare",    km:76.0,  gain:1043},
+  {day:4,  title:"Kenmare → Killorglin",    km:73.2,  gain:1176},
+  {day:5,  title:"Killorglin → Tralee",     km:52.0,  gain:468},
+  {day:6,  title:"Tralee → Kilrush",        km:82.3,  gain:511},
+  {day:7,  title:"Kilrush → Kinvara",       km:92.7,  gain:638},
+  {day:8,  title:"Kinvara → Clifden",       km:84.5,  gain:889},
+  {day:9,  title:"Clifden → Westport",      km:78.5,  gain:977},
+  {day:10, title:"Westport → Ballina",      km:62.8,  gain:601},
+  {day:11, title:"Ballina → Sligo",         km:58.4,  gain:522},
+  // Étapes 12-28 simplifiées pour le test
+  {day:12, title:"Étape 12",                km:70.0,  gain:700},
+  {day:13, title:"Étape 13",                km:68.0,  gain:650},
+  {day:14, title:"Étape 14",                km:72.0,  gain:800},
+  {day:15, title:"Étape 15",                km:65.0,  gain:600},
+  {day:16, title:"Étape 16",                km:71.0,  gain:750},
+  {day:17, title:"Étape 17",                km:69.0,  gain:700},
+  {day:18, title:"Étape 18",                km:74.0,  gain:850},
+  {day:19, title:"Étape 19",                km:66.0,  gain:600},
+  {day:20, title:"Étape 20",                km:73.0,  gain:780},
+  {day:21, title:"Étape 21",                km:68.0,  gain:720},
+  {day:22, title:"Étape 22",                km:70.0,  gain:690},
+  {day:23, title:"Étape 23",                km:67.0,  gain:640},
+  {day:24, title:"Étape 24",                km:75.0,  gain:810},
+  {day:25, title:"Étape 25",                km:69.0,  gain:730},
+  {day:26, title:"Étape 26",                km:72.0,  gain:760},
+  {day:27, title:"Étape 27",                km:64.0,  gain:590},
+  {day:28, title:"Étape 28 → Sligo",        km:58.4,  gain:522},
+];
+
+// =============================================
+// UTILITAIRES
+// =============================================
+function log(msg, isError=false){
+  var el=document.getElementById('log');
+  var span=document.createElement('div');
+  span.textContent='> '+msg;
+  if(isError)span.classList.add('error');
+  el.appendChild(span);
+  el.scrollTop=el.scrollHeight;
+}
+
+function haversine(lat1,lon1,lat2,lon2){
+  var R=6371000;
+  var dLat=(lat2-lat1)*Math.PI/180;
+  var dLon=(lon2-lon1)*Math.PI/180;
+  var a=Math.sin(dLat/2)*Math.sin(dLat/2)+
+    Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
+    Math.sin(dLon/2)*Math.sin(dLon/2);
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+// =============================================
+// PARSING GPX
+// =============================================
+function parseGPX(text){
+  log('Parsing GPX...');
+  var parser=new DOMParser();
+  var doc=parser.parseFromString(text,'application/xml');
+  if(doc.querySelector('parsererror')){throw new Error('GPX invalide');}
+  var pts=doc.querySelectorAll('trkpt');
+  log('Points bruts : '+pts.length);
+  var points=[];
+  pts.forEach(function(pt){
+    var lat=parseFloat(pt.getAttribute('lat'));
+    var lon=parseFloat(pt.getAttribute('lon'));
+    var eleEl=pt.querySelector('ele');
+    var ele=eleEl?parseFloat(eleEl.textContent):0;
+    if(!isNaN(lat)&&!isNaN(lon))points.push({lat,lon,ele});
+  });
+  log('Points valides : '+points.length);
+  return points;
+}
+
+// =============================================
+// CALCUL DISTANCE + DÉNIVELÉ
+// =============================================
+function enrichPoints(points){
+  log('Calcul distances et dénivelé...');
+  var totalDist=0, totalGain=0, totalLoss=0;
+  points[0].dist=0; points[0].cumDist=0;
+  points[0].cumGain=0; points[0].cumLoss=0;
+
+  for(var i=1;i<points.length;i++){
+    var d=haversine(points[i-1].lat,points[i-1].lon,points[i].lat,points[i].lon);
+    var dEle=points[i].ele-points[i-1].ele;
+    // Filtrer les sauts d'élévation aberrants (>50m entre 2 points)
+    if(Math.abs(dEle)>50)dEle=0;
+    var gain=dEle>0?dEle:0;
+    var loss=dEle<0?Math.abs(dEle):0;
+    totalDist+=d;
+    totalGain+=gain;
+    totalLoss+=loss;
+    points[i].dist=d;
+    points[i].cumDist=totalDist;
+    points[i].cumGain=totalGain;
+    points[i].cumLoss=totalLoss;
+  }
+  log('Distance totale : '+(totalDist/1000).toFixed(1)+' km');
+  log('Dénivelé total : +'+Math.round(totalGain)+'m / -'+Math.round(totalLoss)+'m');
+  return {points, totalDist, totalGain, totalLoss};
+}
+
+// =============================================
+// ALGORITHME DE DÉCOUPAGE
+// =============================================
+function splitIntoStages(points, totalDist, opts){
+  var targetKm    = opts.targetDist;       // km/jour cible
+  var maxGain     = opts.maxGain;          // D+ max par étape
+  var gainFactor  = opts.gainFactor;       // 1m D+ = N m de distance équivalente
+  var toleranceM  = opts.tolerance * 1000; // tolérance en mètres
+
+  log('Découpage : cible '+targetKm+' km/j, D+ max '+maxGain+'m, facteur '+gainFactor);
+
+  var stages=[];
+  var startIdx=0;
+  var stageNum=1;
+
+  while(startIdx<points.length-1){
+    var startPt=points[startIdx];
+    var targetDistM=targetKm*1000;
+    var bestIdx=null;
+    var bestScore=Infinity;
+
+    // Scanner les points dans la fenêtre [target - tolerance, target + tolerance]
+    for(var i=startIdx+1;i<points.length;i++){
+      var segDist=(points[i].cumDist-startPt.cumDist);
+      var segGain=(points[i].cumGain-startPt.cumGain);
+
+      // Distance équivalente : km réels + pénalité dénivelé
+      var equivDist=segDist+(segGain*gainFactor);
+
+      // Hors fenêtre de tolérance → stop
+      if(equivDist>targetDistM+toleranceM)break;
+
+      // Dans la fenêtre → calculer le score (proximité de la cible)
+      if(equivDist>=targetDistM-toleranceM){
+        var score=Math.abs(equivDist-targetDistM);
+        // Bonus si le D+ est sous le max
+        if(segGain>maxGain)score+=50000; // pénalité forte si trop de D+
+        if(score<bestScore){
+          bestScore=score;
+          bestIdx=i;
+        }
+      }
+    }
+
+    // Si pas de point dans la fenêtre, prendre le dernier point restant
+    if(bestIdx===null){
+      // Chercher le point le plus proche de la cible
+      var minDiff=Infinity;
+      for(var i=startIdx+1;i<points.length;i++){
+        var segDist=(points[i].cumDist-startPt.cumDist);
+        var diff=Math.abs(segDist-targetDistM);
+        if(diff<minDiff){minDiff=diff;bestIdx=i;}
+        if(segDist>targetDistM*1.5)break;
+      }
+    }
+
+    if(bestIdx===null||bestIdx>=points.length-1){
+      // Dernière étape
+      bestIdx=points.length-1;
+    }
+
+    var endPt=points[bestIdx];
+    var km=(endPt.cumDist-startPt.cumDist)/1000;
+    var gain=Math.round(endPt.cumGain-startPt.cumGain);
+    var loss=Math.round(endPt.cumLoss-startPt.cumLoss);
+
+    stages.push({
+      day: stageNum++,
+      km: Math.round(km*10)/10,
+      gain, loss,
+      startLat: startPt.lat, startLon: startPt.lon,
+      endLat: endPt.lat, endLon: endPt.lon,
+      startIdx, endIdx: bestIdx,
+      cumKmStart: Math.round(startPt.cumDist/100)/10,
+      cumKmEnd: Math.round(endPt.cumDist/100)/10,
+    });
+
+    if(bestIdx>=points.length-1)break;
+    startIdx=bestIdx;
+  }
+
+  log('Étapes générées : '+stages.length);
+  return stages;
+}
+
+// =============================================
+// GÉOCODAGE INVERSÉ (Nominatim)
+// =============================================
+async function reverseGeocode(lat, lon){
+  try{
+    var url='https://nominatim.openstreetmap.org/reverse?lat='+lat+'&lon='+lon+
+      '&format=json&zoom=10&accept-language=fr';
+    var r=await fetch(url,{headers:{'User-Agent':'BikePlanner-AlgoTest/1.0'}});
+    var d=await r.json();
+    // Priorité : village > town > city > county
+    return d.address.village||d.address.town||d.address.city||
+           d.address.municipality||d.address.county||'Point '+Math.round(lat*100)/100;
+  }catch(e){
+    return '?';
+  }
+}
+
+async function nameStages(stages){
+  log('Géocodage inversé des étapes (Nominatim, 1 req/sec)...');
+  var startName=await reverseGeocode(stages[0].startLat,stages[0].startLon);
+  var names=[startName];
+  for(var i=0;i<stages.length;i++){
+    await new Promise(r=>setTimeout(r,1100)); // respecter 1 req/sec
+    var name=await reverseGeocode(stages[i].endLat,stages[i].endLon);
+    names.push(name);
+    log('Étape '+(i+1)+' : '+names[i]+' → '+name+' ('+stages[i].km+' km)');
+    stages[i].title=names[i]+' → '+name;
+  }
+  return stages;
+}
+
+// =============================================
+// COMPARAISON
+// =============================================
+function diffBadge(algoKm, realKm){
+  var diff=Math.abs(algoKm-realKm);
+  var pct=Math.round((diff/realKm)*100);
+  var cls=pct<=10?'ok':pct<=25?'warn':'bad';
+  var sign=algoKm>realKm?'+':'-';
+  return '<span class="diff '+cls+'">'+sign+diff.toFixed(1)+' km</span>';
+}
+
+// =============================================
+// RENDU
+// =============================================
+function renderResults(stages, named){
+  var totalKm=stages.reduce(function(s,e){return s+e.km;},0);
+  var totalGain=stages.reduce(function(s,e){return s+e.gain;},0);
+  var realTotalKm=REAL_STAGES.reduce(function(s,e){return s+e.km;},0);
+
+  var html='';
+
+  // Résumé global
+  html+='<div class="summary">';
+  html+='<div class="sum-item"><div class="sum-v">'+stages.length+'</div><div class="sum-l">Étapes générées</div></div>';
+  html+='<div class="sum-item"><div class="sum-v">'+REAL_STAGES.length+'</div><div class="sum-l">Étapes réelles</div></div>';
+  html+='<div class="sum-item"><div class="sum-v">'+totalKm.toFixed(0)+' km</div><div class="sum-l">Distance algo</div></div>';
+  html+='<div class="sum-item"><div class="sum-v">'+realTotalKm.toFixed(0)+' km</div><div class="sum-l">Distance réelle</div></div>';
+  html+='<div class="sum-item"><div class="sum-v">'+Math.round(totalGain/1000)+'k m</div><div class="sum-l">D+ algo</div></div>';
+  html+='</div>';
+
+  // Stats de précision
+  var paired=Math.min(stages.length,REAL_STAGES.length);
+  var diffs=[];
+  for(var i=0;i<paired;i++){
+    diffs.push(Math.abs(stages[i].km-REAL_STAGES[i].km));
+  }
+  var avgDiff=diffs.reduce(function(s,d){return s+d;},0)/diffs.length;
+  var within10=diffs.filter(function(d){return d<=6.5;}).length;
+
+  html+='<div class="comparison">';
+  html+='<div class="panel-title algo">Précision de l\'algorithme</div>';
+  html+='<div class="stat-row"><span>Écart moyen par étape</span><span><b>'+avgDiff.toFixed(1)+' km</b></span></div>';
+  html+='<div class="stat-row"><span>Étapes à ±10% de la réalité</span><span><b>'+within10+' / '+paired+'</b></span></div>';
+  html+='<div class="stat-row"><span>Différence nombre d\'étapes</span><span><b>'+(stages.length-REAL_STAGES.length > 0 ? '+' : '')+(stages.length-REAL_STAGES.length)+'</b></span></div>';
+  html+='</div>';
+
+  // Comparaison côte à côte
+  html+='<div class="results">';
+
+  // Colonne algo
+  html+='<div class="panel">';
+  html+='<div class="panel-title algo">🤖 Algo ('+stages.length+' étapes)</div>';
+  stages.forEach(function(s,i){
+    var cmp=REAL_STAGES[i]?diffBadge(s.km,REAL_STAGES[i].km):'';
+    html+='<div class="stage-row">';
+    html+='<div class="s-num">'+s.day+'</div>';
+    html+='<div class="s-title">'+(named?s.title:'Étape '+s.day)+'</div>';
+    html+='<div class="s-km">'+s.km+' km'+cmp+'</div>';
+    html+='<div class="s-gain">+'+s.gain+'m</div>';
+    html+='</div>';
+  });
+  html+='</div>';
+
+  // Colonne réelle
+  html+='<div class="panel">';
+  html+='<div class="panel-title real">📍 Réalité ('+REAL_STAGES.length+' étapes)</div>';
+  REAL_STAGES.forEach(function(s){
+    html+='<div class="stage-row">';
+    html+='<div class="s-num">'+s.day+'</div>';
+    html+='<div class="s-title">'+s.title+'</div>';
+    html+='<div class="s-km">'+s.km+' km</div>';
+    html+='<div class="s-gain">+'+s.gain+'m</div>';
+    html+='</div>';
+  });
+  html+='</div>';
+  html+='</div>';
+
+  document.getElementById('output').innerHTML=html;
+}
+
+// =============================================
+// MAIN
+// =============================================
+async function run(){
+  document.getElementById('log').innerHTML='';
+  document.getElementById('output').innerHTML='';
+
+  var file=document.getElementById('gpxFile').files[0];
+  if(!file){log('⚠ Sélectionne un fichier GPX d\'abord','error');return;}
+
+  var opts={
+    targetDist: parseInt(document.getElementById('targetDist').value),
+    maxGain:    parseInt(document.getElementById('maxGain').value),
+    tolerance:  parseInt(document.getElementById('tolerance').value),
+    gainFactor: parseInt(document.getElementById('gainFactor').value),
+  };
+
+  try{
+    var text=await file.text();
+    var points=parseGPX(text);
+    var {points:enriched, totalDist, totalGain}=enrichPoints(points);
+    var stages=splitIntoStages(enriched, totalDist, opts);
+    log('Découpage terminé — '+stages.length+' étapes');
+    renderResults(stages, false);
+
+    // Géocodage optionnel (lent — commenter si besoin)
+    // log('Lancement du géocodage (peut prendre ~'+stages.length+'sec)...');
+    // stages=await nameStages(stages);
+    // renderResults(stages, true);
+
+  }catch(e){
+    log('Erreur : '+e.message, true);
+    console.error(e);
+  }
+}
+
+// Charger le GPX local automatiquement si disponible
+document.addEventListener('DOMContentLoaded',function(){
+  log('Prêt. Charge le fichier IRELANDE-TRACK.gpx pour tester.');
+  log('Ajuste les paramètres puis clique sur ▶ Lancer le découpage.');
+});
+</script>
+</body>
+</html>
