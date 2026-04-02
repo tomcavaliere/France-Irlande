@@ -191,7 +191,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .pw-input:focus{border-color:var(--green)}
 .pw-err{color:#e74c3c;font-size:12px;margin-bottom:8px;display:none}
 .sync-dot{width:7px;height:7px;border-radius:50%;background:#4caf50;display:inline-block;
-  margin-left:6px;vertical-align:middle;animation:blink 2s ease infinite}
+  margin-left:6px;vertical-align:middle;animation:blink 2s ease infinite;transition:background .3s}
+.sync-dot.offline{background:#e67e22;animation:none}
+.sync-dot.syncing{background:#3498db}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 .readonly-overlay{pointer-events:none;opacity:.7}
 
@@ -483,10 +485,11 @@ function activeTab(){
 
 function initFirebase(){
   if(!window._fbDb)return;
-  document.getElementById('syncDot').style.display='inline-block';
   window._fbOnValue(window._fbRef(window._fbDb,'state'),function(snapshot){
     var data=snapshot.val();
     if(data){state={completed:{},journal:{},ratings:{},tags:{},...data};}
+    saveLocalCache();
+    setSyncDot(isOnline?'online':'offline');
     var completedCount=Object.values(state.completed).filter(Boolean).length;
     var countChanged=completedCount!==lastCompletedCount;
     renderStages();updateMap();
@@ -987,16 +990,109 @@ function togTag(i,t){
     el.classList.toggle('sel',(state.tags[i]||[]).indexOf(el.textContent)>=0)});
 }
 
+// ==== OFFLINE / LOCAL CACHE ====
+var offlineQueue=JSON.parse(localStorage.getItem('offlineQueue')||'[]');
+var isOnline=navigator.onLine;
+
+function setSyncDot(mode){
+  // mode: 'online' | 'offline' | 'syncing'
+  var dot=document.getElementById('syncDot');
+  if(!dot)return;
+  dot.style.display='inline-block';
+  dot.classList.toggle('offline', mode==='offline');
+  dot.classList.toggle('syncing', mode==='syncing');
+}
+
+function saveLocalCache(){
+  try{localStorage.setItem('ev1-state-cache',JSON.stringify(state));}catch(e){}
+}
+
+function loadLocalCache(){
+  try{
+    var s=localStorage.getItem('ev1-state-cache');
+    if(s){var d=JSON.parse(s);state={completed:{},journal:{},ratings:{},tags:{},...d};}
+  }catch(e){}
+}
+
+function queueWrite(path, data){
+  offlineQueue.push({path:path, data:data, ts:Date.now()});
+  try{localStorage.setItem('offlineQueue',JSON.stringify(offlineQueue));}catch(e){}
+}
+
+function flushQueue(){
+  if(!offlineQueue.length||!window._fbDb)return;
+  setSyncDot('syncing');
+  var queue=offlineQueue.slice();
+  offlineQueue=[];
+  localStorage.removeItem('offlineQueue');
+  var promises=queue.map(function(item){
+    return window._fbSet(window._fbRef(window._fbDb,item.path),item.data);
+  });
+  Promise.all(promises).then(function(){
+    setSyncDot('online');
+  }).catch(function(){
+    // Remettre en queue ce qui a échoué
+    offlineQueue=queue.concat(offlineQueue);
+    localStorage.setItem('offlineQueue',JSON.stringify(offlineQueue));
+    setSyncDot('offline');
+  });
+}
+
+window.addEventListener('online', function(){
+  isOnline=true;
+  setSyncDot(offlineQueue.length?'syncing':'online');
+  flushQueue();
+});
+window.addEventListener('offline', function(){
+  isOnline=false;
+  setSyncDot('offline');
+});
+
+// Patch save() et saveNow() pour gérer le hors-ligne
+var _origSave=save;
+save=function(){
+  saveLocalCache();
+  if(!isOnline){setSyncDot('offline');return;}
+  _origSave();
+};
+var _origSaveNow=saveNow;
+saveNow=function(){
+  saveLocalCache();
+  if(!isOnline){
+    queueWrite('state',state);
+    setSyncDot('offline');
+    return;
+  }
+  setSyncDot('syncing');
+  _origSaveNow();
+  setSyncDot('online');
+};
+
 // ==== INIT ====
 window.addEventListener('beforeunload',function(){
+  saveLocalCache();
   if(window._fbDb&&isAdmin&&saveTimer){
     clearTimeout(saveTimer);
     window._fbSet(window._fbRef(window._fbDb,'state'),state);
   }
 });
+
 document.addEventListener('DOMContentLoaded',function(){
+  // Charger le cache local immédiatement pour affichage instantané
+  loadLocalCache();
   initMap();renderStages();renderJournal();
-  setTimeout(function(){initFirebase();initPhotos();initComments();initExpenses();},800);
+
+  // Enregistrer le service worker
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('/sw.js').catch(function(){});
+  }
+
+  setSyncDot(isOnline?'online':'offline');
+
+  setTimeout(function(){
+    initFirebase();initPhotos();initComments();initExpenses();
+    if(isOnline)flushQueue();
+  },800);
 });
 </script>
 </body>
