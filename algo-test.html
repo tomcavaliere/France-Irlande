@@ -51,6 +51,10 @@
   .s-info{flex:1;min-width:0}
   .s-title{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .s-accom{font-size:10px;color:#3498db;margin-top:1px}
+  .s-accom.bivouac-label{color:#8d6e63}
+  .s-budget{font-size:10px;color:#aaa;margin-top:1px}
+  .stage-row.bivouac-row{background:#fdf6f0}
+  .stage-row.bivouac-row .s-km{color:#8d6e63}
   .s-km{width:44px;text-align:right;font-weight:700;color:#1a5e1f;flex-shrink:0}
   .s-gain{width:50px;text-align:right;color:#e8772e;font-size:10px;flex-shrink:0}
   .badge{font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px;white-space:nowrap}
@@ -115,14 +119,27 @@
 <div class="controls">
   <div class="section-title">🏕 Type d'hébergement</div>
   <div class="accom-grid" id="accomGrid">
-    <button class="accom-btn sel" data-tag='["tourism=camp_site"]'>⛺ Camping</button>
-    <button class="accom-btn" data-tag='["tourism=caravan_site"]'>🚐 Aire camping-car</button>
-    <button class="accom-btn" data-tag='["tourism=hostel"]'>🛏 Hostel</button>
-    <button class="accom-btn" data-tag='["tourism=hotel","tourism=motel"]'>🏨 Hôtel</button>
-    <button class="accom-btn" data-tag='["tourism=guest_house","tourism=bed_and_breakfast"]'>🏠 B&B</button>
-    <button class="accom-btn" data-tag='[]'>🌿 Bivouac (tout point)</button>
+    <button class="accom-btn sel" data-tag='["tourism=camp_site"]' data-label="Camping" data-budget="15">⛺ Camping</button>
+    <button class="accom-btn" data-tag='["tourism=caravan_site"]' data-label="Aire CC" data-budget="10">🚐 Aire camping-car</button>
+    <button class="accom-btn" data-tag='["tourism=hostel"]' data-label="Hostel" data-budget="25">🛏 Hostel</button>
+    <button class="accom-btn" data-tag='["tourism=hotel","tourism=motel"]' data-label="Hôtel" data-budget="70">🏨 Hôtel</button>
+    <button class="accom-btn" data-tag='["tourism=guest_house","tourism=bed_and_breakfast"]' data-label="B&B" data-budget="55">🏠 B&B</button>
+    <button class="accom-btn" data-tag='[]' data-label="Bivouac" data-budget="0">🌿 Bivouac</button>
   </div>
-  <div style="font-size:11px;color:#999;margin-top:8px">Sélectionne un ou plusieurs types (clic pour activer/désactiver)</div>
+  <div style="font-size:11px;color:#999;margin-top:8px">
+    Sélectionne un ou plusieurs types. Si <b>Bivouac</b> est coché avec d'autres, il sert de filet de sécurité quand aucun hébergement n'est trouvé dans la fourchette.
+  </div>
+  <div class="row" style="margin-top:12px">
+    <label>
+      Budget nuit estimé (€)
+      <input type="range" id="budgetNight" min="0" max="150" value="15" step="5"
+        oninput="updateLabels()">
+      <span class="val" id="budgetNightVal">15 €/nuit</span>
+    </label>
+    <div style="flex:1;min-width:130px;display:flex;flex-direction:column;justify-content:flex-end">
+      <div id="budgetEstimate" style="font-size:12px;color:#1a5e1f;font-weight:600;padding-bottom:4px"></div>
+    </div>
+  </div>
 </div>
 
 <button class="run-btn" id="runBtn" onclick="run()">▶ Lancer la recherche</button>
@@ -156,24 +173,32 @@ function updateLabels(){
   var tol=+document.getElementById('daysTol').value;
   var dmin=+document.getElementById('distMin').value;
   var dmax=+document.getElementById('distMax').value;
+  var budget=+document.getElementById('budgetNight').value;
   if(dmin>dmax){document.getElementById('distMin').value=dmax;dmin=dmax;}
   document.getElementById('targetDaysVal').textContent=days+' jours';
   document.getElementById('daysTolVal').textContent='± '+tol+' jour'+(tol>1?'s':'')+
     ' → '+(days-tol)+' à '+(days+tol)+' jours';
   document.getElementById('distMinVal').textContent=dmin+' km';
   document.getElementById('distMaxVal').textContent=dmax+' km';
+  document.getElementById('budgetNightVal').textContent=budget+' €/nuit';
+  var minTotal=budget*(days-tol), maxTotal=budget*(days+tol);
+  document.getElementById('budgetEstimate').textContent=
+    budget===0 ? 'Budget hébergement : 0 € (bivouac)' :
+    'Budget estimé : '+minTotal+' – '+maxTotal+' €';
 }
 
 document.querySelectorAll('.accom-btn').forEach(function(btn){
-  btn.onclick=function(){btn.classList.toggle('sel');};
+  btn.onclick=function(){btn.classList.toggle('sel');updateLabels();};
 });
 
-function getSelectedTags(){
-  var tags=[];
+function getSelection(){
+  var tags=[], hasBivouac=false, labels=[];
   document.querySelectorAll('.accom-btn.sel').forEach(function(btn){
-    JSON.parse(btn.dataset.tag).forEach(function(t){tags.push(t);});
+    var t=JSON.parse(btn.dataset.tag);
+    if(t.length===0){hasBivouac=true;}
+    else{t.forEach(function(x){tags.push(x);});labels.push(btn.dataset.label);}
   });
-  return tags; // [] = bivouac, tout point est candidat
+  return {tags, hasBivouac, labels};
 }
 
 // ─── LOG ─────────────────────────────────────────────────────────────────────
@@ -319,116 +344,50 @@ function snapPOIsToRoute(pois, pts, maxDistM=3000){
 }
 
 // ─── ALGORITHME PRINCIPAL : programmation dynamique ──────────────────────────
-function findBestPlan(candidates, pts, opts){
+// Génère des points libres tous les ~2km comme candidats bivouac fallback
+function makeFallbackPts(pts){
   var totalKm=pts[pts.length-1].cumDist/1000;
-  var dmin=opts.distMin, dmax=opts.distMax;
-  var targetDays=opts.targetDays, daysTol=opts.daysTol;
-  var minDays=targetDays-daysTol, maxDays=targetDays+daysTol;
-
-  // Ajouter le départ (km=0) et l'arrivée (km=total) comme candidats fixes
-  var nodes=[{name:'Départ',cumKm:0,routeIdx:0,type:'start',distToRoute:0}]
-    .concat(candidates)
-    .concat([{name:'Arrivée',cumKm:totalKm,routeIdx:pts.length-1,type:'end',distToRoute:0}]);
-
-  var N=nodes.length;
-  log('Programmation dynamique sur '+N+' noeuds ('+minDays+'–'+maxDays+' jours)...');
-
-  // dp[i][d] = meilleur score pour arriver au noeud i en d jours
-  // score = somme des écarts au milieu de la fourchette (minimiser)
-  var INF=1e18;
-  var targetKm=(dmin+dmax)/2;
-
-  // dp[noeud][jours] = {score, parent}
-  var dp=[];
-  for(var i=0;i<N;i++){
-    dp.push([]);
-    for(var d=0;d<=maxDays+1;d++)dp[i].push({score:INF,parent:-1,parentDay:-1});
+  var step=Math.max(1,Math.round(pts.length/Math.round(totalKm/2)));
+  var result=[];
+  for(var i=step;i<pts.length-step;i+=step){
+    result.push({idx:i,cumKm:pts[i].cumDist/1000});
   }
-  dp[0][0].score=0;
-
-  for(var i=0;i<N-1;i++){
-    for(var d=0;d<=maxDays;d++){
-      if(dp[i][d].score===INF)continue;
-      // Essayer d'aller de i vers j en un jour
-      for(var j=i+1;j<N;j++){
-        var segKm=nodes[j].cumKm-nodes[i].cumKm;
-        if(segKm<dmin*0.5)continue; // trop court, ignorer
-        if(segKm>dmax*1.5)break;    // trop long, stop
-        if(segKm<dmin||segKm>dmax)continue; // hors fourchette
-        var newD=d+1;
-        if(newD>maxDays)continue;
-        var score=dp[i][d].score+Math.abs(segKm-targetKm);
-        if(score<dp[j][newD].score){
-          dp[j][newD].score=score;
-          dp[j][newD].parent=i;
-          dp[j][newD].parentDay=d;
-        }
-      }
-    }
-  }
-
-  // Chercher la meilleure solution dans [minDays, maxDays]
-  var bestScore=INF,bestDays=-1;
-  for(var d=minDays;d<=maxDays;d++){
-    if(dp[N-1][d].score<bestScore){
-      bestScore=dp[N-1][d].score;
-      bestDays=d;
-    }
-  }
-
-  if(bestDays===-1||bestScore===INF){
-    log('Aucun plan trouvé avec ces contraintes !','err');
-    return null;
-  }
-  log('Meilleur plan : '+bestDays+' jours, score '+bestScore.toFixed(1));
-
-  // Reconstruire le chemin
-  var path=[];
-  var cur=N-1,curD=bestDays;
-  while(curD>0){
-    path.unshift(cur);
-    var prev=dp[cur][curD].parent;
-    var prevD=dp[cur][curD].parentDay;
-    cur=prev;curD=prevD;
-  }
-  path.unshift(0);
-
-  // Construire les étapes
-  var stages=[];
-  for(var i=0;i<path.length-1;i++){
-    var from=nodes[path[i]],to=nodes[path[i+1]];
-    var fromPt=pts[from.routeIdx],toPt=pts[to.routeIdx];
-    var km=Math.round((to.cumKm-from.cumKm)*10)/10;
-    var gain=Math.round(toPt.cumGain-fromPt.cumGain);
-    var loss=Math.round(toPt.cumLoss-fromPt.cumLoss);
-    stages.push({
-      day:i+1,km,gain,loss,
-      fromName:from.name,toName:to.name,
-      toType:to.type,toDistToRoute:to.distToRoute,
-      cumKmEnd:Math.round(to.cumKm*10)/10
-    });
-  }
-  return stages;
+  return result;
 }
 
-// ─── MODE BIVOUAC : découpage libre par programmation dynamique ───────────────
-function freeSplit(pts, opts){
-  var dmin=opts.distMin,dmax=opts.distMax,target=(dmin+dmax)/2;
-  var targetDays=opts.targetDays,daysTol=opts.daysTol;
-  var maxDays=targetDays+daysTol,minDays=targetDays-daysTol;
+// candidates : POIs hébergement (préférés)
+// fallbackPts : points bivouac libres (filet de sécurité, null si bivouac pur)
+function findBestPlan(candidates, fallbackPts, pts, opts){
   var totalKm=pts[pts.length-1].cumDist/1000;
+  var dmin=opts.distMin, dmax=opts.distMax, targetKm=(dmin+dmax)/2;
+  var minDays=opts.targetDays-opts.daysTol, maxDays=opts.targetDays+opts.daysTol;
+  // Pénalité bivouac : doit être plus grande que l'écart max possible
+  // pour que l'algo préfère toujours un camping même légèrement hors-cible
+  var BIVOUAC_PENALTY=targetKm*3;
 
-  // Générer des candidats tous les ~2 km
-  var step=Math.round(pts.length/Math.round(totalKm/2));
-  var nodes=[{routeIdx:0,cumKm:0}];
-  for(var i=step;i<pts.length-step;i+=step){
-    nodes.push({routeIdx:i,cumKm:pts[i].cumDist/1000});
-  }
-  nodes.push({routeIdx:pts.length-1,cumKm:totalKm});
+  var poiNodes=candidates.map(function(c){return Object.assign({},c,{isFallback:false});});
+  var fbNodes=fallbackPts?fallbackPts.map(function(p){
+    return {name:'Bivouac km '+Math.round(p.cumKm),cumKm:p.cumKm,
+      routeIdx:p.idx,type:'bivouac',distToRoute:0,isFallback:true};
+  }):[];
 
-  log('Bivouac : '+nodes.length+' points candidats sur '+totalKm.toFixed(0)+' km');
+  // Fusionner, trier, dédoublonner (POI gagne si < 0.5 km d'un fallback)
+  var all=poiNodes.concat(fbNodes).sort(function(a,b){return a.cumKm-b.cumKm;});
+  var middle=[];
+  all.forEach(function(n){
+    var last=middle[middle.length-1];
+    if(last&&(n.cumKm-last.cumKm)<0.5){
+      if(last.isFallback&&!n.isFallback)middle[middle.length-1]=n;
+    } else { middle.push(n); }
+  });
 
-  var N=nodes.length,INF=1e18;
+  var nodes=[{name:'Départ',cumKm:0,routeIdx:0,type:'start',distToRoute:0,isFallback:false}]
+    .concat(middle)
+    .concat([{name:'Arrivée',cumKm:totalKm,routeIdx:pts.length-1,type:'end',distToRoute:0,isFallback:false}]);
+
+  var N=nodes.length, INF=1e18;
+  log('DP sur '+N+' noeuds ('+candidates.length+' héberg. + '+fbNodes.length+' bivouacs fallback)');
+
   var dp=[];
   for(var i=0;i<N;i++){dp.push([]);for(var d=0;d<=maxDays+1;d++)dp[i].push({score:INF,parent:-1,parentDay:-1});}
   dp[0][0].score=0;
@@ -438,11 +397,12 @@ function freeSplit(pts, opts){
       if(dp[i][d].score===INF)continue;
       for(var j=i+1;j<N;j++){
         var segKm=nodes[j].cumKm-nodes[i].cumKm;
-        if(segKm<dmin*0.7)continue;
-        if(segKm>dmax*1.3)break;
+        if(segKm<dmin*0.5)continue;
+        if(segKm>dmax*1.5)break;
         if(segKm<dmin||segKm>dmax)continue;
-        var newD=d+1;if(newD>maxDays)continue;
-        var score=dp[i][d].score+Math.abs(segKm-target);
+        var newD=d+1; if(newD>maxDays)continue;
+        var score=dp[i][d].score+Math.abs(segKm-targetKm);
+        if(nodes[j].isFallback)score+=BIVOUAC_PENALTY;
         if(score<dp[j][newD].score){dp[j][newD].score=score;dp[j][newD].parent=i;dp[j][newD].parentDay=d;}
       }
     }
@@ -450,24 +410,37 @@ function freeSplit(pts, opts){
 
   var bestScore=INF,bestDays=-1;
   for(var d=minDays;d<=maxDays;d++){if(dp[N-1][d].score<bestScore){bestScore=dp[N-1][d].score;bestDays=d;}}
-  if(bestDays===-1)return null;
+  if(bestDays===-1||bestScore===INF){
+    log('Aucun plan trouvé — élargis la fourchette km ou le nombre de jours','err');
+    return null;
+  }
 
   var path=[],cur=N-1,curD=bestDays;
-  while(curD>0){path.unshift(cur);var prev=dp[cur][curD].parent,prevD=dp[cur][curD].parentDay;cur=prev;curD=prevD;}
+  while(curD>0){path.unshift(cur);var pp=dp[cur][curD].parent,pd=dp[cur][curD].parentDay;cur=pp;curD=pd;}
   path.unshift(0);
 
-  return path.slice(0,-1).map(function(idx,i){
+  var nFallback=0;
+  var stages=[];
+  for(var i=0;i<path.length-1;i++){
     var from=nodes[path[i]],to=nodes[path[i+1]];
     var fromPt=pts[from.routeIdx],toPt=pts[to.routeIdx];
-    return {day:i+1,km:Math.round((to.cumKm-from.cumKm)*10)/10,
-      gain:Math.round(toPt.cumGain-fromPt.cumGain),loss:Math.round(toPt.cumLoss-fromPt.cumLoss),
-      fromName:'Point km '+Math.round(from.cumKm),toName:'Point km '+Math.round(to.cumKm),
-      toType:'bivouac',toDistToRoute:0,cumKmEnd:Math.round(to.cumKm*10)/10};
-  });
+    if(to.isFallback)nFallback++;
+    stages.push({day:i+1,
+      km:Math.round((to.cumKm-from.cumKm)*10)/10,
+      gain:Math.round(toPt.cumGain-fromPt.cumGain),
+      loss:Math.round(toPt.cumLoss-fromPt.cumLoss),
+      fromName:from.name,toName:to.name,
+      toType:to.isFallback?'bivouac':to.type,
+      toDistToRoute:to.distToRoute||0,
+      isFallback:!!to.isFallback
+    });
+  }
+  log('Plan : '+bestDays+' jours | '+nFallback+' nuit(s) en bivouac (fallback)');
+  return stages;
 }
 
 // ─── RENDU ───────────────────────────────────────────────────────────────────
-function renderResults(stages,opts,totalKm,nPOIs){
+function renderResults(stages,opts,totalKm,nPOIs,sel){
   if(!stages){document.getElementById('output').innerHTML='<div style="color:#e74c3c;padding:16px">Aucun plan trouvé. Essaie d\'élargir la fourchette de km ou le nombre de jours.</div>';return;}
 
   var totalGenKm=stages.reduce(function(s,e){return s+e.km;},0);
@@ -475,12 +448,20 @@ function renderResults(stages,opts,totalKm,nPOIs){
   var diffDays=stages.length-opts.targetDays;
   var daysOk=Math.abs(diffDays)<=opts.daysTol;
 
+  // Budget
+  var budgetPerNight=+(document.getElementById('budgetNight').value)||0;
+  var paidNights=stages.filter(function(s){return !s.isFallback;}).length;
+  var bivouacNights=stages.filter(function(s){return s.isFallback;}).length;
+  var budgetTotal=paidNights*budgetPerNight;
+
   var html='<div class="summary">';
   html+='<div class="sum-item"><div class="sum-v'+(daysOk?'':' warn')+'">'+stages.length+'</div><div class="sum-l">Étapes</div></div>';
   html+='<div class="sum-item"><div class="sum-v">'+opts.targetDays+' ±'+opts.daysTol+'</div><div class="sum-l">Objectif</div></div>';
   html+='<div class="sum-item"><div class="sum-v">'+avgKm.toFixed(0)+' km</div><div class="sum-l">Moy / étape</div></div>';
   html+='<div class="sum-item"><div class="sum-v">'+totalGenKm.toFixed(0)+' km</div><div class="sum-l">Total</div></div>';
   if(nPOIs!==null)html+='<div class="sum-item"><div class="sum-v">'+nPOIs+'</div><div class="sum-l">POIs trouvés</div></div>';
+  if(budgetPerNight>0)html+='<div class="sum-item"><div class="sum-v">~'+budgetTotal+' €</div><div class="sum-l">Budget héberg.</div></div>';
+  if(bivouacNights>0)html+='<div class="sum-item"><div class="sum-v">'+bivouacNights+' nuit'+(bivouacNights>1?'s':'')+'</div><div class="sum-l">Bivouac secours</div></div>';
   html+='</div>';
 
   html+='<div class="results">';
@@ -490,10 +471,13 @@ function renderResults(stages,opts,totalKm,nPOIs){
   stages.forEach(function(s){
     var inRange=s.km>=opts.distMin&&s.km<=opts.distMax;
     var badge=inRange?'<span class="badge ok">✓</span>':'<span class="badge bad">hors fourchette</span>';
-    var accom=s.toType&&s.toType!=='end'&&s.toType!=='start'?
-      '<div class="s-accom">'+s.toType+(s.toDistToRoute>0?' ('+s.toDistToRoute+'m du tracé)':'')+'</div>':'';
-    html+='<div class="stage-row"><div class="s-num">'+s.day+'</div>'+
-      '<div class="s-info"><div class="s-title">'+(s.toName||'Étape '+s.day)+'</div>'+accom+'</div>'+
+    var isBiv=s.isFallback;
+    var accomLabel=isBiv?'🏕️ Bivouac (secours)':(s.toType&&s.toType!=='end'&&s.toType!=='start'?s.toType:'');
+    var distLabel=!isBiv&&s.toDistToRoute>0?' ('+s.toDistToRoute+'m du tracé)':'';
+    var accom=accomLabel?'<div class="s-accom'+(isBiv?' bivouac-label':'')+'">'+accomLabel+distLabel+'</div>':'';
+    var budgetLabel=!isBiv&&budgetPerNight>0?'<div class="s-budget">~'+budgetPerNight+' €/nuit</div>':'';
+    html+='<div class="stage-row'+(isBiv?' bivouac-row':'')+'"><div class="s-num">'+s.day+'</div>'+
+      '<div class="s-info"><div class="s-title">'+(s.toName||'Étape '+s.day)+'</div>'+accom+budgetLabel+'</div>'+
       '<div class="s-km">'+s.km+' km'+badge+'</div>'+
       '<div class="s-gain">+'+s.gain+'m</div></div>';
   });
@@ -530,8 +514,7 @@ async function run(){
   };
   if(opts.distMin>opts.distMax){log('Distance min > max !','err');btn.disabled=false;btn.textContent='▶ Lancer la recherche';return;}
 
-  var tags=getSelectedTags();
-  var isBivouac=tags.length===0;
+  var sel=getSelection();
 
   try{
     setProgress(10);
@@ -542,24 +525,28 @@ async function run(){
     var {pts:enriched,totalKm}=enrichPoints(pts);
 
     var stages,nPOIs=null;
+    var fallbackPts=makeFallbackPts(enriched);
 
-    if(isBivouac){
+    if(sel.tags.length===0){
+      // Mode bivouac pur : pas de recherche POI
       setProgress(60);
-      stages=freeSplit(enriched,opts);
+      log('Mode bivouac : découpage libre...');
+      stages=findBestPlan([],fallbackPts,enriched,opts);
     } else {
       setProgress(35);
-      var pois=await fetchPOIs(enriched,tags);
+      var pois=await fetchPOIs(enriched,sel.tags);
       setProgress(65);
       var candidates=snapPOIsToRoute(pois,enriched,5000);
       nPOIs=candidates.length;
-      log('Lancement optimisation...');
+      log('Lancement optimisation'+(sel.hasBivouac?' (camping + bivouac en secours)':'')+'...');
       setProgress(80);
-      stages=findBestPlan(candidates,enriched,opts);
+      // fallbackPts passés si bivouac coché OU pour garantir qu'une solution existe toujours
+      stages=findBestPlan(candidates,fallbackPts,enriched,opts);
     }
 
     setProgress(100);
     log('Terminé !','info');
-    renderResults(stages,opts,totalKm,nPOIs);
+    renderResults(stages,opts,totalKm,nPOIs,sel);
   }catch(e){
     log('Erreur : '+e.message,'err');
     console.error(e);
