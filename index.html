@@ -1005,17 +1005,16 @@ function deletePhoto(i,id){
 function renderPhotosHtml(i){
   var stagePhotos=photos[i]||{};
   var ids=Object.keys(stagePhotos);
-  var iq=JSON.stringify(String(i));
   var html='<div class="j-photos" id="photos-'+i+'">';
   ids.forEach(function(id){
     var src=stagePhotos[id];
     html+='<div class="j-photo-wrap">'+
-      '<img src="'+src+'" onclick="openLightbox(''+id+'','+iq+')">'+
-      (isAdmin?'<button class="j-photo-del" onclick="deletePhoto('+iq+',''+id+'')">&#x2715;</button>':'')+
+      '<img src="'+src+'" onclick="openLightbox(\''+id+'\',\''+i+'\')">'+
+      (isAdmin?'<button class="j-photo-del" onclick="deletePhoto(\''+i+'\',\''+id+'\')">&#x2715;</button>':'')+
       '</div>';
   });
   if(isAdmin){
-    html+='<div class="j-photo-add" id="photos-add-'+i+'" onclick="uploadPhoto('+iq+')">'+
+    html+='<div class="j-photo-add" id="photos-add-'+i+'" onclick="uploadPhoto(\''+i+'\')">'+
       '<span class="j-photo-add-icon">&#x1f4f7;</span><span>Ajouter</span></div>';
   }
   html+='</div>';
@@ -1043,7 +1042,6 @@ function formatTime(ts){
 }
 
 function renderStageCommentsHtml(i){
-  var iq=JSON.stringify(String(i));
   var stageCmts=comments[i]||{};
   var ids=Object.keys(stageCmts).sort(function(a,b){return (stageCmts[a].ts||0)-(stageCmts[b].ts||0);});
   var html='<div class="stage-comments" id="scmts-'+i+'">';
@@ -1054,17 +1052,16 @@ function renderStageCommentsHtml(i){
       html+='<div class="comment-card">'+
         '<span class="comment-name">'+escHtml(c.name)+'</span>'+
         '<span class="comment-time">'+formatTime(c.ts)+'</span>'+
-        (isAdmin?'<button class="comment-del" onclick="deleteComment('+iq+','\''+id+'\')">&#x1f5d1;</button>':'')+
+        (isAdmin?'<button class="comment-del" onclick="deleteComment(\''+i+'\',\''+id+'\')">&#x1f5d1;</button>':'')+
         '<div class="comment-text">'+escHtml(c.text)+'</div>'+
         '</div>';
     });
   }
-  // Formulaire toujours visible pour les non-admin
   if(!isAdmin){
     html+='<div class="comment-form" style="margin-top:10px">'+
       '<input type="text" id="cname-'+i+'" placeholder="Ton prénom" maxlength="30">'+
       '<textarea id="ctxt-'+i+'" placeholder="Laisse un commentaire..."></textarea>'+
-      '<button class="btn btn-p comment-send" onclick="postComment('+i+')">Envoyer &#x1f4e8;</button>'+
+      '<button class="btn btn-p comment-send" onclick="postComment(\''+i+'\')">Envoyer &#x1f4e8;</button>'+
       '</div>';
   }
   html+='</div>';
