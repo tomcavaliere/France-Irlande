@@ -1320,40 +1320,55 @@ function renderJournal(){
   var c=document.getElementById('journalList');c.innerHTML='';
   var tags=['Beau temps','Pluie','Vent','Dur','Genial','Pub','Camping','Bivouac','Photos'];
   var days=state.days||{};
-  var dates=Object.keys(days).sort().reverse(); // plus récent en premier
+  var dates=Object.keys(days).sort().reverse();
   var hasAny=false;
-
-  // Si admin et aucune entrée aujourd'hui → montrer formulaire vide
-  var todayISO=new Date().toISOString().slice(0,10);
-
   dates.forEach(function(date){
     var d=days[date];
     hasAny=true;
-    var entry=document.createElement('div');entry.className='journal-entry';entry.dataset.date=date;
+    var entry=document.createElement('div');
+    entry.className='journal-entry';
+    entry.dataset.date=date;
     var txt=state.journal[date]||'';
     var rating=state.ratings[date]||0;
     var stags=state.tags[date]||[];
-    var starsHtml='';
-    for(var n=1;n<=5;n++)starsHtml+='<span class="j-star'+(n<=rating?' on':'')+'"'+(isAdmin?' onclick="setRat(''+date+'','+n+')"':'')+'>⭐</span>';
-    var tagsHtml='';
-    tags.forEach(function(t){tagsHtml+='<span class="j-tag'+(stags.indexOf(t)>=0?' sel':'')+'"'+(isAdmin?' onclick="togTag(''+date+'',''+t+'')"':'')+'>'+t+'</span>'});
-    var placeholder=isAdmin?'Raconte ta journée...':'(aucune entrée)';
     var dateLabel=new Date(date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
-    var kmInfo=d.kmDay?'🚴 '+Math.round(d.kmDay)+' km — total '+Math.round(d.kmTotal)+' km':'';
+    var kmInfo=d.kmDay?'\uD83D\uDEB4 '+Math.round(d.kmDay)+' km \u2014 total '+Math.round(d.kmTotal)+' km':'';
+
+    // Stars
+    var starsHtml='';
+    for(var n=1;n<=5;n++){
+      var onS=n<=rating?' on':'';
+      var clickS=isAdmin?' onclick="setRat(\''+date+'\','+n+')"':'';
+      starsHtml+='<span class="j-star'+onS+'"'+clickS+'>\u2B50</span>';
+    }
+
+    // Tags
+    var tagsHtml='';
+    tags.forEach(function(t){
+      var selS=stags.indexOf(t)>=0?' sel':'';
+      var clickT=isAdmin?' onclick="togTag(\''+date+'\',\''+t+'\')"':'';
+      tagsHtml+='<span class="j-tag'+selS+'"'+clickT+'>'+t+'</span>';
+    });
+
+    var placeholder=isAdmin?'Raconte ta journ\u00e9e...':'(aucune entr\u00e9e)';
+    var taId='rat'+date.replace(/-/g,'');
+    var tmId='jt'+date.replace(/-/g,'');
+
+    var taAttr=isAdmin?' oninput="state.journal[\''+date+'\']=this.value;save()"':' readonly';
+
     entry.innerHTML=
       '<div class="j-date">'+dateLabel+'</div>'+
       (kmInfo?'<div class="j-stage">'+kmInfo+'</div>':'')+
-      '<textarea class="j-ta" placeholder="'+placeholder+'"'+(isAdmin?' oninput="state.journal[''+date+'']=this.value;save()"':' readonly')+'>'+txt+'</textarea>'+
+      '<textarea class="j-ta" placeholder="'+placeholder+'"'+taAttr+'>'+txt+'</textarea>'+
       renderPhotosHtml(date)+
-      '<div class="j-rating" id="rat'+date.replace(/-/g,'')+'">'+starsHtml+'</div>'+
-      '<div class="j-meta" id="jt'+date.replace(/-/g,'')+'">'+tagsHtml+'</div>'+
+      '<div class="j-rating" id="'+taId+'">'+starsHtml+'</div>'+
+      '<div class="j-meta" id="'+tmId+'">'+tagsHtml+'</div>'+
       renderStageCommentsHtml(date);
     c.appendChild(entry);
   });
-
   if(!hasAny){
     c.innerHTML='<div style="text-align:center;color:var(--text-light);font-size:13px;padding:32px 0">'+
-      'Le journal apparaîtra ici après la mise à jour de position.</div>';
+      'Le journal appara\u00eEtra ici apr\u00e8s la mise \u00e0 jour de position.</div>';
   }
   observeJournalEntries();
 }
