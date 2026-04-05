@@ -633,7 +633,7 @@ function initFirebase(){
   if(!window._fbDb)return;
   window._fbOnValue(window._fbRef(window._fbDb,'state'),function(snapshot){
     var data=snapshot.val();
-    if(data){state={completed:{},journal:{},ratings:{},tags:{},days:{},...data};}
+    if(data){state=Object.assign({completed:{},journal:{},ratings:{},tags:{},days:{}},data);}
     saveLocalCache();
     setSyncDot(isOnline?'online':'offline');
     var daysCount=Object.keys(state.days||{}).length;
@@ -1412,7 +1412,7 @@ function saveLocalCache(){
 function loadLocalCache(){
   try{
     var s=localStorage.getItem('ev1-state-cache');
-    if(s){var d=JSON.parse(s);state={completed:{},journal:{},ratings:{},tags:{},days:{},...d};}
+    if(s){var d=JSON.parse(s);state=Object.assign({completed:{},journal:{},ratings:{},tags:{},days:{}},d);}
   }catch(e){}
 }
 
