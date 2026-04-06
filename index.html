@@ -37,6 +37,7 @@
 </script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="campspace-data.js"></script>
 <style>
 :root {
   --green:#1a5e1f; --green-light:#2d8a33; --green-dark:#0f3d12;
@@ -285,6 +286,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
   border-radius:10px;border:1.5px solid #e0e0e0;cursor:pointer;font-size:13px;font-weight:600;
   color:var(--text-light);margin-bottom:0;transition:all .15s;white-space:nowrap}
 .camp-toggle.on{border-color:var(--green);color:var(--green);background:#f0f9f0}
+.camp-toggle.on-cs{border-color:#e65100;color:#e65100;background:#fff3e0}
+.camp-toggle.on-water{border-color:#1565c0;color:#1565c0;background:#e3f2fd}
 .camp-popup{font-size:12px;line-height:1.5;max-width:200px}
 .camp-popup b{font-size:13px;color:var(--green);display:block;margin-bottom:3px}
 .camp-popup .camp-tags{margin-top:4px;display:flex;flex-wrap:wrap;gap:3px}
@@ -351,7 +354,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
       <div class="map-stat"><div class="map-stat-v" id="mapDays">J0</div><div class="map-stat-l">jours</div></div>
     </div>
     <div class="map-admin-bar" id="mapAdminBar" style="display:none">
-      <button class="camp-toggle" id="campToggle" onclick="toggleCampings()">&#x1f3d5; Campings</button>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="camp-toggle" id="campToggle" onclick="toggleCampings()">&#x1f3d5; Campings</button>
+        <button class="camp-toggle" id="campspaceToggle" onclick="toggleCampspace()" style="background:#fff3e0;color:#e65100;border-color:#ffcc80">&#x1f3e1; Campspace</button>
+        <button class="camp-toggle" id="waterToggle" onclick="toggleWater()" style="background:#e3f2fd;color:#1565c0;border-color:#90caf9">&#x1f4a7; Eau</button>
+        <select id="campRange" onchange="onCampRangeChange()" style="padding:6px 8px;border-radius:10px;border:1.5px solid #e0e0e0;font-size:13px;font-weight:600;background:#fff;color:var(--text-light)">
+          <option value="50">50 km</option>
+          <option value="100">100 km</option>
+          <option value="150" selected>150 km</option>
+          <option value="200">200 km</option>
+          <option value="300">300 km</option>
+          <option value="500">500 km</option>
+        </select>
+      </div>
     </div>
     <div class="pos-admin-bar" id="posAdminBar">
       <button class="pos-gps-btn" onclick="updatePosition()">&#x1f4cd; Ma position</button>
@@ -479,11 +494,14 @@ function setAdminUI(on){
   if(posBar)posBar.classList.toggle('vis',on);
   if(!on){
     if(campingsVisible)toggleCampings();
+    if(campspaceVisible)toggleCampspace();
+    if(waterVisible)toggleWater();
     if(activeTab()==='depenses'||activeTab()==='stages'||activeTab()==='info')switchTab('map');
   }
 }
 function logoutAdmin(){
   clearTimeout(inactivityTimer);
+  if(saveTimer){clearTimeout(saveTimer);saveTimer=null;}
   if(window._fbAuth)window._fbSignOut(window._fbAuth);
 }
 function resetInactivity(){
@@ -577,8 +595,10 @@ function updatePosition(){
     journalDirty=true;
     fetchWeather();
 
-    // Recharger les campings si visibles
+    // Recharger les overlays si visibles
     if(campingsVisible)loadCampings();
+    if(campspaceVisible)loadCampspace();
+    if(waterVisible)loadWater();
 
     if(statusEl)statusEl.textContent='±'+accuracy+'m · '+Math.round(kmTotal)+' km';
     // Centrer la carte sur la position
@@ -623,6 +643,7 @@ function patchJournal(){
 let fbInitialized=false;
 let lastCompletedCount=0;
 let journalDirty=false;
+var _unsubState=null, _unsubComments=null, _unsubExpenses=null;
 
 function activeTab(){
   var p=document.querySelector('.page.active');
@@ -631,7 +652,8 @@ function activeTab(){
 
 function initFirebase(){
   if(!window._fbDb)return;
-  window._fbOnValue(window._fbRef(window._fbDb,'state'),function(snapshot){
+  if(_unsubState)_unsubState();
+  _unsubState=window._fbOnValue(window._fbRef(window._fbDb,'state'),function(snapshot){
     var data=snapshot.val();
     if(data){state=Object.assign({completed:{},journal:{},ratings:{},tags:{},days:{}},data);}
     saveLocalCache();
@@ -652,8 +674,8 @@ function initFirebase(){
 }
 
 // ==== MAP ====
-let map, completedLayer, posMarker, campingLayer=null;
-let campingsVisible=false;
+let map, completedLayer, posMarker, campingLayer=null, campspaceLayer=null, waterLayer=null;
+let campingsVisible=false, campspaceVisible=false, waterVisible=false;
 let campingsCache=null; // cache {bbox_key: [features]}
 
 // Snap un point lat/lon au point le plus proche sur ALL_ROUTE_PTS
@@ -689,8 +711,30 @@ function ptsBbox(pts, margin){
   return {s:minLat-margin,n:maxLat+margin,w:minLon-margin,e:maxLon+margin};
 }
 
+// Distance jusqu'à un camping : trace GPX + détour vol d'oiseau
+function campingDist(campLat,campLon){
+  var pos=getCurrentPos();
+  var fromIdx=pos?pos.idx:0;
+  var snap=snapToRoute(campLat,campLon);
+  var traceKm=CUM_KM[snap.idx]-CUM_KM[fromIdx];
+  if(traceKm<0)traceKm=0;
+  var cosLat=Math.cos(campLat*Math.PI/180);
+  var dlat=(snap.lat-campLat)*111.12;
+  var dlon=(snap.lon-campLon)*111.12*cosLat;
+  var detourKm=Math.sqrt(dlat*dlat+dlon*dlon);
+  return {trace:Math.round(traceKm),detour:Math.round(detourKm*10)/10};
+}
+
+function campingDistHtml(campLat,campLon){
+  var d=campingDist(campLat,campLon);
+  return '<div style="margin-top:4px;padding:3px 6px;background:#f5f5f5;border-radius:4px;font-size:11px;color:#333">' +
+    '&#x1f6b4; <b>'+d.trace+' km</b> sur la trace' +
+    (d.detour>0.2?' + <b>'+d.detour+' km</b> de détour':'') +
+    '</div>';
+}
+
 function initMap(){
-  if(map){map.remove();map=null;completedLayer=null;posMarker=null;campingLayer=null;}
+  if(map){map.remove();map=null;completedLayer=null;posMarker=null;campingLayer=null;campspaceLayer=null;waterLayer=null;}
   map=L.map('map',{zoomControl:false,attributionControl:true}).setView([47.5,-1.5],6);
   L.control.zoom({position:'bottomright'}).addTo(map);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
@@ -795,25 +839,31 @@ function toggleCampings(){
   loadCampings();
 }
 
+function onCampRangeChange(){
+  if(campingsVisible)loadCampings();
+  if(campspaceVisible)loadCampspace();
+  if(waterVisible)loadWater();
+}
+
 function loadCampings(){
   var pos=getCurrentPos();
-  if(!pos){
-    // Pas de position : afficher autour du début
-    var aheadPts=routePointsAhead(0,150);
-  } else {
-    var aheadPts=routePointsAhead(pos.idx,150);
-  }
-  if(!aheadPts.length)return;
+  var rangeKm=parseInt(document.getElementById('campRange').value)||150;
+  var aheadPts=routePointsAhead(pos?pos.idx:0,rangeKm);
+  if(!aheadPts.length){console.warn('[Campings] Aucun point ahead');return;}
   var bbox=ptsBbox(aheadPts,0.1);
   var bboxStr=bbox.w.toFixed(4)+','+bbox.s.toFixed(4)+','+bbox.e.toFixed(4)+','+bbox.n.toFixed(4);
+  console.log('[Campings] bbox=',bboxStr,'pts=',aheadPts.length);
 
-  // Requête OpenCampingMap
-  var fd=new FormData();
-  fd.append('bbox',bboxStr);
-  fetch('https://opencampingmap.org/getcampsites',{method:'POST',body:fd})
-    .then(function(r){return r.json();})
-    .then(function(geojson){renderCampings(geojson,aheadPts);})
-    .catch(function(){
+  // Requête OpenCampingMap (x-www-form-urlencoded requis)
+  fetch('https://opencampingmap.org/getcampsites',{
+    method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:'bbox='+bboxStr
+  })
+    .then(function(r){console.log('[Campings] HTTP',r.status);return r.json();})
+    .then(function(geojson){console.log('[Campings] features:',geojson.features?geojson.features.length:0);renderCampings(geojson,aheadPts);})
+    .catch(function(e){
+      console.warn('[Campings] OpenCampingMap failed:',e);
       // Fallback : Overpass API
       loadCampingsOverpass(bbox,aheadPts);
     });
@@ -838,13 +888,15 @@ function renderCampings(geojson,aheadPts){
   if(campingLayer){map.removeLayer(campingLayer);campingLayer=null;}
   if(!geojson.features||!geojson.features.length)return;
 
-  // Filtrer : garder uniquement les campings proches de la trace (max 15km)
+  // Filtrer : garder uniquement les campings proches de la trace (max 10km)
   var ptSet=aheadPts;
   function nearTrace(lat,lon){
-    var R=15/111; // ~15km en degrés
-    for(var i=0;i<ptSet.length;i+=5){
-      var d=Math.abs(ptSet[i][0]-lat)+Math.abs(ptSet[i][1]-lon);
-      if(d<R)return true;
+    var R2=Math.pow(5/111,2); // ~5km en degrés, au carré
+    var cosLat=Math.cos(lat*Math.PI/180);
+    for(var i=0;i<ptSet.length;i+=3){
+      var dlat=ptSet[i][0]-lat;
+      var dlon=(ptSet[i][1]-lon)*cosLat;
+      if(dlat*dlat+dlon*dlon<R2)return true;
     }
     return false;
   }
@@ -867,9 +919,10 @@ function renderCampings(geojson,aheadPts){
     if(p.fee==='no')tags.push('Gratuit');
     var website=p.website||p['contact:website']||'';
     var popup='<div class="camp-popup"><b>'+name+'</b>'+
-      (p.operator?'<span style="color:#666;font-size:11px">'+p.operator+'</span><br>':'')+ 
+      (p.operator?'<span style="color:#666;font-size:11px">'+p.operator+'</span><br>':'')+
       (tags.length?'<div class="camp-tags">'+tags.map(function(t){return'<span class="camp-tag">'+t+'</span>'}).join('')+'</div>':'')+
-      (website?'<br><a href="'+website+'" target="_blank" style="color:var(--green);font-size:11px">Site web</a>':'')+
+      campingDistHtml(c[1],c[0])+
+      (website?'<a href="'+website+'" target="_blank" style="color:var(--green);font-size:11px">Site web</a>':'')+
       '</div>';
     var m=L.marker([c[1],c[0]],{icon:campIcon}).bindPopup(popup);
     markers.push(m);
@@ -878,6 +931,190 @@ function renderCampings(geojson,aheadPts){
   campingLayer=L.layerGroup(markers).addTo(map);
   var btn=document.getElementById('campToggle');
   btn.textContent='🏕 '+markers.length+' campings';
+}
+
+// ==== CAMPSPACE (chez l'habitant) ====
+function toggleCampspace(){
+  campspaceVisible=!campspaceVisible;
+  var btn=document.getElementById('campspaceToggle');
+  btn.classList.toggle('on-cs',campspaceVisible);
+  if(!campspaceVisible){
+    if(campspaceLayer){map.removeLayer(campspaceLayer);campspaceLayer=null;}
+    btn.textContent='🏡 Campspace';
+    return;
+  }
+  loadCampspace();
+}
+
+function loadCampspace(){
+  if(typeof CAMPSPACE_DATA==='undefined'||!CAMPSPACE_DATA.length)return;
+  var pos=getCurrentPos();
+  var rangeKm=parseInt(document.getElementById('campRange').value)||150;
+  var aheadPts=routePointsAhead(pos?pos.idx:0,rangeKm);
+  if(!aheadPts.length)return;
+
+  if(campspaceLayer){map.removeLayer(campspaceLayer);campspaceLayer=null;}
+
+  // nearTrace : max 5km de la trace
+  var ptSet=aheadPts;
+  function nearTrace(lat,lon){
+    var R2=Math.pow(5/111,2);
+    var cosLat=Math.cos(lat*Math.PI/180);
+    for(var i=0;i<ptSet.length;i+=3){
+      var dlat=ptSet[i][0]-lat;
+      var dlon=(ptSet[i][1]-lon)*cosLat;
+      if(dlat*dlat+dlon*dlon<R2)return true;
+    }
+    return false;
+  }
+
+  // Pré-filtre bbox rapide
+  var bbox=ptsBbox(aheadPts,0.1);
+
+  var csIcon=L.divIcon({className:'',iconSize:[20,20],iconAnchor:[10,10],
+    html:'<div style="background:#e65100;color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.3)">&#x1f3e1;</div>'});
+
+  var markers=[];
+  // CAMPSPACE_DATA: [lat, lng, title, price, href_suffix]
+  for(var i=0;i<CAMPSPACE_DATA.length;i++){
+    var d=CAMPSPACE_DATA[i];
+    var lat=d[0],lng=d[1];
+    // Filtre bbox rapide
+    if(lat<bbox.s||lat>bbox.n||lng<bbox.w||lng>bbox.e)continue;
+    // Filtre proximité trace
+    if(!nearTrace(lat,lng))continue;
+    var title=d[2]||'Campspace';
+    var price=d[3]||'';
+    var href=d[4]?'https://campspace.com/fr/s/'+d[4]:'';
+    var popup='<div class="camp-popup"><b style="color:#e65100">'+title+'</b>'+
+      (price?'<span style="color:#666;font-size:11px">'+price+'</span><br>':'')+
+      campingDistHtml(lat,lng)+
+      (href?'<a href="'+href+'" target="_blank" style="color:#e65100;font-size:11px">Voir sur Campspace</a>':'')+
+      '</div>';
+    markers.push(L.marker([lat,lng],{icon:csIcon}).bindPopup(popup));
+  }
+
+  campspaceLayer=L.layerGroup(markers).addTo(map);
+  var btn=document.getElementById('campspaceToggle');
+  btn.textContent='🏡 '+markers.length+' campspace';
+}
+
+// ==== POINTS D'EAU (Overpass API) ====
+var waterCacheKey='';
+var waterCacheData=[];
+var waterLoading=false;
+
+function toggleWater(){
+  waterVisible=!waterVisible;
+  var btn=document.getElementById('waterToggle');
+  btn.classList.toggle('on-water',waterVisible);
+  if(!waterVisible){
+    if(waterLayer){map.removeLayer(waterLayer);waterLayer=null;}
+    btn.textContent='💧 Eau';
+    return;
+  }
+  loadWater();
+}
+
+function loadWater(){
+  if(waterLoading)return;
+  var pos=getCurrentPos();
+  var rangeKm=parseInt(document.getElementById('campRange').value)||150;
+  var aheadPts=routePointsAhead(pos?pos.idx:0,rangeKm);
+  if(!aheadPts.length)return;
+  var bbox=ptsBbox(aheadPts,0.02);
+  var key=bbox.s.toFixed(1)+','+bbox.w.toFixed(1)+','+bbox.n.toFixed(1)+','+bbox.e.toFixed(1);
+
+  // Cache hit
+  if(key===waterCacheKey&&waterCacheData.length){
+    renderWater(waterCacheData,aheadPts);
+    return;
+  }
+
+  var btn=document.getElementById('waterToggle');
+  btn.textContent='💧 chargement…';
+  waterLoading=true;
+
+  var q='[out:json][timeout:60];(node[amenity=drinking_water]('+bbox.s+','+bbox.w+','+bbox.n+','+bbox.e+');'+
+    'node[amenity=water_point]('+bbox.s+','+bbox.w+','+bbox.n+','+bbox.e+');'+
+    'node[natural=spring][drinking_water=yes]('+bbox.s+','+bbox.w+','+bbox.n+','+bbox.e+'););out body;';
+
+  var servers=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
+  var attempt=0;
+
+  function tryFetch(){
+    var url=servers[attempt%servers.length];
+    fetch(url,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(q)})
+      .then(function(r){
+        if(r.status===429||r.status===504){throw new Error('HTTP '+r.status);}
+        if(!r.ok)throw new Error('HTTP '+r.status);
+        return r.json();
+      })
+      .then(function(d){
+        waterLoading=false;
+        waterCacheKey=key;
+        waterCacheData=d.elements||[];
+        renderWater(waterCacheData,aheadPts);
+      })
+      .catch(function(e){
+        console.warn('[Water] attempt '+(attempt+1)+':',e.message);
+        attempt++;
+        if(attempt>=4){
+          waterLoading=false;
+          btn.textContent='💧 erreur (réessayer)';
+          return;
+        }
+        // Backoff : 3s, 6s, 9s
+        var delay=attempt*3000;
+        btn.textContent='💧 retry dans '+Math.round(delay/1000)+'s…';
+        setTimeout(tryFetch,delay);
+      });
+  }
+  tryFetch();
+}
+
+function renderWater(elements,aheadPts){
+  if(waterLayer){map.removeLayer(waterLayer);waterLayer=null;}
+  if(!elements.length)return;
+
+  var ptSet=aheadPts;
+  function nearTrace(lat,lon){
+    var R2=Math.pow(1/111,2); // 1km max pour l'eau
+    var cosLat=Math.cos(lat*Math.PI/180);
+    for(var i=0;i<ptSet.length;i+=3){
+      var dlat=ptSet[i][0]-lat;
+      var dlon=(ptSet[i][1]-lon)*cosLat;
+      if(dlat*dlat+dlon*dlon<R2)return true;
+    }
+    return false;
+  }
+
+  var waterIcon=L.divIcon({className:'',iconSize:[18,18],iconAnchor:[9,9],
+    html:'<div style="background:#1565c0;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.3)">&#x1f4a7;</div>'});
+
+  var markers=[];
+  elements.forEach(function(el){
+    if(!el.lat||!el.lon)return;
+    if(!nearTrace(el.lat,el.lon))return;
+    var t=el.tags||{};
+    var name=t.name||t.description||'';
+    var type=t.natural==='spring'?'Source':t.amenity==='water_point'?'Point d\'eau':'Fontaine';
+    var tags=[];
+    if(t.drinking_water==='yes'||t.amenity==='drinking_water')tags.push('Potable');
+    if(t.bottle==='yes')tags.push('Remplissage');
+    if(t.seasonal==='yes')tags.push('Saisonnier');
+    if(t.access==='private')tags.push('Privé');
+    var dist=campingDistHtml(el.lat,el.lon);
+    var popup='<div class="camp-popup"><b style="color:#1565c0">'+(name||type)+'</b>'+
+      (name?'<span style="color:#666;font-size:11px">'+type+'</span><br>':'')+
+      (tags.length?'<div class="camp-tags">'+tags.map(function(t){return'<span class="camp-tag" style="background:#e3f2fd;color:#1565c0">'+t+'</span>'}).join('')+'</div>':'')+
+      dist+'</div>';
+    markers.push(L.marker([el.lat,el.lon],{icon:waterIcon}).bindPopup(popup));
+  });
+
+  waterLayer=L.layerGroup(markers).addTo(map);
+  var btn=document.getElementById('waterToggle');
+  btn.textContent='💧 '+markers.length+' pts d\'eau';
 }
 
 // ==== TABS ====
@@ -915,7 +1152,7 @@ function renderStages(){
     card.innerHTML=
       '<div class="s-hdr"><div>'+
         '<div class="s-day">'+seg+' J'+(idx+1)+' — '+dateLabel+'</div>'+
-        '<div class="s-title">'+(d.note||'Étape du jour')+'</div>'+
+        '<div class="s-title">'+escHtml(d.note||'Étape du jour')+'</div>'+
       '</div></div>'+
       '<div class="s-stats">'+
         '<span class="s-stat">🚴 '+Math.round(kmDay)+' km/jour</span>'+
@@ -1002,19 +1239,23 @@ function deletePhoto(i,id){
   patchPhotos(i);
 }
 
+function escAttr(s){return String(s).replace(/&/g,'&amp;').replace(/'/g,'&#39;').replace(/"/g,'&quot;');}
+
 function renderPhotosHtml(i){
   var stagePhotos=photos[i]||{};
   var ids=Object.keys(stagePhotos);
-  var html='<div class="j-photos" id="photos-'+i+'">';
+  var ei=escAttr(i);
+  var html='<div class="j-photos" id="photos-'+ei+'">';
   ids.forEach(function(id){
     var src=stagePhotos[id];
+    var eid=escAttr(id);
     html+='<div class="j-photo-wrap">'+
-      '<img src="'+src+'" onclick="openLightbox(\''+id+'\',\''+i+'\')">'+
-      (isAdmin?'<button class="j-photo-del" onclick="deletePhoto(\''+i+'\',\''+id+'\')">&#x2715;</button>':'')+
+      '<img src="'+escAttr(src)+'" onclick="openLightbox(\''+eid+'\',\''+ei+'\')">'+
+      (isAdmin?'<button class="j-photo-del" onclick="deletePhoto(\''+ei+'\',\''+eid+'\')">&#x2715;</button>':'')+
       '</div>';
   });
   if(isAdmin){
-    html+='<div class="j-photo-add" id="photos-add-'+i+'" onclick="uploadPhoto(\''+i+'\')">'+
+    html+='<div class="j-photo-add" id="photos-add-'+ei+'" onclick="uploadPhoto(\''+ei+'\')">'+
       '<span class="j-photo-add-icon">&#x1f4f7;</span><span>Ajouter</span></div>';
   }
   html+='</div>';
@@ -1044,24 +1285,26 @@ function formatTime(ts){
 function renderStageCommentsHtml(i){
   var stageCmts=comments[i]||{};
   var ids=Object.keys(stageCmts).sort(function(a,b){return (stageCmts[a].ts||0)-(stageCmts[b].ts||0);});
-  var html='<div class="stage-comments" id="scmts-'+i+'">';
+  var ei=escAttr(i);
+  var html='<div class="stage-comments" id="scmts-'+ei+'">';
   if(ids.length){
     html+='<div class="m-sec-t" style="margin:10px 0 6px">&#x1f4ac; Commentaires</div>';
     ids.forEach(function(id){
       var c=stageCmts[id];
+      var eid=escAttr(id);
       html+='<div class="comment-card">'+
         '<span class="comment-name">'+escHtml(c.name)+'</span>'+
         '<span class="comment-time">'+formatTime(c.ts)+'</span>'+
-        (isAdmin?'<button class="comment-del" onclick="deleteComment(\''+i+'\',\''+id+'\')">&#x1f5d1;</button>':'')+
+        (isAdmin?'<button class="comment-del" onclick="deleteComment(\''+ei+'\',\''+eid+'\')">&#x1f5d1;</button>':'')+
         '<div class="comment-text">'+escHtml(c.text)+'</div>'+
         '</div>';
     });
   }
   if(!isAdmin){
     html+='<div class="comment-form" style="margin-top:10px">'+
-      '<input type="text" id="cname-'+i+'" placeholder="Ton prénom" maxlength="30">'+
-      '<textarea id="ctxt-'+i+'" placeholder="Laisse un commentaire..."></textarea>'+
-      '<button class="btn btn-p comment-send" onclick="postComment(\''+i+'\')">Envoyer &#x1f4e8;</button>'+
+      '<input type="text" id="cname-'+ei+'" placeholder="Ton pr\u00e9nom" maxlength="30">'+
+      '<textarea id="ctxt-'+ei+'" placeholder="Laisse un commentaire..."></textarea>'+
+      '<button class="btn btn-p comment-send" onclick="postComment(\''+ei+'\')">Envoyer &#x1f4e8;</button>'+
       '</div>';
   }
   html+='</div>';
@@ -1178,11 +1421,10 @@ function renderExpenses(){
 }
 
 function initExpenses(){
-  // Pré-remplir la date du jour
   var today=new Date().toISOString().slice(0,10);
   var el=document.getElementById('depDate');if(el)el.value=today;
-
-  window._fbOnValue(window._fbRef(window._fbDb,'expenses'),function(snap){
+  if(_unsubExpenses)_unsubExpenses();
+  _unsubExpenses=window._fbOnValue(window._fbRef(window._fbDb,'expenses'),function(snap){
     expenses=snap.val()||{};
     if(activeTab()==='depenses')renderExpenses();
   });
@@ -1237,7 +1479,7 @@ function fetchWeather(){
       '<div class="weather-days">';
     for(var i=0;i<3;i++){
       var date=new Date(days.time[i]+'T12:00:00');
-      var lbl=i===0?'Aujourd'hui':i===1?'Demain':date.toLocaleDateString('fr-FR',{weekday:'short'});
+      var lbl=i===0?'Aujourd\'hui':i===1?'Demain':date.toLocaleDateString('fr-FR',{weekday:'short'});
       var code=days.weathercode[i];
       var icon=WMO_ICONS[code]||'🌡️';
       var desc=WMO_DESC[code]||'';
@@ -1263,7 +1505,8 @@ function fetchWeather(){
 
 
 function initComments(){
-  window._fbOnValue(window._fbRef(window._fbDb,'comments'),function(snap){
+  if(_unsubComments)_unsubComments();
+  _unsubComments=window._fbOnValue(window._fbRef(window._fbDb,'comments'),function(snap){
     comments=snap.val()||{};
     Object.keys(comments).forEach(function(i){patchStageComments(parseInt(i));});
   });
@@ -1284,7 +1527,6 @@ function loadPhotosForStage(i){
 }
 
 function observeJournalEntries(){
-  if(photoObserver)photoObserver.disconnect();
   if(!('IntersectionObserver' in window)){
     document.querySelectorAll('#journalList .journal-entry').forEach(function(entry){
       if(entry.dataset.date)loadPhotosForStage(entry.dataset.date);
@@ -1311,9 +1553,9 @@ function initPhotos(){
 
 // ==== JOURNAL ====
 function renderJournal(){
-  photosLoaded={};
+  if(photoObserver)photoObserver.disconnect();
   Object.values(photosUnsub).forEach(function(unsub){if(typeof unsub==='function')unsub();});
-  photosUnsub={};photos={};
+  photosLoaded={};photosUnsub={};photos={};
   var c=document.getElementById('journalList');c.innerHTML='';
   var tags=['Beau temps','Pluie','Vent','Dur','Genial','Pub','Camping','Bivouac','Photos'];
   var days=state.days||{};
@@ -1331,11 +1573,13 @@ function renderJournal(){
     var dateLabel=new Date(date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
     var kmInfo=d.kmDay?'\uD83D\uDEB4 '+Math.round(d.kmDay)+' km \u2014 total '+Math.round(d.kmTotal)+' km':'';
 
+    var edate=escAttr(date);
+
     // Stars
     var starsHtml='';
     for(var n=1;n<=5;n++){
       var onS=n<=rating?' on':'';
-      var clickS=isAdmin?' onclick="setRat(\''+date+'\','+n+')"':'';
+      var clickS=isAdmin?' onclick="setRat(\''+edate+'\','+n+')"':'';
       starsHtml+='<span class="j-star'+onS+'"'+clickS+'>\u2B50</span>';
     }
 
@@ -1343,7 +1587,7 @@ function renderJournal(){
     var tagsHtml='';
     tags.forEach(function(t){
       var selS=stags.indexOf(t)>=0?' sel':'';
-      var clickT=isAdmin?' onclick="togTag(\''+date+'\',\''+t+'\')"':'';
+      var clickT=isAdmin?' onclick="togTag(\''+edate+'\',\''+escAttr(t)+'\')"':'';
       tagsHtml+='<span class="j-tag'+selS+'"'+clickT+'>'+t+'</span>';
     });
 
@@ -1351,7 +1595,7 @@ function renderJournal(){
     var taId='rat'+date.replace(/-/g,'');
     var tmId='jt'+date.replace(/-/g,'');
 
-    var taAttr=isAdmin?' oninput="state.journal[\''+date+'\']=this.value;save()"':' readonly';
+    var taAttr=isAdmin?' oninput="state.journal[\''+edate+'\']=this.value;save()"':' readonly';
 
     entry.innerHTML=
       '<div class="j-date">'+dateLabel+'</div>'+
@@ -1403,7 +1647,9 @@ function setSyncDot(mode){
 }
 
 function saveLocalCache(){
-  try{localStorage.setItem('ev1-state-cache',JSON.stringify(state));}catch(e){}
+  try{localStorage.setItem('ev1-state-cache',JSON.stringify(state));}catch(e){
+    console.warn('localStorage plein, cache non sauvegardé');
+  }
 }
 
 function loadLocalCache(){
@@ -1413,9 +1659,13 @@ function loadLocalCache(){
   }catch(e){}
 }
 
+var MAX_OFFLINE_QUEUE=50;
 function queueWrite(path, data){
   offlineQueue.push({path:path, data:data, ts:Date.now()});
-  try{localStorage.setItem('offlineQueue',JSON.stringify(offlineQueue));}catch(e){}
+  if(offlineQueue.length>MAX_OFFLINE_QUEUE) offlineQueue=offlineQueue.slice(-MAX_OFFLINE_QUEUE);
+  try{localStorage.setItem('offlineQueue',JSON.stringify(offlineQueue));}catch(e){
+    console.warn('localStorage plein, queue offline non sauvegardée');
+  }
 }
 
 function flushQueue(){
@@ -1485,7 +1735,7 @@ document.addEventListener('visibilitychange',function(){
 
 document.addEventListener('DOMContentLoaded',function(){
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('/sw.js').catch(function(){});
+    navigator.serviceWorker.register('./sw.js').catch(function(){});
   }
   loadLocalCache();
   initMap();
