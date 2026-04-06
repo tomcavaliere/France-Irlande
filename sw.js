@@ -1,7 +1,8 @@
-const CACHE = 'ev1-v1';
+const CACHE = 'ev1-v9';
 const PRECACHE = [
   '/',
   '/index.html',
+  '/campspace-data.js',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
 ];
@@ -23,7 +24,8 @@ self.addEventListener('activate', function(e){
 });
 
 self.addEventListener('fetch', function(e){
-  // Firebase et APIs externes : réseau d'abord, pas de cache
+  // Ne pas cacher les POST (Cache API ne supporte pas) ni les APIs externes
+  if(e.request.method !== 'GET') return;
   var url = e.request.url;
   if(url.includes('firebasedatabase') || url.includes('googleapis') ||
      url.includes('gstatic.com/firebasejs') || url.includes('firebaseio')){
