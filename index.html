@@ -74,6 +74,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 #map{width:100%;height:100%}
 .leaflet-control-attribution{font-size:9px!important}
 
+/* ============================================================
+   POSITIONNEMENT DES OVERLAYS DE LA CARTE (onglet Carte)
+   ------------------------------------------------------------
+   Tous les blocs ci-dessous sont en position:absolute par-dessus
+   #map (la carte Leaflet remplit toute la page). z-index:800 pour
+   passer au-dessus des tuiles Leaflet (z-index par défaut 400-700).
+   Empilement vertical en haut de la carte :
+     1. .map-stats       (top:10px)  — résumé km/jours
+     2. .map-admin-bar   (top:62px)  — boutons admin (Campings, etc.)
+   En bas de la carte :
+     - .pos-admin-bar    (bottom:90px) — bouton "Ma position" (admin)
+     - .pos-badge        (bottom:16px) — badge prochaine étape
+   ============================================================ */
+
+/* Bandeau de stats en haut de la carte (km faits / restants / jours).
+   Visible par tous les visiteurs. flex-wrap pour passer à la ligne
+   sur très petits écrans. */
 .map-stats{position:absolute;top:10px;left:10px;right:10px;display:flex;gap:6px;z-index:800;flex-wrap:wrap}
 .map-stat{flex:1;min-width:70px;background:rgba(255,255,255,.95);border-radius:10px;
   padding:6px 8px;text-align:center;box-shadow:var(--shadow)}
@@ -81,7 +98,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .map-stat-l{font-size:8px;color:var(--text-light);text-transform:uppercase;letter-spacing:.3px}
 .map-stat-v.o{color:var(--orange)}
 
-.pos-badge{position:absolute;bottom:16px;left:16px;right:16px;background:rgba(255,255,255,.95);
+/* Badge "prochaine étape" en bas de la carte. Caché par défaut,
+   affiché via .vis dès qu'une position GPS est connue. */
+.pos-badge{position:absolute;bottom:16px;left:10px;right:50px;background:rgba(255,255,255,.95);
   border-radius:12px;padding:12px;z-index:800;box-shadow:var(--shadow);display:none}
 .pos-badge.vis{display:block}
 .pos-badge-t{font-size:13px;font-weight:600;color:var(--green)}
@@ -295,18 +314,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .camp-popup .camp-tags{margin-top:4px;display:flex;flex-wrap:wrap;gap:3px}
 .camp-popup .camp-tag{font-size:10px;padding:1px 5px;border-radius:6px;background:#e8f5e9;color:#2e7d32}
 
-/* Position GPS admin */
-.pos-admin-bar{display:none;align-items:center;gap:8px;padding:8px 12px;
-  background:rgba(255,255,255,.95);border-radius:10px;box-shadow:var(--shadow);
-  position:absolute;bottom:70px;left:10px;right:10px;z-index:800}
+/* Barre admin GPS — bouton "Ma position" + statut.
+   Placée juste au-dessus du .pos-badge (bottom:16px + ~74px de hauteur).
+   Visible uniquement en mode admin via la classe .vis. */
+.pos-admin-bar{display:none;align-items:center;gap:8px;
+  position:absolute;bottom:90px;left:10px;right:10px;z-index:800;background:transparent;box-shadow:none;padding:0}
 .pos-admin-bar.vis{display:flex}
-.pos-gps-btn{flex:1;padding:10px;background:var(--green);color:#fff;border:none;
+.pos-gps-btn{width:150px;padding:10px;background:var(--green);color:#fff;border:none;
   border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;display:flex;
   align-items:center;justify-content:center;gap:6px}
 .pos-gps-status{font-size:11px;color:var(--text-light);flex:1;text-align:right}
 
-/* Map controls admin */
-.map-admin-bar{position:absolute;top:72px;left:10px;right:10px;z-index:800;display:flex;gap:6px;flex-direction:column;align-items:stretch}
+/* Barre admin de la carte — boutons Campings / Campspace / Eau / sélecteur km.
+   top:62px = juste sous .map-stats (top:10px, hauteur ~46px + marge).
+   Si .map-stats grandit (wrap sur petit écran), ajuster ce top.
+   Le > div interne est scrollable horizontalement (overflow-x:auto)
+   pour ne pas déborder sur mobile, scrollbar masquée. */
+.map-admin-bar{position:absolute;top:62px;left:10px;right:10px;z-index:800;display:flex;gap:6px;flex-direction:column;align-items:stretch}
 .map-admin-bar > div{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px;flex-wrap:nowrap;justify-content:flex-start}
 .map-admin-bar > div::-webkit-scrollbar{display:none}
 .map-admin-bar > div > *{flex-shrink:0}
@@ -418,8 +442,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
     <div class="info-card"><h3>Installer sur iPhone</h3><p>1. Ouvrir dans Safari — 2. Bouton partager — 3. "Sur l'ecran d'accueil"</p></div>
     <div class="spacer"></div>
   </div>
-
-</div>
 
   <div class="page" id="page-depenses">
     <div class="sec-title">Dépenses</div>
