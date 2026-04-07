@@ -1,8 +1,10 @@
-const CACHE = 'ev1-v9';
+const CACHE = 'ev1-v11';
 const PRECACHE = [
   '/',
   '/index.html',
   '/campspace-data.js',
+  '/js/gps-core.js',
+  '/js/utils.js',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
 ];

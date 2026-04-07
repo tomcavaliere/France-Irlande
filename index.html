@@ -38,6 +38,8 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="campspace-data.js"></script>
+<script src="js/gps-core.js"></script>
+<script src="js/utils.js"></script>
 <style>
 :root {
   --green:#1a5e1f; --green-light:#2d8a33; --green-dark:#0f3d12;
@@ -678,51 +680,16 @@ let map, completedLayer, posMarker, campingLayer=null, campspaceLayer=null, wate
 let campingsVisible=false, campspaceVisible=false, waterVisible=false;
 let campingsCache=null; // cache {bbox_key: [features]}
 
-// Snap un point lat/lon au point le plus proche sur ALL_ROUTE_PTS
-// Retourne {idx, kmTotal, lat, lon}
-function snapToRoute(lat,lon){
-  var best=-1,bestD=Infinity;
-  for(var i=0;i<ALL_ROUTE_PTS.length;i++){
-    var p=ALL_ROUTE_PTS[i];
-    var d=Math.pow(p[0]-lat,2)+Math.pow(p[1]-lon,2);
-    if(d<bestD){bestD=d;best=i;}
-  }
-  return {idx:best, kmTotal:CUM_KM[best], lat:ALL_ROUTE_PTS[best][0], lon:ALL_ROUTE_PTS[best][1]};
-}
-
-// Trouver les points de la trace dans les 150km devant idx
-function routePointsAhead(fromIdx, distKm){
-  var targetKm=CUM_KM[fromIdx]+distKm;
-  var pts=[];
-  for(var i=fromIdx;i<ALL_ROUTE_PTS.length;i++){
-    pts.push(ALL_ROUTE_PTS[i]);
-    if(CUM_KM[i]>=targetKm)break;
-  }
-  return pts;
-}
-
-// Bbox englobant une liste de points avec marge en degrés
-function ptsBbox(pts, margin){
-  var minLat=Infinity,maxLat=-Infinity,minLon=Infinity,maxLon=-Infinity;
-  pts.forEach(function(p){
-    if(p[0]<minLat)minLat=p[0]; if(p[0]>maxLat)maxLat=p[0];
-    if(p[1]<minLon)minLon=p[1]; if(p[1]>maxLon)maxLon=p[1];
-  });
-  return {s:minLat-margin,n:maxLat+margin,w:minLon-margin,e:maxLon+margin};
-}
+// Fonctions GPS pures déléguées à js/gps-core.js (testé via Vitest).
+function snapToRoute(lat,lon){ return GPSCore.snapToRoute(lat,lon,ALL_ROUTE_PTS,CUM_KM); }
+function routePointsAhead(fromIdx,distKm){ return GPSCore.routePointsAhead(fromIdx,distKm,ALL_ROUTE_PTS,CUM_KM); }
+function ptsBbox(pts,margin){ return GPSCore.ptsBbox(pts,margin); }
 
 // Distance jusqu'à un camping : trace GPX + détour vol d'oiseau
 function campingDist(campLat,campLon){
   var pos=getCurrentPos();
   var fromIdx=pos?pos.idx:0;
-  var snap=snapToRoute(campLat,campLon);
-  var traceKm=CUM_KM[snap.idx]-CUM_KM[fromIdx];
-  if(traceKm<0)traceKm=0;
-  var cosLat=Math.cos(campLat*Math.PI/180);
-  var dlat=(snap.lat-campLat)*111.12;
-  var dlon=(snap.lon-campLon)*111.12*cosLat;
-  var detourKm=Math.sqrt(dlat*dlat+dlon*dlon);
-  return {trace:Math.round(traceKm),detour:Math.round(detourKm*10)/10};
+  return GPSCore.campingDist(fromIdx,campLat,campLon,ALL_ROUTE_PTS,CUM_KM);
 }
 
 function campingDistHtml(campLat,campLon){
@@ -1239,7 +1206,7 @@ function deletePhoto(i,id){
   patchPhotos(i);
 }
 
-function escAttr(s){return String(s).replace(/&/g,'&amp;').replace(/'/g,'&#39;').replace(/"/g,'&quot;');}
+function escAttr(s){return Utils.escAttr(s);}
 
 function renderPhotosHtml(i){
   var stagePhotos=photos[i]||{};
@@ -1272,15 +1239,8 @@ function patchPhotos(i){
 // ==== COMMENTAIRES PAR ETAPE ====
 var comments={};  // {stageIndex: {commentId: {name, text, ts}}}
 
-function escHtml(s){
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function formatTime(ts){
-  var d=new Date(ts);
-  return d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' à '+
-    d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
-}
+function escHtml(s){return Utils.escHtml(s);}
+function formatTime(ts){return Utils.formatTime(ts);}
 
 function renderStageCommentsHtml(i){
   var stageCmts=comments[i]||{};
