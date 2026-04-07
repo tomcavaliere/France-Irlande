@@ -1,4 +1,4 @@
-const CACHE = 'ev1-v11';
+const CACHE = 'ev1-v12';
 const PRECACHE = [
   '/',
   '/index.html',
@@ -30,10 +30,27 @@ self.addEventListener('fetch', function(e){
   if(e.request.method !== 'GET') return;
   var url = e.request.url;
   if(url.includes('firebasedatabase') || url.includes('googleapis') ||
-     url.includes('gstatic.com/firebasejs') || url.includes('firebaseio')){
+     url.includes('gstatic.com/firebasejs') || url.includes('firebaseio') ||
+     url.includes('open-meteo.com') || url.includes('overpass') ||
+     url.includes('opencampingmap')){
     return;
   }
-  // App shell et libs : cache d'abord, réseau en fallback
+  // HTML/JS de l'app : network-first (pour récupérer les MAJ), cache en fallback offline
+  var isAppShell = url.endsWith('/') || url.endsWith('/index.html') ||
+                   url.endsWith('.js') || url.endsWith('.html');
+  if(isAppShell && new URL(url).origin === self.location.origin){
+    e.respondWith(
+      fetch(e.request).then(function(resp){
+        if(resp && resp.status === 200){
+          var clone = resp.clone();
+          caches.open(CACHE).then(function(c){ c.put(e.request, clone); });
+        }
+        return resp;
+      }).catch(function(){ return caches.match(e.request); })
+    );
+    return;
+  }
+  // Libs externes : cache d'abord, réseau en fallback
   e.respondWith(
     caches.match(e.request).then(function(cached){
       if(cached) return cached;
