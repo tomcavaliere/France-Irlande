@@ -306,7 +306,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .pos-gps-status{font-size:11px;color:var(--text-light);flex:1;text-align:right}
 
 /* Map controls admin */
-.map-admin-bar{position:absolute;top:10px;right:10px;z-index:800;display:flex;gap:6px;flex-direction:column;align-items:flex-end}
+.map-admin-bar{position:absolute;top:10px;left:10px;right:10px;z-index:800;display:flex;gap:6px;flex-direction:column;align-items:stretch}
+.map-admin-bar > div{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px;flex-wrap:nowrap;justify-content:flex-start}
+.map-admin-bar > div::-webkit-scrollbar{display:none}
+.map-admin-bar > div > *{flex-shrink:0}
 
 /* Météo */
 .weather-card{background:var(--card);border-radius:var(--radius);padding:14px;
