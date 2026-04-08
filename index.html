@@ -1737,7 +1737,9 @@ function renderJournal(){
   var c=document.getElementById('journalList');c.innerHTML='';
   var tags=['Beau temps','Pluie','Vent','Dur','Genial','Pub','Camping','Bivouac','Photos'];
   var days=state.days||{};
-  var dates=Object.keys(days).sort().reverse();
+  var dates=Object.keys(days)
+    .filter(function(d){return isAdmin||days[d].published===true;})
+    .sort().reverse();
   var hasAny=false;
   dates.forEach(function(date){
     var d=days[date];
@@ -1752,6 +1754,18 @@ function renderJournal(){
     var kmInfo=d.kmDay?'\uD83D\uDEB4 '+Math.round(d.kmDay)+' km \u2014 total '+Math.round(d.kmTotal)+' km':'';
 
     var edate=escAttr(date);
+    var pub=!!(days[date]&&days[date].published);
+    var adminActionsHtml='';
+    if(isAdmin){
+      adminActionsHtml=
+        '<div class="j-actions">'+
+          '<span class="'+(pub?'j-badge-pub':'j-badge-draft')+' j-pub-badge">'+(pub?'\u2713 Publi\u00e9':'Brouillon')+'</span>'+
+          '<button class="btn btn-o j-pub-btn" onclick="publishDay(\''+edate+'\')">'+
+            (pub?'D\u00e9publier':'Publier')+
+          '</button>'+
+          '<button class="btn btn-danger" onclick="deleteJournalEntry(\''+edate+'\')">&#x1f5d1; Supprimer</button>'+
+        '</div>';
+    }
 
     // Stars
     var starsHtml='';
@@ -1782,6 +1796,7 @@ function renderJournal(){
       renderPhotosHtml(date)+
       '<div class="j-rating" id="'+taId+'">'+starsHtml+'</div>'+
       '<div class="j-meta" id="'+tmId+'">'+tagsHtml+'</div>'+
+      adminActionsHtml+
       renderStageCommentsHtml(date);
     c.appendChild(entry);
   });
