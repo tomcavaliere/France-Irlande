@@ -1810,6 +1810,34 @@ function togTag(date,t){
   var el=document.getElementById(id);
   if(el)el.querySelectorAll('.j-tag').forEach(function(e){e.classList.toggle('sel',(state.tags[date]||[]).indexOf(e.textContent)>=0)});
 }
+function publishDay(date){
+  if(!isAdmin)return;
+  if(!state.days[date])return;
+  state.days[date].published=!state.days[date].published;
+  save();
+  var entry=document.querySelector('#journalList .journal-entry[data-date="'+date+'"]');
+  if(!entry)return;
+  var badge=entry.querySelector('.j-pub-badge');
+  var btn=entry.querySelector('.j-pub-btn');
+  var pub=state.days[date].published;
+  if(badge){badge.className=pub?'j-badge-pub':'j-badge-draft';badge.textContent=pub?'✓ Publié':'Brouillon';}
+  if(btn){btn.textContent=pub?'Dépublier':'Publier';}
+}
+function deleteJournalEntry(date){
+  if(!isAdmin)return;
+  confirmDialog({
+    title:'Supprimer l\'entrée journal',
+    message:'Le texte, les étoiles et les tags de ce jour seront effacés. L\'étape reste sur la carte.',
+    okLabel:'Supprimer'
+  }).then(function(ok){
+    if(!ok)return;
+    delete state.journal[date];
+    delete state.ratings[date];
+    delete state.tags[date];
+    save();
+    renderJournal();
+  });
+}
 
 // ==== OFFLINE / LOCAL CACHE ====
 var offlineQueue=JSON.parse(localStorage.getItem('offlineQueue')||'[]');
