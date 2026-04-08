@@ -1738,7 +1738,7 @@ function renderJournal(){
   var tags=['Beau temps','Pluie','Vent','Dur','Genial','Pub','Camping','Bivouac','Photos'];
   var days=state.days||{};
   var dates=Object.keys(days)
-    .filter(function(d){return isAdmin||days[d].published===true;})
+    .filter(function(d){return !days[d].journalDeleted&&(isAdmin||days[d].published===true);})
     .sort().reverse();
   var hasAny=false;
   dates.forEach(function(date){
@@ -1841,19 +1841,17 @@ function publishDay(date){
 function deleteJournalEntry(date){
   if(!isAdmin)return;
   confirmDialog({
-    title:'Supprimer l\'étape',
-    message:'Cette étape sera définitivement supprimée du journal et des statistiques.',
+    title:'Supprimer l\'entrée journal',
+    message:'Le texte, les étoiles et les tags seront effacés. La progression (km, carte) reste intacte.',
     okLabel:'Supprimer'
   }).then(function(ok){
     if(!ok)return;
     delete state.journal[date];
     delete state.ratings[date];
     delete state.tags[date];
-    delete state.days[date];
+    if(state.days[date])state.days[date].journalDeleted=true;
     saveNow();
     renderJournal();
-    renderStages();
-    updateMap();
   });
 }
 
