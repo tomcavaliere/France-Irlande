@@ -457,6 +457,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 
   <div class="page" id="page-journal">
     <div class="sec-title">Carnet de voyage</div>
+    <div id="exportJournalBar" style="display:none;padding:0 12px 8px">
+      <button class="btn btn-p" style="width:100%" onclick="exportJournal('md')">📥 Exporter le journal (.md)</button>
+      <button class="btn" style="width:100%;margin-top:6px" onclick="exportJournal('json')">📦 Exporter (.json complet)</button>
+    </div>
     <div id="journalList"></div>
     <div class="spacer"></div>
   </div>
@@ -576,6 +580,8 @@ function setAdminUI(on){
   if(adminBar)adminBar.style.display=on?'flex':'none';
   var posBar=document.getElementById('posAdminBar');
   if(posBar)posBar.classList.toggle('vis',on);
+  var expBar=document.getElementById('exportJournalBar');
+  if(expBar)expBar.style.display=on?'block':'none';
   if(on){
     refreshQuotaBar();
   }else{
@@ -587,6 +593,47 @@ function setAdminUI(on){
     if(campspaceVisible)toggleCampspace();
     if(waterVisible)toggleWater();
     if(activeTab()==='depenses'||activeTab()==='stages'||activeTab()==='info')switchTab('map');
+  }
+}
+function exportJournal(fmt){
+  try{
+    var journal=state.journal||{};
+    var ratings=state.ratings||{};
+    var tags=state.tags||{};
+    var days=state.days||{};
+    var stamp=new Date().toISOString().slice(0,10);
+    var blob,filename;
+    if(fmt==='json'){
+      var payload={exportedAt:new Date().toISOString(),journal:journal,ratings:ratings,tags:tags,days:days,comments:comments,expenses:expenses};
+      blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+      filename='carnet-eurovelo1-'+stamp+'.json';
+    }else{
+      var dates=Object.keys(journal).concat(Object.keys(days)).filter(function(v,i,a){return a.indexOf(v)===i;}).sort();
+      var lines=['# Carnet de voyage — EuroVelo 1','','_Exporté le '+stamp+'_',''];
+      dates.forEach(function(d){
+        lines.push('## '+d);
+        var dd=days[d];
+        if(dd){
+          var meta=[];
+          if(dd.kmDay!=null)meta.push(dd.kmDay+' km');
+          if(dd.kmTotal!=null)meta.push('total '+dd.kmTotal+' km');
+          if(meta.length)lines.push('_'+meta.join(' · ')+'_');
+        }
+        var r=ratings[d];if(r)lines.push('Note : '+'★'.repeat(r)+'☆'.repeat(5-r));
+        var t=tags[d];if(t&&t.length)lines.push('Tags : '+t.join(', '));
+        var txt=journal[d];if(txt)lines.push('',txt);
+        lines.push('');
+      });
+      blob=new Blob([lines.join('\n')],{type:'text/markdown'});
+      filename='carnet-eurovelo1-'+stamp+'.md';
+    }
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url;a.download=filename;document.body.appendChild(a);a.click();
+    setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},100);
+  }catch(err){
+    console.error('[export] failed',err);
+    alert('Export impossible : '+err.message);
   }
 }
 function logoutAdmin(){
