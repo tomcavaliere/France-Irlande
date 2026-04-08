@@ -1853,11 +1853,14 @@ function deleteStage(date){
   });
 }
 function openJournalEntry(date){
+  if(!state.journal)state.journal={};
+  if(state.journal[date]===undefined)state.journal[date]='';
   switchTab('journal');
+  renderJournal();
   setTimeout(function(){
     var entry=document.querySelector('#journalList .journal-entry[data-date="'+date+'"]');
     if(entry)entry.scrollIntoView({behavior:'smooth',block:'start'});
-  },100);
+  },50);
 }
 function publishDay(date){
   if(!isAdmin)return;
