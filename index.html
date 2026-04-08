@@ -236,10 +236,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .quota-bar.warn{background:rgba(230,126,34,.95)}
 .quota-bar.high{background:rgba(231,76,60,.95)}
 .quota-bar.block{background:#c0392b}
-.sync-dot{width:7px;height:7px;border-radius:50%;background:#4caf50;display:inline-block;
-  margin-left:6px;vertical-align:middle;animation:blink 2s ease infinite;transition:background .3s}
-.sync-dot.offline{background:#e67e22;animation:none}
+.sync-dot{width:10px;height:10px;border-radius:50%;background:#4caf50;display:inline-block;
+  margin-left:6px;vertical-align:middle;animation:blink 2s ease infinite;transition:background .3s;
+  cursor:pointer;flex-shrink:0}
+.sync-dot.offline{background:#e74c3c;animation:none}
+.sync-dot.queued{background:#f39c12}
 .sync-dot.syncing{background:#3498db}
+#syncPopover{display:none;position:fixed;top:52px;right:12px;background:#fff;border-radius:10px;
+  padding:10px 14px;box-shadow:0 4px 20px rgba(0,0,0,.18);font-size:13px;color:#1a1a1a;
+  z-index:9999;min-width:180px;line-height:1.6}
+#syncPopover.visible{display:block}
+#syncPopover strong{display:block;margin-bottom:4px}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 .readonly-overlay{pointer-events:none;opacity:.7}
 
@@ -375,10 +382,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 
 <div class="header">
   <div class="header-c">
-    <h1 id="headerTitle">Annecy → Sligo<span class="sync-dot" id="syncDot" style="display:none"></span></h1>
+    <h1 id="headerTitle">Annecy → Sligo<span class="sync-dot" id="syncDot" style="display:none" onclick="toggleSyncPopover(event)" title="État de synchronisation"></span></h1>
     <div class="header-sub" id="headerSub">France → Irlande | 2978 km</div>
   </div>
 </div>
+<div id="syncPopover" role="tooltip" aria-live="polite"></div>
 <button class="admin-btn" id="adminBtn" onclick="toggleAdmin()">&#x1f512; Admin</button>
 
 <div class="quota-bar" id="quotaBar">📊 —</div>
@@ -1803,13 +1811,46 @@ var offlineQueue=JSON.parse(localStorage.getItem('offlineQueue')||'[]');
 var isOnline=navigator.onLine;
 
 function setSyncDot(mode){
-  // mode: 'online' | 'offline' | 'syncing'
+  // mode: 'online' | 'offline' | 'syncing' | 'queued'
   var dot=document.getElementById('syncDot');
   if(!dot)return;
   dot.style.display='inline-block';
   dot.classList.toggle('offline', mode==='offline');
   dot.classList.toggle('syncing', mode==='syncing');
+  dot.classList.toggle('queued', mode==='queued');
 }
+
+function _queueSummary(){
+  if(!offlineQueue.length) return null;
+  var counts={};
+  offlineQueue.forEach(function(item){
+    var t=item.type||'élément';
+    counts[t]=(counts[t]||0)+1;
+  });
+  var lines=Object.keys(counts).map(function(t){return counts[t]+' '+t+(counts[t]>1?'s':'');});
+  return {total:offlineQueue.length, lines:lines};
+}
+
+function toggleSyncPopover(e){
+  e.stopPropagation();
+  var pop=document.getElementById('syncPopover');
+  if(!pop)return;
+  if(pop.classList.contains('visible')){pop.classList.remove('visible');return;}
+  var summary=_queueSummary();
+  if(!isOnline){
+    pop.innerHTML='<strong>🔴 Hors-ligne</strong>Les modifications seront synchronisées au retour du réseau.';
+  } else if(summary){
+    pop.innerHTML='<strong>🟡 '+summary.total+' élément'+(summary.total>1?'s':'')+' en attente</strong>'+summary.lines.join('<br>');
+  } else {
+    pop.innerHTML='<strong>🟢 Synchronisé</strong>Toutes les données sont à jour.';
+  }
+  pop.classList.add('visible');
+  setTimeout(function(){pop.classList.remove('visible');},4000);
+}
+document.addEventListener('click',function(){
+  var pop=document.getElementById('syncPopover');
+  if(pop)pop.classList.remove('visible');
+});
 
 function saveLocalCache(){
   try{localStorage.setItem('ev1-state-cache',JSON.stringify(state));}catch(e){
@@ -1852,11 +1893,19 @@ function queueWrite(path, data){
   // Compat : ancien format = set
   enqueueOp('set', path, data);
 }
+function _inferType(path){
+  if(typeof path==='string'){
+    if(path.startsWith('comments')) return 'commentaire';
+    if(path.startsWith('expenses')) return 'dépense';
+    if(path.startsWith('state')) return 'journal';
+  }
+  return 'élément';
+}
 function enqueueOp(op, path, data){
-  offlineQueue.push({op:op, path:path, data:data, ts:Date.now()});
+  offlineQueue.push({op:op, path:path, data:data, ts:Date.now(), type:_inferType(path)});
   if(offlineQueue.length>MAX_OFFLINE_QUEUE) offlineQueue=offlineQueue.slice(-MAX_OFFLINE_QUEUE);
   persistQueue();
-  setSyncDot('syncing');
+  setSyncDot('queued');
 }
 // Tente une écriture Firebase, ou la met en queue si offline / échec.
 // Retourne une Promise qui résout dans tous les cas (queue = succès logique).
@@ -1896,7 +1945,7 @@ function flushQueue(){
     if(failed.length){
       offlineQueue=failed.concat(offlineQueue);
       persistQueue();
-      setSyncDot(isOnline?'syncing':'offline');
+      setSyncDot(isOnline?'queued':'offline');
     } else {
       setSyncDot(isOnline?'online':'offline');
     }
@@ -1905,7 +1954,7 @@ function flushQueue(){
 
 window.addEventListener('online', function(){
   isOnline=true;
-  setSyncDot(offlineQueue.length?'syncing':'online');
+  setSyncDot(offlineQueue.length?'queued':'online');
   flushQueue();
 });
 window.addEventListener('offline', function(){
