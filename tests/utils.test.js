@@ -5,7 +5,8 @@ import utils from '../js/utils.js';
 const {
   escAttr, escHtml, formatTime, summarizeExpenses,
   validateComment, validateExpense, validateJournal,
-  EXPENSE_CATEGORIES, LIMITS
+  EXPENSE_CATEGORIES, LIMITS,
+  computeQuotaBytes, formatBytes, quotaLevel, RTDB_QUOTA_BYTES
 } = utils;
 
 describe('escAttr', () => {
@@ -267,5 +268,69 @@ describe('LIMITS et EXPENSE_CATEGORIES exportés', () => {
     expect(EXPENSE_CATEGORIES).toContain('Loisirs');
     expect(EXPENSE_CATEGORIES).toContain('Autre');
     expect(EXPENSE_CATEGORIES).toHaveLength(6);
+  });
+});
+
+describe('computeQuotaBytes', () => {
+  it('retourne 0 pour une entrée vide ou invalide', () => {
+    expect(computeQuotaBytes(null)).toEqual({ count: 0, bytes: 0 });
+    expect(computeQuotaBytes({})).toEqual({ count: 0, bytes: 0 });
+    expect(computeQuotaBytes('nope')).toEqual({ count: 0, bytes: 0 });
+  });
+
+  it('compte les photos et estime les octets décodés (length * 0.75)', () => {
+    const photos = {
+      0: { p1: 'AAAA', p2: 'BBBBBBBB' }, // 4 + 8 = 12 chars → 9 bytes
+      1: { p3: 'CCCCCCCCCCCC' }           // 12 chars → 9 bytes
+    };
+    const r = computeQuotaBytes(photos);
+    expect(r.count).toBe(3);
+    expect(r.bytes).toBe(18);
+  });
+
+  it('ignore le préfixe data:image/...;base64,', () => {
+    const photos = { 0: { p1: 'data:image/jpeg;base64,AAAAAAAA' } }; // 8 chars après virgule
+    expect(computeQuotaBytes(photos).bytes).toBe(6);
+  });
+
+  it('ignore les valeurs non-string', () => {
+    const photos = { 0: { p1: 'AAAA', p2: 42, p3: null } };
+    const r = computeQuotaBytes(photos);
+    expect(r.count).toBe(1);
+    expect(r.bytes).toBe(3);
+  });
+});
+
+describe('formatBytes', () => {
+  it('formate en B, KB, MB, GB', () => {
+    expect(formatBytes(0)).toBe('0 B');
+    expect(formatBytes(512)).toBe('512 B');
+    expect(formatBytes(2048)).toBe('2.0 KB');
+    expect(formatBytes(5 * 1024 * 1024)).toBe('5.0 MB');
+    expect(formatBytes(2 * 1024 * 1024 * 1024)).toBe('2.00 GB');
+  });
+
+  it('gère les valeurs invalides', () => {
+    expect(formatBytes(-1)).toBe('0 B');
+    expect(formatBytes(NaN)).toBe('0 B');
+  });
+});
+
+describe('quotaLevel', () => {
+  const Q = RTDB_QUOTA_BYTES;
+  it('retourne les bons seuils', () => {
+    expect(quotaLevel(0)).toBe('ok');
+    expect(quotaLevel(Q * 0.5)).toBe('ok');
+    expect(quotaLevel(Q * 0.70)).toBe('warn');
+    expect(quotaLevel(Q * 0.84)).toBe('warn');
+    expect(quotaLevel(Q * 0.85)).toBe('high');
+    expect(quotaLevel(Q * 0.89)).toBe('high');
+    expect(quotaLevel(Q * 0.90)).toBe('block');
+    expect(quotaLevel(Q)).toBe('block');
+  });
+
+  it('accepte un quota custom', () => {
+    expect(quotaLevel(95, 100)).toBe('block');
+    expect(quotaLevel(60, 100)).toBe('ok');
   });
 });

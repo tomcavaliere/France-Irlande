@@ -109,6 +109,52 @@
     return { ok: true };
   }
 
+  // Quota RTDB Firebase : limite du plan gratuit (1 Go).
+  var RTDB_QUOTA_BYTES = 1024 * 1024 * 1024;
+
+  // Estime la taille (octets décodés) d'un arbre photos Firebase.
+  // Entrée : { [stage]: { [photoId]: base64String } } — structure exacte de `photos/` en RTDB.
+  // Pour chaque string base64, octets décodés ≈ length * 0.75 (ignore un éventuel préfixe data:...).
+  // Fonction pure, testable, sans dépendance Firebase.
+  function computeQuotaBytes(photosTree){
+    var count = 0;
+    var bytes = 0;
+    if (!photosTree || typeof photosTree !== 'object') return { count: 0, bytes: 0 };
+    Object.keys(photosTree).forEach(function(stage){
+      var stageObj = photosTree[stage];
+      if (!stageObj || typeof stageObj !== 'object') return;
+      Object.keys(stageObj).forEach(function(id){
+        var v = stageObj[id];
+        if (typeof v !== 'string') return;
+        count++;
+        var b64 = v;
+        var comma = b64.indexOf(',');
+        if (comma !== -1) b64 = b64.slice(comma + 1);
+        bytes += Math.floor(b64.length * 0.75);
+      });
+    });
+    return { count: count, bytes: bytes };
+  }
+
+  // Formate un nombre d'octets en chaîne lisible (B, KB, MB, GB).
+  function formatBytes(bytes){
+    if (!isFinite(bytes) || bytes < 0) return '0 B';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+  }
+
+  // Niveau d'alerte quota : 'ok' < 70% ≤ 'warn' < 85% ≤ 'high' < 90% ≤ 'block'.
+  function quotaLevel(bytes, quota){
+    var q = quota || RTDB_QUOTA_BYTES;
+    var pct = bytes / q;
+    if (pct >= 0.90) return 'block';
+    if (pct >= 0.85) return 'high';
+    if (pct >= 0.70) return 'warn';
+    return 'ok';
+  }
+
   // Agrège un objet de dépenses {id: {amount, cat, date, desc}} en un résumé.
   // Retourne {total, days, perDay, byCat, byDate}.
   // - byCat : { [cat]: total }
@@ -144,7 +190,11 @@
     validateExpense: validateExpense,
     validateJournal: validateJournal,
     EXPENSE_CATEGORIES: EXPENSE_CATEGORIES,
-    LIMITS: LIMITS
+    LIMITS: LIMITS,
+    computeQuotaBytes: computeQuotaBytes,
+    formatBytes: formatBytes,
+    quotaLevel: quotaLevel,
+    RTDB_QUOTA_BYTES: RTDB_QUOTA_BYTES
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
