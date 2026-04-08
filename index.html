@@ -1841,16 +1841,19 @@ function publishDay(date){
 function deleteJournalEntry(date){
   if(!isAdmin)return;
   confirmDialog({
-    title:'Supprimer l\'entrée journal',
-    message:'Le texte, les étoiles et les tags de ce jour seront effacés. L\'étape reste sur la carte.',
+    title:'Supprimer l\'étape',
+    message:'Cette étape sera définitivement supprimée du journal et des statistiques.',
     okLabel:'Supprimer'
   }).then(function(ok){
     if(!ok)return;
     delete state.journal[date];
     delete state.ratings[date];
     delete state.tags[date];
-    save();
+    delete state.days[date];
+    saveNow();
     renderJournal();
+    renderStages();
+    updateMap();
   });
 }
 
