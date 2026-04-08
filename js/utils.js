@@ -155,6 +155,55 @@
     return 'ok';
   }
 
+  // Wrapper fetch durci : timeout (AbortController) + retries avec backoff exponentiel.
+  // - cfg.retries  : nombre de retries après le premier essai (défaut 2 → 3 tentatives max)
+  // - cfg.timeout  : ms avant abort (défaut 15000)
+  // - cfg.backoff  : délai initial entre retries (défaut 1000 → 1s, 2s, 4s...)
+  // - cfg.onError  : callback(err, nextAttempt) appelé entre chaque retry (ex. toast UI)
+  // - cfg.fetch    : injection pour tests (sinon globalThis.fetch)
+  // Résout avec la Response si r.ok, rejette sinon (erreur HTTP XXX ou réseau).
+  // L'appelant reste responsable du .json() / .text().
+  function safeFetch(url, opts, cfg){
+    opts = opts || {};
+    cfg = cfg || {};
+    var retries = (cfg.retries != null) ? cfg.retries : 2;
+    var timeout = cfg.timeout || 15000;
+    var backoff = (cfg.backoff != null) ? cfg.backoff : 1000;
+    var onError = cfg.onError;
+    var fetchImpl = ('fetch' in cfg) ? cfg.fetch : (typeof globalThis !== 'undefined' ? globalThis.fetch : null);
+    if (typeof fetchImpl !== 'function') {
+      return Promise.reject(new Error('fetch indisponible'));
+    }
+    function attempt(n){
+      var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+      var timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, timeout) : null;
+      var o = Object.assign({}, opts);
+      if (ctrl && !o.signal) o.signal = ctrl.signal;
+      return fetchImpl(url, o).then(function(r){
+        if (timer) clearTimeout(timer);
+        if (!r.ok) {
+          var err = new Error('HTTP ' + r.status);
+          err.status = r.status;
+          throw err;
+        }
+        return r;
+      }, function(err){
+        if (timer) clearTimeout(timer);
+        throw err;
+      }).catch(function(err){
+        if (n < retries) {
+          if (typeof onError === 'function') {
+            try { onError(err, n + 1); } catch (_) { /* callback ne doit pas casser la chaîne */ }
+          }
+          var delay = backoff * Math.pow(2, n);
+          return new Promise(function(res){ setTimeout(res, delay); }).then(function(){ return attempt(n + 1); });
+        }
+        throw err;
+      });
+    }
+    return attempt(0);
+  }
+
   // Agrège un objet de dépenses {id: {amount, cat, date, desc}} en un résumé.
   // Retourne {total, days, perDay, byCat, byDate}.
   // - byCat : { [cat]: total }
@@ -194,7 +243,8 @@
     computeQuotaBytes: computeQuotaBytes,
     formatBytes: formatBytes,
     quotaLevel: quotaLevel,
-    RTDB_QUOTA_BYTES: RTDB_QUOTA_BYTES
+    RTDB_QUOTA_BYTES: RTDB_QUOTA_BYTES,
+    safeFetch: safeFetch
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

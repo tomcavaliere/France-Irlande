@@ -1,12 +1,13 @@
 // Tests unitaires pour js/utils.js
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import utils from '../js/utils.js';
 
 const {
   escAttr, escHtml, formatTime, summarizeExpenses,
   validateComment, validateExpense, validateJournal,
   EXPENSE_CATEGORIES, LIMITS,
-  computeQuotaBytes, formatBytes, quotaLevel, RTDB_QUOTA_BYTES
+  computeQuotaBytes, formatBytes, quotaLevel, RTDB_QUOTA_BYTES,
+  safeFetch
 } = utils;
 
 describe('escAttr', () => {
@@ -332,5 +333,59 @@ describe('quotaLevel', () => {
   it('accepte un quota custom', () => {
     expect(quotaLevel(95, 100)).toBe('block');
     expect(quotaLevel(60, 100)).toBe('ok');
+  });
+});
+
+describe('safeFetch', () => {
+  it('résout dès le premier succès', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+    const r = await safeFetch('u', {}, { fetch: fetchMock, retries: 2, backoff: 0 });
+    expect(r.ok).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('réessaie après une erreur réseau puis résout', async () => {
+    const fetchMock = vi.fn()
+      .mockRejectedValueOnce(new Error('net'))
+      .mockResolvedValueOnce({ ok: true, status: 200 });
+    const r = await safeFetch('u', {}, { fetch: fetchMock, retries: 2, backoff: 0 });
+    expect(r.ok).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('rejette après épuisement des retries', async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new Error('net down'));
+    await expect(
+      safeFetch('u', {}, { fetch: fetchMock, retries: 2, backoff: 0 })
+    ).rejects.toThrow('net down');
+    expect(fetchMock).toHaveBeenCalledTimes(3); // 1 + 2 retries
+  });
+
+  it('rejette sur statut HTTP non-ok avec .status', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 500 });
+    try {
+      await safeFetch('u', {}, { fetch: fetchMock, retries: 0, backoff: 0 });
+      throw new Error('devrait rejeter');
+    } catch (err) {
+      expect(err.message).toBe('HTTP 500');
+      expect(err.status).toBe(500);
+    }
+  });
+
+  it('appelle onError entre les retries', async () => {
+    const onError = vi.fn();
+    const fetchMock = vi.fn()
+      .mockRejectedValueOnce(new Error('fail1'))
+      .mockResolvedValueOnce({ ok: true, status: 200 });
+    await safeFetch('u', {}, { fetch: fetchMock, retries: 2, backoff: 0, onError });
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError.mock.calls[0][0].message).toBe('fail1');
+    expect(onError.mock.calls[0][1]).toBe(1);
+  });
+
+  it('rejette proprement si fetch est indisponible', async () => {
+    await expect(
+      safeFetch('u', {}, { fetch: null, retries: 0 })
+    ).rejects.toThrow('fetch indisponible');
   });
 });
