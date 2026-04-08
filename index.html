@@ -11,7 +11,7 @@
 <title>EuroVelo 1 — Cork → Sligo</title>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  import { getDatabase, ref, onValue, set, remove, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
   import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   const firebaseConfig = {
     apiKey: "AIzaSyA_1xAPK0D5_Mc_cuzJiKT04i9KzrEEDRc",
@@ -30,6 +30,7 @@
   window._fbSet = set;
   window._fbRemove = remove;
   window._fbOnValue = onValue;
+  window._fbGet = get;
   window._fbAuth = auth;
   window._fbSignIn = signInWithEmailAndPassword;
   window._fbSignOut = signOut;
@@ -227,6 +228,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .confirm-actions{display:flex;gap:10px;justify-content:center}
 .confirm-actions .btn{flex:1;padding:10px 14px}
 .btn-danger{background:#e74c3c;color:#fff;border:none}
+.quota-bar{position:fixed;left:0;right:0;bottom:0;z-index:1500;display:none;
+  background:rgba(26,94,31,.95);color:#fff;font-size:11px;padding:6px 12px;
+  text-align:center;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  padding-bottom:calc(6px + env(safe-area-inset-bottom,0px))}
+.quota-bar.vis{display:block}
+.quota-bar.warn{background:rgba(230,126,34,.95)}
+.quota-bar.high{background:rgba(231,76,60,.95)}
+.quota-bar.block{background:#c0392b}
 .sync-dot{width:7px;height:7px;border-radius:50%;background:#4caf50;display:inline-block;
   margin-left:6px;vertical-align:middle;animation:blink 2s ease infinite;transition:background .3s}
 .sync-dot.offline{background:#e67e22;animation:none}
@@ -372,6 +381,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 </div>
 <button class="admin-btn" id="adminBtn" onclick="toggleAdmin()">&#x1f512; Admin</button>
 
+<div class="quota-bar" id="quotaBar">📊 —</div>
 <div class="confirm-modal" id="confirmModal" onclick="if(event.target===this)confirmCancel()">
   <div class="confirm-box">
     <h3 id="confirmTitle">Confirmer</h3>
@@ -526,6 +536,33 @@ let isAdmin = false;
 let inactivityTimer=null;
 const INACTIVITY_MS=3*60*1000;
 
+// ==== QUOTA RTDB ====
+// Dernière mesure connue du quota photos. Rafraîchie à chaque login admin,
+// après chaque upload réussi et après chaque suppression.
+var _quotaState={count:0,bytes:0,level:'ok'};
+
+function refreshQuotaBar(){
+  var bar=document.getElementById('quotaBar');
+  if(!bar)return;
+  if(!isAdmin){bar.classList.remove('vis');return;}
+  if(!window._fbDb||!window._fbGet){return;}
+  window._fbGet(window._fbRef(window._fbDb,'photos'))
+    .then(function(snap){
+      var tree=snap.exists()?snap.val():{};
+      var r=Utils.computeQuotaBytes(tree);
+      var lvl=Utils.quotaLevel(r.bytes);
+      _quotaState={count:r.count,bytes:r.bytes,level:lvl};
+      var pct=(r.bytes/Utils.RTDB_QUOTA_BYTES*100).toFixed(1);
+      bar.textContent='📊 '+r.count+' photos · '+Utils.formatBytes(r.bytes)+' · '+pct+'% / 1 Go';
+      bar.classList.remove('warn','high','block');
+      if(lvl!=='ok')bar.classList.add(lvl);
+      bar.classList.add('vis');
+    })
+    .catch(function(err){
+      console.error('[quota] refresh failed',err);
+    });
+}
+
 function setAdminUI(on){
   document.getElementById('adminBtn').classList.toggle('on',on);
   document.getElementById('adminBtn').textContent=on?'🔓 Admin':'🔒 Admin';
@@ -539,6 +576,12 @@ function setAdminUI(on){
   if(adminBar)adminBar.style.display=on?'flex':'none';
   var posBar=document.getElementById('posAdminBar');
   if(posBar)posBar.classList.toggle('vis',on);
+  if(on){
+    refreshQuotaBar();
+  }else{
+    var qb=document.getElementById('quotaBar');
+    if(qb)qb.classList.remove('vis');
+  }
   if(!on){
     if(campingsVisible)toggleCampings();
     if(campspaceVisible)toggleCampspace();
@@ -1244,6 +1287,10 @@ function compressImage(file,cb){
 
 function uploadPhoto(i){
   if(!isAdmin)return;
+  if(_quotaState.level==='block'){
+    alert('Quota Firebase atteint (≥ 90%). Upload bloqué. Supprime d\'anciennes photos avant d\'en ajouter.');
+    return;
+  }
   var input=document.createElement('input');
   input.type='file';input.accept='image/*';input.multiple=true;
   input.onchange=function(){
@@ -1257,6 +1304,11 @@ function uploadPhoto(i){
             if(!photos[i])photos[i]={};
             photos[i][id]=b64;
             patchPhotos(i);
+            if(addBtn)addBtn.classList.remove('j-uploading');
+            refreshQuotaBar();
+          })
+          .catch(function(err){
+            console.error('[uploadPhoto] set failed',err);
             if(addBtn)addBtn.classList.remove('j-uploading');
           });
       });
@@ -1272,7 +1324,9 @@ function deletePhoto(i,id){
     message:'Cette photo sera définitivement supprimée. Action irréversible.'
   }).then(function(ok){
     if(!ok)return;
-    window._fbRemove(window._fbRef(window._fbDb,'photos/'+i+'/'+id));
+    window._fbRemove(window._fbRef(window._fbDb,'photos/'+i+'/'+id))
+      .then(function(){refreshQuotaBar();})
+      .catch(function(err){console.error('[deletePhoto] remove failed',err);});
     if(photos[i])delete photos[i][id];
     patchPhotos(i);
   });
