@@ -2,7 +2,11 @@
 import { describe, it, expect } from 'vitest';
 import utils from '../js/utils.js';
 
-const { escAttr, escHtml, formatTime, summarizeExpenses } = utils;
+const {
+  escAttr, escHtml, formatTime, summarizeExpenses,
+  validateComment, validateExpense, validateJournal,
+  EXPENSE_CATEGORIES, LIMITS
+} = utils;
 
 describe('escAttr', () => {
   it('échappe les guillemets, apostrophes et &', () => {
@@ -100,5 +104,168 @@ describe('summarizeExpenses', () => {
       e2: { amount: 'oops', cat: 'Autre', date: '2026-04-01' }
     });
     expect(r.total).toBe(10);
+  });
+});
+
+describe('validateComment', () => {
+  it('accepte un commentaire standard', () => {
+    expect(validateComment({ name: 'Maman', text: 'Courage !' }))
+      .toEqual({ ok: true });
+  });
+
+  it('rejette un name vide ou absent', () => {
+    expect(validateComment({ name: '', text: 'ok' }).ok).toBe(false);
+    expect(validateComment({ name: '   ', text: 'ok' }).ok).toBe(false);
+    expect(validateComment({ text: 'ok' }).ok).toBe(false);
+  });
+
+  it('rejette un text vide ou absent', () => {
+    expect(validateComment({ name: 'Tom', text: '' }).ok).toBe(false);
+    expect(validateComment({ name: 'Tom', text: '   ' }).ok).toBe(false);
+    expect(validateComment({ name: 'Tom' }).ok).toBe(false);
+  });
+
+  it('rejette un name > 30 caractères', () => {
+    const longName = 'a'.repeat(31);
+    const r = validateComment({ name: longName, text: 'hi' });
+    expect(r.ok).toBe(false);
+    expect(r.error).toMatch(/30/);
+  });
+
+  it('accepte un name pile à 30 caractères', () => {
+    expect(validateComment({ name: 'a'.repeat(30), text: 'hi' }).ok).toBe(true);
+  });
+
+  it('rejette un text > 500 caractères', () => {
+    const r = validateComment({ name: 'Tom', text: 'a'.repeat(501) });
+    expect(r.ok).toBe(false);
+    expect(r.error).toMatch(/500/);
+  });
+
+  it('accepte un text pile à 500 caractères', () => {
+    expect(validateComment({ name: 'Tom', text: 'a'.repeat(500) }).ok).toBe(true);
+  });
+
+  it('rejette les inputs non-objets', () => {
+    expect(validateComment(null).ok).toBe(false);
+    expect(validateComment(undefined).ok).toBe(false);
+    expect(validateComment('string').ok).toBe(false);
+  });
+});
+
+describe('validateExpense', () => {
+  const valid = { amount: 12.5, cat: 'Nourriture', date: '2026-04-15', desc: 'Pain' };
+
+  it('accepte une dépense standard', () => {
+    expect(validateExpense(valid)).toEqual({ ok: true });
+  });
+
+  it('accepte desc absent (optionnel)', () => {
+    const { desc, ...rest } = valid;
+    expect(validateExpense(rest).ok).toBe(true);
+  });
+
+  it('rejette amount <= 0', () => {
+    expect(validateExpense({ ...valid, amount: 0 }).ok).toBe(false);
+    expect(validateExpense({ ...valid, amount: -5 }).ok).toBe(false);
+  });
+
+  it('rejette amount >= 10000', () => {
+    expect(validateExpense({ ...valid, amount: 10000 }).ok).toBe(false);
+    expect(validateExpense({ ...valid, amount: 99999 }).ok).toBe(false);
+  });
+
+  it('accepte amount juste en dessous de 10000', () => {
+    expect(validateExpense({ ...valid, amount: 9999.99 }).ok).toBe(true);
+  });
+
+  it('rejette amount non numérique', () => {
+    expect(validateExpense({ ...valid, amount: 'abc' }).ok).toBe(false);
+    expect(validateExpense({ ...valid, amount: NaN }).ok).toBe(false);
+    expect(validateExpense({ ...valid, amount: Infinity }).ok).toBe(false);
+  });
+
+  it('rejette une catégorie hors liste fermée', () => {
+    expect(validateExpense({ ...valid, cat: 'Gadgets' }).ok).toBe(false);
+    expect(validateExpense({ ...valid, cat: '' }).ok).toBe(false);
+    expect(validateExpense({ ...valid, cat: undefined }).ok).toBe(false);
+  });
+
+  it('accepte toutes les catégories valides', () => {
+    EXPENSE_CATEGORIES.forEach(cat => {
+      expect(validateExpense({ ...valid, cat }).ok).toBe(true);
+    });
+  });
+
+  it('rejette une date au mauvais format', () => {
+    expect(validateExpense({ ...valid, date: '15/04/2026' }).ok).toBe(false);
+    expect(validateExpense({ ...valid, date: '2026-4-15' }).ok).toBe(false);
+    expect(validateExpense({ ...valid, date: '' }).ok).toBe(false);
+    expect(validateExpense({ ...valid, date: undefined }).ok).toBe(false);
+  });
+
+  it('rejette desc > 100 caractères', () => {
+    const r = validateExpense({ ...valid, desc: 'a'.repeat(101) });
+    expect(r.ok).toBe(false);
+    expect(r.error).toMatch(/100/);
+  });
+
+  it('accepte desc pile à 100 caractères', () => {
+    expect(validateExpense({ ...valid, desc: 'a'.repeat(100) }).ok).toBe(true);
+  });
+
+  it('rejette les inputs non-objets', () => {
+    expect(validateExpense(null).ok).toBe(false);
+    expect(validateExpense(undefined).ok).toBe(false);
+  });
+});
+
+describe('validateJournal', () => {
+  it('accepte un texte court', () => {
+    expect(validateJournal('Super journée !')).toEqual({ ok: true });
+  });
+
+  it('accepte une chaîne vide (effacement)', () => {
+    expect(validateJournal('').ok).toBe(true);
+  });
+
+  it('accepte null/undefined', () => {
+    expect(validateJournal(null).ok).toBe(true);
+    expect(validateJournal(undefined).ok).toBe(true);
+  });
+
+  it('rejette un texte > 5000 caractères', () => {
+    const r = validateJournal('a'.repeat(5001));
+    expect(r.ok).toBe(false);
+    expect(r.error).toMatch(/5000/);
+  });
+
+  it('accepte un texte pile à 5000 caractères', () => {
+    expect(validateJournal('a'.repeat(5000)).ok).toBe(true);
+  });
+
+  it('rejette les types non-string', () => {
+    expect(validateJournal(42).ok).toBe(false);
+    expect(validateJournal({}).ok).toBe(false);
+  });
+});
+
+describe('LIMITS et EXPENSE_CATEGORIES exportés', () => {
+  it('expose les limites partagées', () => {
+    expect(LIMITS.COMMENT_NAME).toBe(30);
+    expect(LIMITS.COMMENT_TEXT).toBe(500);
+    expect(LIMITS.EXPENSE_DESC).toBe(100);
+    expect(LIMITS.EXPENSE_MAX_AMOUNT).toBe(10000);
+    expect(LIMITS.JOURNAL_TEXT).toBe(5000);
+  });
+
+  it('expose la liste fermée des catégories', () => {
+    expect(EXPENSE_CATEGORIES).toContain('Hébergement');
+    expect(EXPENSE_CATEGORIES).toContain('Nourriture');
+    expect(EXPENSE_CATEGORIES).toContain('Transport');
+    expect(EXPENSE_CATEGORIES).toContain('Équipement');
+    expect(EXPENSE_CATEGORIES).toContain('Loisirs');
+    expect(EXPENSE_CATEGORIES).toContain('Autre');
+    expect(EXPENSE_CATEGORIES).toHaveLength(6);
   });
 });
