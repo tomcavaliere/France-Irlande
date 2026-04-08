@@ -218,6 +218,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
   font-size:16px;text-align:center;letter-spacing:3px;outline:none;margin-bottom:10px}
 .pw-input:focus{border-color:var(--green)}
 .pw-err{color:#e74c3c;font-size:12px;margin-bottom:8px;display:none}
+.confirm-modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);
+  z-index:3500;display:none;align-items:center;justify-content:center;padding:20px}
+.confirm-modal.vis{display:flex}
+.confirm-box{background:#fff;border-radius:16px;padding:22px 20px;width:100%;max-width:320px;text-align:center}
+.confirm-box h3{font-size:16px;font-weight:700;margin-bottom:6px;color:#222}
+.confirm-box p{font-size:13px;color:var(--text-light);margin-bottom:16px;line-height:1.5}
+.confirm-actions{display:flex;gap:10px;justify-content:center}
+.confirm-actions .btn{flex:1;padding:10px 14px}
+.btn-danger{background:#e74c3c;color:#fff;border:none}
 .sync-dot{width:7px;height:7px;border-radius:50%;background:#4caf50;display:inline-block;
   margin-left:6px;vertical-align:middle;animation:blink 2s ease infinite;transition:background .3s}
 .sync-dot.offline{background:#e67e22;animation:none}
@@ -362,6 +371,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
   </div>
 </div>
 <button class="admin-btn" id="adminBtn" onclick="toggleAdmin()">&#x1f512; Admin</button>
+
+<div class="confirm-modal" id="confirmModal" onclick="if(event.target===this)confirmCancel()">
+  <div class="confirm-box">
+    <h3 id="confirmTitle">Confirmer</h3>
+    <p id="confirmMsg">Action irréversible.</p>
+    <div class="confirm-actions">
+      <button class="btn btn-o" onclick="confirmCancel()">Annuler</button>
+      <button class="btn btn-danger" id="confirmOk" onclick="confirmAccept()">Supprimer</button>
+    </div>
+  </div>
+</div>
 
 <div class="pw-modal" id="pwModal">
   <div class="pw-box">
@@ -1171,6 +1191,27 @@ function updateRecap(){
   document.getElementById('mapDays').textContent='J'+nbDays;
 }
 
+// ==== CONFIRM DIALOG ====
+// Modal de confirmation custom (évite confirm() natif qui bloque l'UI iOS).
+// Usage : confirmDialog({title, message, okLabel?}).then(ok => { if(ok) ... }).
+var _confirmResolve=null;
+function confirmDialog(opts){
+  opts=opts||{};
+  document.getElementById('confirmTitle').textContent=opts.title||'Confirmer';
+  document.getElementById('confirmMsg').textContent=opts.message||'Action irréversible.';
+  document.getElementById('confirmOk').textContent=opts.okLabel||'Supprimer';
+  document.getElementById('confirmModal').classList.add('vis');
+  return new Promise(function(resolve){_confirmResolve=resolve;});
+}
+function confirmAccept(){
+  document.getElementById('confirmModal').classList.remove('vis');
+  if(_confirmResolve){var r=_confirmResolve;_confirmResolve=null;r(true);}
+}
+function confirmCancel(){
+  document.getElementById('confirmModal').classList.remove('vis');
+  if(_confirmResolve){var r=_confirmResolve;_confirmResolve=null;r(false);}
+}
+
 // ==== MODAL ====
 function closeModal(){document.getElementById('stageModal').classList.remove('vis');}
 
@@ -1226,9 +1267,15 @@ function uploadPhoto(i){
 
 function deletePhoto(i,id){
   if(!isAdmin)return;
-  window._fbRemove(window._fbRef(window._fbDb,'photos/'+i+'/'+id));
-  if(photos[i])delete photos[i][id];
-  patchPhotos(i);
+  confirmDialog({
+    title:'Supprimer la photo',
+    message:'Cette photo sera définitivement supprimée. Action irréversible.'
+  }).then(function(ok){
+    if(!ok)return;
+    window._fbRemove(window._fbRef(window._fbDb,'photos/'+i+'/'+id));
+    if(photos[i])delete photos[i][id];
+    patchPhotos(i);
+  });
 }
 
 function escAttr(s){return Utils.escAttr(s);}
@@ -1312,7 +1359,13 @@ function postComment(i){
 
 function deleteComment(i,id){
   if(!isAdmin)return;
-  window._fbRemove(window._fbRef(window._fbDb,'comments/'+i+'/'+id));
+  confirmDialog({
+    title:'Supprimer le commentaire',
+    message:'Ce commentaire sera définitivement supprimé. Action irréversible.'
+  }).then(function(ok){
+    if(!ok)return;
+    window._fbRemove(window._fbRef(window._fbDb,'comments/'+i+'/'+id));
+  });
 }
 
 function patchStageComments(i){
@@ -1346,7 +1399,15 @@ function addExpense(){
 
 function deleteExpense(id){
   if(!isAdmin)return;
-  window._fbRemove(window._fbRef(window._fbDb,'expenses/'+id));
+  var exp=expenses[id];
+  var label=exp?(exp.desc||exp.cat)+' · '+exp.amount.toFixed(2)+' €':'cette dépense';
+  confirmDialog({
+    title:'Supprimer la dépense',
+    message:'Supprimer '+label+' ? Action irréversible.'
+  }).then(function(ok){
+    if(!ok)return;
+    window._fbRemove(window._fbRef(window._fbDb,'expenses/'+id));
+  });
 }
 
 function renderExpenses(){
