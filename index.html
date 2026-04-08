@@ -1334,6 +1334,7 @@ function compressImage(file,cb){
 
 function uploadPhoto(i){
   if(!isAdmin)return;
+  if(!isOnline){alert('Upload impossible hors-ligne. Les photos ne sont pas mises en cache (taille). Réessaie au retour du réseau.');return;}
   if(_quotaState.level==='block'){
     alert('Quota Firebase atteint (≥ 90%). Upload bloqué. Supprime d\'anciennes photos avant d\'en ajouter.');
     return;
@@ -1427,7 +1428,7 @@ function renderStageCommentsHtml(i){
       var eid=escAttr(id);
       html+='<div class="comment-card">'+
         '<span class="comment-name">'+escHtml(c.name)+'</span>'+
-        '<span class="comment-time">'+formatTime(c.ts)+'</span>'+
+        '<span class="comment-time">'+formatTime(c.ts)+(c._pending?' ⏳':'')+'</span>'+
         (isAdmin?'<button class="comment-del" onclick="deleteComment(\''+ei+'\',\''+eid+'\')">&#x1f5d1;</button>':'')+
         '<div class="comment-text">'+escHtml(c.text)+'</div>'+
         '</div>';
@@ -1452,10 +1453,14 @@ function postComment(i){
   if(!name){if(nameEl)nameEl.focus();return;}
   if(!text){if(txtEl)txtEl.focus();return;}
   var id='c'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
-  window._fbSet(window._fbRef(window._fbDb,'comments/'+i+'/'+id),{name:name,text:text,ts:Date.now()})
-    .then(function(){
-      if(txtEl)txtEl.value='';
-    });
+  var data={name:name,text:text,ts:Date.now()};
+  // Optimistic UI
+  if(!comments[i])comments[i]={};
+  comments[i][id]=Object.assign({},data,{_pending:true});
+  patchStageComments(parseInt(i));
+  saveCommentsCache();
+  if(txtEl)txtEl.value='';
+  tryWrite('set','comments/'+i+'/'+id,data);
 }
 
 function deleteComment(i,id){
@@ -1465,7 +1470,8 @@ function deleteComment(i,id){
     message:'Ce commentaire sera définitivement supprimé. Action irréversible.'
   }).then(function(ok){
     if(!ok)return;
-    window._fbRemove(window._fbRef(window._fbDb,'comments/'+i+'/'+id));
+    if(comments[i]){delete comments[i][id];patchStageComments(parseInt(i));saveCommentsCache();}
+    tryWrite('remove','comments/'+i+'/'+id);
   });
 }
 
@@ -1492,10 +1498,13 @@ function addExpense(){
   if(!date||isNaN(amount)||amount<=0){return;}
   var id='d'+Date.now()+'_'+Math.random().toString(36).slice(2,5);
   var exp={date:date,cat:cat,amount:amount,desc:desc||cat,ts:Date.now()};
-  window._fbSet(window._fbRef(window._fbDb,'expenses/'+id),exp).then(function(){
-    document.getElementById('depAmount').value='';
-    document.getElementById('depDesc').value='';
-  });
+  // Optimistic UI
+  expenses[id]=Object.assign({},exp,{_pending:true});
+  saveExpensesCache();
+  if(activeTab()==='depenses')renderExpenses();
+  document.getElementById('depAmount').value='';
+  document.getElementById('depDesc').value='';
+  tryWrite('set','expenses/'+id,exp);
 }
 
 function deleteExpense(id){
@@ -1507,7 +1516,10 @@ function deleteExpense(id){
     message:'Supprimer '+label+' ? Action irréversible.'
   }).then(function(ok){
     if(!ok)return;
-    window._fbRemove(window._fbRef(window._fbDb,'expenses/'+id));
+    delete expenses[id];
+    saveExpensesCache();
+    if(activeTab()==='depenses')renderExpenses();
+    tryWrite('remove','expenses/'+id);
   });
 }
 
@@ -1554,7 +1566,7 @@ function renderExpenses(){
         '<div class="dep-cat-dot" style="background:'+color+'"></div>'+
         '<div class="dep-info">'+
           '<div class="dep-info-top">'+
-            '<div class="dep-desc">'+escHtml(item.e.desc)+'</div>'+
+            '<div class="dep-desc">'+escHtml(item.e.desc)+(item.e._pending?' ⏳':'')+'</div>'+
             '<div class="dep-amount">'+item.e.amount.toFixed(2)+'€</div>'+
           '</div>'+
           '<div class="dep-meta">'+item.e.cat+'</div>'+
@@ -1573,6 +1585,7 @@ function initExpenses(){
   if(_unsubExpenses)_unsubExpenses();
   _unsubExpenses=window._fbOnValue(window._fbRef(window._fbDb,'expenses'),function(snap){
     expenses=snap.val()||{};
+    saveExpensesCache();
     if(activeTab()==='depenses')renderExpenses();
   });
 }
@@ -1655,6 +1668,7 @@ function initComments(){
   if(_unsubComments)_unsubComments();
   _unsubComments=window._fbOnValue(window._fbRef(window._fbDb,'comments'),function(snap){
     comments=snap.val()||{};
+    saveCommentsCache();
     Object.keys(comments).forEach(function(i){patchStageComments(parseInt(i));});
   });
 }
@@ -1804,15 +1818,54 @@ function loadLocalCache(){
     var s=localStorage.getItem('ev1-state-cache');
     if(s){var d=JSON.parse(s);state=Object.assign({completed:{},journal:{},ratings:{},tags:{},days:{}},d);}
   }catch(e){}
+  try{
+    var c=localStorage.getItem('ev1-comments-cache');
+    if(c)comments=JSON.parse(c)||{};
+  }catch(e){}
+  try{
+    var x=localStorage.getItem('ev1-expenses-cache');
+    if(x)expenses=JSON.parse(x)||{};
+  }catch(e){}
+}
+function saveCommentsCache(){
+  try{localStorage.setItem('ev1-comments-cache',JSON.stringify(comments));}catch(e){
+    console.warn('localStorage plein, comments cache non sauvegardé');
+  }
+}
+function saveExpensesCache(){
+  try{localStorage.setItem('ev1-expenses-cache',JSON.stringify(expenses));}catch(e){
+    console.warn('localStorage plein, expenses cache non sauvegardé');
+  }
 }
 
-var MAX_OFFLINE_QUEUE=50;
-function queueWrite(path, data){
-  offlineQueue.push({path:path, data:data, ts:Date.now()});
-  if(offlineQueue.length>MAX_OFFLINE_QUEUE) offlineQueue=offlineQueue.slice(-MAX_OFFLINE_QUEUE);
+var MAX_OFFLINE_QUEUE=200;
+function persistQueue(){
   try{localStorage.setItem('offlineQueue',JSON.stringify(offlineQueue));}catch(e){
     console.warn('localStorage plein, queue offline non sauvegardée');
   }
+}
+function queueWrite(path, data){
+  // Compat : ancien format = set
+  enqueueOp('set', path, data);
+}
+function enqueueOp(op, path, data){
+  offlineQueue.push({op:op, path:path, data:data, ts:Date.now()});
+  if(offlineQueue.length>MAX_OFFLINE_QUEUE) offlineQueue=offlineQueue.slice(-MAX_OFFLINE_QUEUE);
+  persistQueue();
+  setSyncDot('syncing');
+}
+// Tente une écriture Firebase, ou la met en queue si offline / échec.
+// Retourne une Promise qui résout dans tous les cas (queue = succès logique).
+function tryWrite(op, path, data){
+  if(!isOnline||!window._fbDb){enqueueOp(op,path,data);return Promise.resolve({queued:true});}
+  var p=(op==='remove')
+    ? window._fbRemove(window._fbRef(window._fbDb,path))
+    : window._fbSet(window._fbRef(window._fbDb,path),data);
+  return p.then(function(){return {queued:false};}).catch(function(err){
+    console.error('[tryWrite] '+op+' '+path+' failed, queueing',err);
+    enqueueOp(op,path,data);
+    return {queued:true};
+  });
 }
 
 function flushQueue(){
@@ -1820,17 +1873,29 @@ function flushQueue(){
   setSyncDot('syncing');
   var queue=offlineQueue.slice();
   offlineQueue=[];
-  localStorage.removeItem('offlineQueue');
-  var promises=queue.map(function(item){
-    return window._fbSet(window._fbRef(window._fbDb,item.path),item.data);
+  persistQueue();
+  // Séquentiel pour préserver l'ordre (delete avant set sur même path, etc.)
+  var failed=[];
+  var chain=Promise.resolve();
+  queue.forEach(function(item){
+    chain=chain.then(function(){
+      var op=item.op||'set';
+      var ref=window._fbRef(window._fbDb,item.path);
+      var p=(op==='remove')?window._fbRemove(ref):window._fbSet(ref,item.data);
+      return p.catch(function(err){
+        console.error('[flushQueue] '+op+' '+item.path+' failed',err);
+        failed.push(item);
+      });
+    });
   });
-  Promise.all(promises).then(function(){
-    setSyncDot('online');
-  }).catch(function(){
-    // Remettre en queue ce qui a échoué
-    offlineQueue=queue.concat(offlineQueue);
-    localStorage.setItem('offlineQueue',JSON.stringify(offlineQueue));
-    setSyncDot('offline');
+  chain.then(function(){
+    if(failed.length){
+      offlineQueue=failed.concat(offlineQueue);
+      persistQueue();
+      setSyncDot(isOnline?'syncing':'offline');
+    } else {
+      setSyncDot(isOnline?'online':'offline');
+    }
   });
 }
 
