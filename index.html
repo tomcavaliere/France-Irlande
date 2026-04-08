@@ -128,6 +128,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .stage-card.done .s-title{text-decoration:line-through;color:#999}
 .stage-card.next{border-left-color:var(--orange);box-shadow:0 2px 16px rgba(232,119,46,.2)}
 .s-hdr{display:flex;justify-content:space-between;align-items:flex-start}
+.s-del{position:absolute;top:10px;right:10px;background:none;border:none;color:#e74c3c;font-size:18px;cursor:pointer;line-height:1;padding:2px 4px}
+.s-write{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--green);background:none;border:1px solid var(--green);border-radius:20px;padding:3px 10px;cursor:pointer;margin-top:6px}
 .s-day{font-size:11px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
 .s-title{font-size:15px;font-weight:600;margin:2px 0 6px}
 .s-stats{display:flex;gap:12px;font-size:12px;color:var(--text-light)}
@@ -1262,21 +1264,28 @@ function renderStages(){
     var d=days[date];
     var card=document.createElement('div');
     card.className='stage-card';
+    card.style.position='relative';
     // Calculer km du jour
     var kmDay=d.kmDay||0;
     var kmTotal=d.kmTotal||0;
     var seg=d.lat&&d.lon?(snapToRoute(d.lat,d.lon).idx<=FRANCE_END_IDX?'🇫🇷':'🇮🇪'):'';
     var dateLabel=new Date(date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'});
+    var edate=escAttr(date);
+    var adminStageHtml=isAdmin?
+      '<button class="s-del" onclick="deleteStage(\''+edate+'\');event.stopPropagation()">&#x2715;</button>'+
+      '<button class="s-write" onclick="openJournalEntry(\''+edate+'\');event.stopPropagation()">&#x1f4dd; \u00c9crire</button>'
+      :'';
     card.innerHTML=
       '<div class="s-hdr"><div>'+
         '<div class="s-day">'+seg+' J'+(idx+1)+' — '+dateLabel+'</div>'+
-        '<div class="s-title">'+escHtml(d.note||'Étape du jour')+'</div>'+
+        '<div class="s-title">'+escHtml(d.note||'\u00c9tape du jour')+'</div>'+
+        adminStageHtml+
       '</div></div>'+
       '<div class="s-stats">'+
-        '<span class="s-stat">🚴 '+Math.round(kmDay)+' km/jour</span>'+
-        '<span class="s-stat">📍 '+Math.round(kmTotal)+' km total</span>'+
+        '<span class="s-stat">&#x1f6b4; '+Math.round(kmDay)+' km/jour</span>'+
+        '<span class="s-stat">&#x1f4cd; '+Math.round(kmTotal)+' km total</span>'+
       '</div>';
-    card.onclick=function(){switchTab('journal');};
+    if(!isAdmin)card.onclick=function(){switchTab('journal');};
     c.appendChild(card);
   });
   updateRecap();
@@ -1824,6 +1833,31 @@ function togTag(date,t){
   var id='jt'+date.replace(/-/g,'');
   var el=document.getElementById(id);
   if(el)el.querySelectorAll('.j-tag').forEach(function(e){e.classList.toggle('sel',(state.tags[date]||[]).indexOf(e.textContent)>=0)});
+}
+function deleteStage(date){
+  if(!isAdmin)return;
+  confirmDialog({
+    title:'Supprimer l\'étape',
+    message:'Cette étape et son entrée journal seront définitivement supprimées. La progression des autres jours n\'est pas affectée.',
+    okLabel:'Supprimer'
+  }).then(function(ok){
+    if(!ok)return;
+    delete state.days[date];
+    delete state.journal[date];
+    delete state.ratings[date];
+    delete state.tags[date];
+    saveNow();
+    renderStages();
+    renderJournal();
+    updateMap();
+  });
+}
+function openJournalEntry(date){
+  switchTab('journal');
+  setTimeout(function(){
+    var entry=document.querySelector('#journalList .journal-entry[data-date="'+date+'"]');
+    if(entry)entry.scrollIntoView({behavior:'smooth',block:'start'});
+  },100);
 }
 function publishDay(date){
   if(!isAdmin)return;
