@@ -1,0 +1,20 @@
+{
+  "rules": {
+    "state": { ".read": true, ".write": "auth != null" },
+    "photos": {
+      ".read": true,
+      "$stage": { "$id": {
+        ".write": "auth != null",
+        ".validate": "newData.isString() && newData.val().length < 500000"
+      }}
+    },
+    "comments": {
+      ".read": true,
+      "$stage": { "$id": {
+        ".write": "!data.exists() || auth != null",
+        ".validate": "newData.child('text').val().length < 500 && newData.child('name').val().length < 30"
+      }}
+    },
+    "expenses": { ".read": "auth != null", ".write": "auth != null" }
+  }
+}
