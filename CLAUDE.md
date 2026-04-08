@@ -37,3 +37,33 @@ IRELANDE-TRACK.gpx  — trace GPX
 
 ## Tags journal
 `Beau temps` `Pluie` `Vent` `Dur` `Génial` `Pub` `Camping` `Bivouac` `Photos`
+
+## Conventions Git
+
+- **Commits atomiques** : un commit = une seule modif logique (une feature, un fix, un refacto). Jamais de mélange.
+- **Conventional Commits en anglais** :
+  - `feat:` nouvelle fonctionnalité
+  - `fix:` correction de bug
+  - `refactor:` réécriture sans changement de comportement
+  - `chore:` maintenance (deps, config, etc.)
+  - `docs:` documentation uniquement
+- **Avant chaque `git commit`** : vérifier qu'il ne reste pas de `console.log()` de debug ni de blocs de code commentés inutiles dans le diff stagé.
+- **Ne jamais utiliser `--no-verify`** ni contourner les hooks sans demande explicite.
+
+## Qualité du code (stack vanilla JS)
+
+- **Pas de `any` implicite déguisé** : même en JS vanilla, documenter via JSDoc (`@param`, `@returns`) dès qu'un type n'est pas évident. Si le type est inconnu, valider avec un type guard (`typeof`, `Array.isArray`, `instanceof`) avant usage.
+- **Pas d'erreur silencieuse** : toute fonction `async` / tout `.then()` DOIT avoir un `try/catch` ou `.catch()` avec au minimum un `console.error('[contexte]', err)` nommé. Pas de `catch {}` vide.
+- **Séparation logique UI / logique métier / I/O** : ce projet tient tout dans [index.html](index.html), mais à l'intérieur garder la séparation par sections de fonctions :
+  - rendu DOM (`render*`)
+  - état et logique métier (mutations de `state`, calculs)
+  - accès Firebase / localStorage / réseau (`flushState`, listeners RTDB, `offlineQueue`)
+  - Ne pas manipuler le DOM depuis une fonction d'I/O, et inversement.
+- **Ne jamais casser les points non-évidents** listés plus haut (photos base64, debounce journal, désabonnement listeners, etc.).
+
+## Tests et QA
+
+- **Tests existants** : [tests/utils.test.js](tests/utils.test.js) — toute modification de [js/utils.js](js/utils.js) ou d'une fonction utilitaire pure DOIT être accompagnée d'un test ajouté ou mis à jour dans ce fichier.
+- **Exécution** : lancer les tests avant de considérer une tâche terminée. Si un test échoue, analyser la stack trace, corriger, relancer — ne pas laisser au user le soin de découvrir la casse.
+- **Pas d'appel réseau réel dans les tests** : mocker Firebase RTDB et toute API tierce (météo, etc.). Les tests doivent tourner hors-ligne.
+- **Nouvelles fonctions métier pures** (calculs distance, dénivelé, formatage dépenses, etc.) → test obligatoire. Code purement DOM/rendu → test non requis.
