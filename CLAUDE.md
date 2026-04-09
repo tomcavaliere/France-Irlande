@@ -1,69 +1,182 @@
-# EuroVelo 1 — Bikepacking Cork → Sligo
+# EuroVelo 1 — Bikepacking France → Irlande
 
-PWA de suivi de voyage. Tom tient son journal, ses proches suivent en temps réel.
+PWA de suivi de voyage en temps réel. Tom journalise, ses proches suivent en live.
+Tracé complet : France (Chamonix → Roscoff) + Irlande (Cork → Sligo).
 
-## Infos clés
+## Stack
 
-- **Stack** : HTML/CSS/JS vanilla dans `index.html` (~1250 lignes). Pas de build, pas de framework.
-- **Déploiement** : GitHub Pages — `https://tomcavaliere.github.io/France-Irlande/`
-- **Firebase** : projet `france-irlande-bike`, RTDB europe-west1. Lecture publique, écriture auth.
-- **28 étapes**, 1734 km, +11 041 m de dénivelé
+- **Frontend** : HTML/CSS/JS vanilla — tout dans `index.html` (~1700 lignes). Zéro build, zéro framework.
+- **Carte** : Leaflet 1.9.4 (CDN unpkg, mis en cache par le SW).
+- **Backend** : Firebase RTDB `france-irlande-bike`, région `europe-west1`. Lecture publique sauf `expenses` (auth uniquement).
+- **Deploy** : GitHub Pages → `https://tomcavaliere.github.io/France-Irlande/`
+- **PWA** : service worker `sw.js` (cache `ev1-v12`), `manifest.json`.
+- **Tests** : Vitest (`npm test` / `npm run test:watch`). Aucun bundler, aucun jsdom — Node pur.
 
-## Fichiers
+## Structure du repo
 
 ```
-index.html          — tout le code
-sw.js               — service worker hors-ligne
-manifest.json       — PWA manifest
-IRELANDE-TRACK.gpx  — trace GPX
+index.html                  — application complète (~1700 lignes)
+sw.js                       — service worker (network-first app shell, cache-first libs)
+manifest.json               — PWA manifest
+campspace-data.js           — dump Campspace (520 KB, 1 liner) — mis en cache SW
+js/
+  gps-core.js               — calculs GPS purs (snap tracé, progression, POI)
+  utils.js                  — helpers purs (escaping, formatage, validation, quota)
+tests/
+  gps-core.test.js          — 19 tests Vitest pour gps-core.js
+  utils.test.js             — 15 tests Vitest pour utils.js
+  fixtures/route-sample.js  — 50 pts GPS réels sous-échantillonnés (25 FR + 25 IE)
+  README.md                 — doc tests, couverture, comment ajouter un test
+docs/superpowers/
+  specs/                    — design technique détaillé de chaque feature (source de vérité)
+  plans/                    — plans d'implémentation step-by-step (checkbox) pour agents
+FRANCE-TRACK.gpx            — trace France
+IRELANDE-TRACK.gpx          — trace Irlande
+firebase.rules.json         — règles RTDB versionnées (source de vérité)
+package.json                — scripts test uniquement (vitest ^2.1.0)
 ```
 
-## Points non-évidents (à ne pas casser)
+## Architecture JS — séparation stricte des responsabilités
 
-- **Photos** : base64 dans RTDB (pas Firebase Storage — payant). Lazy load via IntersectionObserver, listeners désabonnés à chaque `renderJournal`.
-- **Journal** : debounce 60s + `flushState()` sur `beforeunload` ET `visibilitychange:hidden` (iOS Safari).
-- **Hors-ligne** : state dans localStorage + offlineQueue. Photos/commentaires/dépenses NON mis en cache.
+Le code de `index.html` est organisé en trois couches. **Ne jamais les croiser.**
+
+| Couche | Fonctions | Règle |
+|---|---|---|
+| **Rendu DOM** | `render*()` | Ne lit/écrit que le DOM. Ne touche pas Firebase. |
+| **Métier / état** | mutations de `state`, calculs | Pas de DOM, pas d'I/O directe. |
+| **I/O** | `save()`, `flushState()`, listeners RTDB, `offlineQueue` | Ne manipule jamais le DOM directement. |
+
+`index.html` délègue via des wrappers d'une ligne aux modules purs :
+```js
+function escAttr(s){ return Utils.escAttr(s); }
+```
+La prod exécute donc exactement le code couvert par les tests.
+
+## Modules purs (testés)
+
+### `js/gps-core.js` → `window.GPSCore`
+
+| Fonction | Rôle |
+|---|---|
+| `snapToRoute(lat, lon, routePts, cumKm)` | Point le plus proche du tracé → `{idx, kmTotal, lat, lon}` |
+| `routePointsAhead(fromIdx, distKm, routePts, cumKm)` | Points du tracé dans les N km devant (pour requêtes Overpass) |
+| `ptsBbox(pts, margin)` | Bounding box `{s,n,w,e}` avec marge (pour requêtes Overpass) |
+| `computeStageInfo(lat, lon, routePts, cumKm, totalKm, franceEndIdx)` | État complet : `{idx, lat, lon, kmTotal, kmRemaining, progressPct, country}` |
+| `campingDist(fromIdx, campLat, campLon, routePts, cumKm)` | Distance POI : `{trace, detour}` en km |
+
+`country` = `'FR'` si `idx <= franceEndIdx`, sinon `'IE'`.
+`trace` = km sur le tracé (clampé à 0 si POI derrière), `detour` = vol d'oiseau snap→POI.
+
+### `js/utils.js` → `window.Utils`
+
+| Fonction/constante | Rôle |
+|---|---|
+| `escAttr(s)` / `escHtml(s)` | Escaping HTML — critique sécurité (utilisé dans les `onclick`) |
+| `formatTime(ts)` | Timestamp → `"12 avr. à 14:30"` (locale fr-FR) |
+| `summarizeExpenses(expenses)` | Agrégation `{total, days, perDay, byCat, byDate}` |
+| `validateComment(c)` | `{ok, error?}` — name ≤ 30 car., text ≤ 500 car. |
+| `validateExpense(e)` | `{ok, error?}` — amount, cat (liste fermée), date ISO, desc ≤ 100 |
+| `validateJournal(text)` | `{ok, error?}` — vide autorisé, max 5000 car. |
+| `computeQuotaBytes(photosTree)` | Estime taille base64 photos RTDB → `{count, bytes}` |
+| `formatBytes(bytes)` | `bytes → "1.2 MB"` |
+| `quotaLevel(bytes, quota)` | `'ok' / 'warn' / 'high' / 'block'` (seuils 70/85/90 %) |
+| `safeFetch(url, opts, cfg)` | fetch durci : timeout AbortController + retries backoff expo |
+| `EXPENSE_CATEGORIES` | Liste fermée des catégories |
+| `LIMITS` | Constantes de taille partagées client/Firebase |
+
+**`safeFetch` est le seul wrapper fetch autorisé** — toujours l'utiliser pour les appels réseau dans `index.html`. Ne jamais appeler `fetch()` directement.
+
+## Points non-évidents — ne jamais casser
+
+- **Photos** : base64 dans RTDB (pas Firebase Storage — payant). Lazy load via `IntersectionObserver`. Listeners RTDB désabonnés à chaque `renderJournal()` pour éviter les fuites mémoire.
+- **Journal** : debounce 60 s + `flushState()` déclenché sur `beforeunload` ET `visibilitychange:hidden` (iOS Safari ne déclenche pas `beforeunload`).
+- **Publication journal** : champ `published: boolean` dans `state.days[date]`. Absence du champ = brouillon, invisible pour les visiteurs. `renderJournal()` filtre si `!isAdmin && days[d].published !== true`.
+- **Hors-ligne** : state dans `localStorage` + `offlineQueue`. Photos, commentaires et dépenses ne sont **pas** disponibles offline — c'est voulu, pas un bug.
+- **Service worker** : app shell (index.html, js/) → network-first. Libs externes (Leaflet CDN) → cache-first. Firebase / open-meteo / Overpass → jamais mis en cache.
 - **Admin** : déconnexion auto après 3 min d'inactivité.
+- **`TOTAL_KM` fixture ≠ prod** : la fixture de test (~2337 km) est sous-échantillonnée, la prod fait ~2978 km. Ne pas confondre dans les assertions.
 
-## Faiblesses connues
+## Firebase RTDB — règles d'accès
 
-- Pas de confirmation avant suppression
-- Photos/commentaires/dépenses indisponibles hors-ligne
-- Quota RTDB non surveillé (1 Go gratuit)
-- Pas d'export journal
+| Nœud | Lecture | Écriture |
+|---|---|---|
+| `state` | publique | auth uniquement |
+| `photos/$stage/$id` | publique | auth + validation taille < 500 000 chars base64 |
+| `comments/$stage/$id` | publique | création sans auth, modif/suppr auth — validation name/text |
+| `expenses` | auth uniquement | auth uniquement |
 
-## Catégories dépenses
-`Hébergement` `Nourriture` `Transport` `Équipement` `Loisirs` `Autre`
+Quota gratuit : **1 Go**. Surveillé via `computeQuotaBytes` + `quotaLevel` dans `utils.js`.
+`firebase.rules.json` est la **source de vérité** — toujours le mettre à jour avant de déployer de nouvelles règles sur la console Firebase.
 
-## Tags journal
-`Beau temps` `Pluie` `Vent` `Dur` `Génial` `Pub` `Camping` `Bivouac` `Photos`
+## Tests
+
+```bash
+npm install          # une seule fois
+npm test             # run unique (CI, avant tout commit)
+npm run test:watch   # mode TDD
+```
+
+**Règles absolues :**
+- Lancer les tests avant de considérer une tâche terminée. Ne pas laisser un test cassé.
+- Toute modification de `gps-core.js` ou `utils.js` → test ajouté ou mis à jour dans le fichier correspondant.
+- Toute nouvelle fonction pure (calcul, validation, formatage) → test obligatoire.
+- Code DOM-only → test non requis.
+- **Zéro appel réseau réel dans les tests** : mocker Firebase RTDB et toute API tierce. Les tests doivent tourner hors-ligne.
+
+Si le tracé GPX change significativement, régénérer `tests/fixtures/route-sample.js` avec le script Python documenté dans `tests/README.md`.
+
+## Docs / specs / plans
+
+```
+docs/superpowers/specs/   — design technique détaillé de chaque feature
+docs/superpowers/plans/   — plans d'implémentation step-by-step (checkbox) pour agents
+```
+
+Avant d'implémenter une feature documentée ici : **lire le spec en entier** avant d'écrire la moindre ligne de code.
+
+## Qualité du code
+
+**Typage**
+- JSDoc (`@param`, `@returns`) sur toute fonction dont le type n'est pas évident.
+- Type guard (`typeof`, `Array.isArray`, `instanceof`) avant usage d'une valeur de type inconnu.
+
+**Erreurs**
+- Toute fonction `async` / tout `.then()` → `try/catch` ou `.catch()` avec `console.error('[contexte]', err)`.
+- Pas de `catch {}` vide.
+
+## Données de référence
+
+**Catégories dépenses** (liste fermée — `EXPENSE_CATEGORIES` dans utils.js) :
+`Hébergement` · `Nourriture` · `Transport` · `Équipement` · `Loisirs` · `Autre`
+
+**Tags journal** :
+`Beau temps` · `Pluie` · `Vent` · `Dur` · `Génial` · `Pub` · `Camping` · `Bivouac` · `Photos`
+
+**Limites** (`LIMITS` dans utils.js) :
+
+| Champ | Max |
+|---|---|
+| Nom commentaire | 30 car. |
+| Texte commentaire | 500 car. |
+| Description dépense | 100 car. |
+| Montant dépense | < 10 000 € |
+| Texte journal | 5 000 car. |
 
 ## Conventions Git
 
-- **Commits atomiques** : un commit = une seule modif logique (une feature, un fix, un refacto). Jamais de mélange.
-- **Conventional Commits en anglais** :
-  - `feat:` nouvelle fonctionnalité
-  - `fix:` correction de bug
-  - `refactor:` réécriture sans changement de comportement
-  - `chore:` maintenance (deps, config, etc.)
-  - `docs:` documentation uniquement
-- **Avant chaque `git commit`** : vérifier qu'il ne reste pas de `console.log()` de debug ni de blocs de code commentés inutiles dans le diff stagé.
-- **Ne jamais utiliser `--no-verify`** ni contourner les hooks sans demande explicite.
+**Commits atomiques** : un commit = une seule modification logique. Jamais de mélange feature/fix/refacto.
 
-## Qualité du code (stack vanilla JS)
+**Conventional Commits (en anglais)** :
+- `feat:` nouvelle fonctionnalité
+- `fix:` correction de bug
+- `refactor:` réécriture sans changement de comportement
+- `chore:` maintenance (deps, config)
+- `docs:` documentation uniquement
 
-- **Pas de `any` implicite déguisé** : même en JS vanilla, documenter via JSDoc (`@param`, `@returns`) dès qu'un type n'est pas évident. Si le type est inconnu, valider avec un type guard (`typeof`, `Array.isArray`, `instanceof`) avant usage.
-- **Pas d'erreur silencieuse** : toute fonction `async` / tout `.then()` DOIT avoir un `try/catch` ou `.catch()` avec au minimum un `console.error('[contexte]', err)` nommé. Pas de `catch {}` vide.
-- **Séparation logique UI / logique métier / I/O** : ce projet tient tout dans [index.html](index.html), mais à l'intérieur garder la séparation par sections de fonctions :
-  - rendu DOM (`render*`)
-  - état et logique métier (mutations de `state`, calculs)
-  - accès Firebase / localStorage / réseau (`flushState`, listeners RTDB, `offlineQueue`)
-  - Ne pas manipuler le DOM depuis une fonction d'I/O, et inversement.
-- **Ne jamais casser les points non-évidents** listés plus haut (photos base64, debounce journal, désabonnement listeners, etc.).
+**Avant chaque commit** : vérifier l'absence de `console.log()` de debug et de blocs commentés inutiles dans le diff stagé. Ne jamais utiliser `--no-verify` sans demande explicite.
 
-## Tests et QA
+## Faiblesses connues (backlog)
 
-- **Tests existants** : [tests/utils.test.js](tests/utils.test.js) — toute modification de [js/utils.js](js/utils.js) ou d'une fonction utilitaire pure DOIT être accompagnée d'un test ajouté ou mis à jour dans ce fichier.
-- **Exécution** : lancer les tests avant de considérer une tâche terminée. Si un test échoue, analyser la stack trace, corriger, relancer — ne pas laisser au user le soin de découvrir la casse.
-- **Pas d'appel réseau réel dans les tests** : mocker Firebase RTDB et toute API tierce (météo, etc.). Les tests doivent tourner hors-ligne.
-- **Nouvelles fonctions métier pures** (calculs distance, dénivelé, formatage dépenses, etc.) → test obligatoire. Code purement DOM/rendu → test non requis.
+- Photos/commentaires/dépenses indisponibles hors-ligne
+- Quota RTDB non alerté en production (logique présente dans utils.js, UI non branchée)
+- `.github/copilot-instructions.md` obsolète (référence l'ancienne architecture monofichier)
