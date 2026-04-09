@@ -422,6 +422,46 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 </div>
 <div id="syncPopover" role="tooltip" aria-live="polite"></div>
 <button class="admin-btn" id="adminBtn" onclick="toggleAdmin()">&#x1f512; Admin</button>
+<div id="adminDropdown">
+  <button onclick="openProfileModal()">👤 Profil</button>
+  <hr>
+  <button onclick="logoutAdmin()">🚪 Déconnexion</button>
+</div>
+
+<div id="profileModal" onclick="if(event.target===this)closeProfileModal()">
+  <div class="profile-box">
+    <h2>Profil admin <button onclick="closeProfileModal()" aria-label="Fermer">✕</button></h2>
+
+    <div class="profile-section">
+      <h3>Compte</h3>
+      <div class="profile-row"><span>Email</span><span id="profileEmail">—</span></div>
+      <div class="profile-row"><span>Session restante</span><span id="profileSession">—</span></div>
+    </div>
+
+    <div class="profile-section">
+      <h3>Stockage RTDB <button class="btn" style="font-size:11px;padding:3px 8px" onclick="refreshProfileQuota()">🔄</button></h3>
+      <div class="quota-progress"><div class="quota-progress-fill" id="profileQuotaFill" style="width:0%"></div></div>
+      <div class="profile-row" id="profileQuotaText"><span>Chargement…</span></div>
+    </div>
+
+    <div class="profile-section">
+      <h3>Stats</h3>
+      <div class="profile-stat-grid">
+        <div class="profile-stat"><div class="stat-num" id="profileStatStages">—</div><div class="stat-lbl">Étapes</div></div>
+        <div class="profile-stat"><div class="stat-num" id="profileStatJournal">—</div><div class="stat-lbl">Journal publié</div></div>
+        <div class="profile-stat"><div class="stat-num" id="profileStatComments">—</div><div class="stat-lbl">Commentaires</div></div>
+      </div>
+    </div>
+
+    <div class="profile-section">
+      <h3>Export journal</h3>
+      <div class="profile-export">
+        <button class="btn btn-p" onclick="exportJournal('md')">⬇ .md</button>
+        <button class="btn" onclick="exportJournal('json')">⬇ .json</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div class="confirm-modal" id="confirmModal" onclick="if(event.target===this)confirmCancel()">
   <div class="confirm-box">
