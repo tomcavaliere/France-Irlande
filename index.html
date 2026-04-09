@@ -1494,26 +1494,32 @@ function uploadPhoto(i){
   var input=document.createElement('input');
   input.type='file';input.accept='image/*';input.multiple=true;
   input.onchange=function(){
-    Array.from(input.files).forEach(function(file){
-      var addBtn=document.getElementById('photos-add-'+i);
+    var files=Array.from(input.files);
+    var addBtn=document.getElementById('photos-add-'+i);
+    function uploadNext(idx){
+      if(idx>=files.length){
+        if(addBtn)addBtn.classList.remove('j-uploading');
+        return;
+      }
       if(addBtn)addBtn.classList.add('j-uploading');
-      compressImage(file,function(b64){
-        if(!b64){if(addBtn)addBtn.classList.remove('j-uploading');return;}
+      compressImage(files[idx],function(b64){
+        if(!b64){uploadNext(idx+1);return;}
         var id='p'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
         window._fbSet(window._fbRef(window._fbDb,'photos/'+i+'/'+id),b64)
           .then(function(){
             if(!photos[i])photos[i]={};
             photos[i][id]=b64;
             patchPhotos(i);
-            if(addBtn)addBtn.classList.remove('j-uploading');
             refreshQuotaState();
+            uploadNext(idx+1);
           })
           .catch(function(err){
             console.error('[uploadPhoto] set failed',err);
-            if(addBtn)addBtn.classList.remove('j-uploading');
+            uploadNext(idx+1);
           });
       });
-    });
+    }
+    uploadNext(0);
   };
   input.click();
 }
