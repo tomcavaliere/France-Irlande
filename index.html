@@ -1962,6 +1962,12 @@ function deleteStage(date){
     delete state.ratings[date];
     delete state.tags[date];
     saveNow();
+    if(window._fbDb&&window._fbRemove&&window._fbRef){
+      window._fbRemove(window._fbRef(window._fbDb,'photos/'+date))
+        .catch(function(err){console.error('[deleteStage] remove photos failed',err);});
+      window._fbRemove(window._fbRef(window._fbDb,'comments/'+date))
+        .catch(function(err){console.error('[deleteStage] remove comments failed',err);});
+    }
     renderStages();
     renderJournal();
     updateMap();
