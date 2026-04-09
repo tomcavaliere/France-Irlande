@@ -606,7 +606,7 @@ const FRANCE_KM=1358.3;
 const FRANCE_END_IDX=2531;
 
 // ==== STATE ====
-let state={completed:{},journal:{},ratings:{},tags:{},days:{}};
+let state={completed:{},journal:{},days:{}};
 // days: { "2026-05-01": { lat, lon, kmTotal, kmDay, note } }
 
 // ==== STATE ====
@@ -660,13 +660,11 @@ function setAdminUI(on){
 function exportJournal(fmt){
   try{
     var journal=state.journal||{};
-    var ratings=state.ratings||{};
-    var tags=state.tags||{};
     var days=state.days||{};
     var stamp=new Date().toISOString().slice(0,10);
     var blob,filename;
     if(fmt==='json'){
-      var payload={exportedAt:new Date().toISOString(),journal:journal,ratings:ratings,tags:tags,days:days,comments:comments,expenses:expenses};
+      var payload={exportedAt:new Date().toISOString(),journal:journal,days:days,comments:comments,expenses:expenses};
       blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
       filename='carnet-eurovelo1-'+stamp+'.json';
     }else{
@@ -905,10 +903,6 @@ function patchJournal(){
     if(!date)return;
     var ta=entry.querySelector('.j-ta');
     if(ta&&document.activeElement!==ta){ta.value=state.journal[date]||'';}
-    var stars=entry.querySelectorAll('.j-star');
-    stars.forEach(function(s,idx){s.classList.toggle('on',idx<(state.ratings[date]||0));});
-    var jtags=entry.querySelectorAll('.j-tag');
-    jtags.forEach(function(el){el.classList.toggle('sel',(state.tags[date]||[]).indexOf(el.textContent)>=0);});
     patchPhotos(date);
   });
 }
@@ -1949,23 +1943,6 @@ function renderJournal(){
 }
 
 
-function setRat(date,n){
-  if(!isAdmin)return;
-  state.ratings[date]=state.ratings[date]===n?0:n;save();
-  var id='rat'+date.replace(/-/g,'');
-  var el=document.getElementById(id);
-  if(el)el.querySelectorAll('.j-star').forEach(function(s,idx){s.classList.toggle('on',idx<state.ratings[date])});
-}
-function togTag(date,t){
-  if(!isAdmin)return;
-  if(!state.tags[date])state.tags[date]=[];
-  var idx=state.tags[date].indexOf(t);
-  if(idx>=0)state.tags[date].splice(idx,1);else state.tags[date].push(t);
-  save();
-  var id='jt'+date.replace(/-/g,'');
-  var el=document.getElementById(id);
-  if(el)el.querySelectorAll('.j-tag').forEach(function(e){e.classList.toggle('sel',(state.tags[date]||[]).indexOf(e.textContent)>=0)});
-}
 function deleteStage(date){
   if(!isAdmin)return;
   confirmDialog({
