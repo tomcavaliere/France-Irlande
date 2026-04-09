@@ -1,28 +1,32 @@
 {
   "rules": {
-    "state": { ".read": true, ".write": "auth != null" },
-    "photos": {
-      ".read": true,
-      "$stage": { "$id": {
-        ".write": "auth != null",
-        ".validate": "newData.isString() && newData.val().length < 500000"
-      }}
-    },
-    "comments": {
-      ".read": true,
-      "$stage": { "$id": {
-        ".write": "!data.exists() || auth != null",
-        ".validate": "newData.child('text').val().length < 500 && newData.child('name').val().length < 30"
-      }}
-    },
-    "bravos": {
+    "days": {
       ".read": true,
       "$date": {
-        "$visitorId": {
-          ".write": "!data.exists()",
-          ".validate": "newData.val() === true"
+        ".write": "auth != null",
+        "photos": {
+          "$id": {
+            ".write": "auth != null",
+            ".validate": "newData.isString() && newData.val().length < 500000"
+          }
+        },
+        "comments": {
+          "$id": {
+            ".write": "!data.exists() || auth != null",
+            ".validate": "newData.child('text').val().length < 500 && newData.child('name').val().length < 30"
+          }
+        },
+        "bravos": {
+          "$visitorId": {
+            ".write": "!data.exists()",
+            ".validate": "newData.val() === true"
+          }
         }
       }
+    },
+    "meta": {
+      ".read": true,
+      ".write": "auth != null"
     },
     "expenses": { ".read": "auth != null", ".write": "auth != null" }
   }

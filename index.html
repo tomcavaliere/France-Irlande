@@ -606,8 +606,9 @@ const FRANCE_KM=1358.3;
 const FRANCE_END_IDX=2531;
 
 // ==== STATE ====
-let state={completed:{},journal:{},days:{}};
-// days: { "2026-05-01": { lat, lon, kmTotal, kmDay, note } }
+let state={days:{}};
+let meta={completed:{}};
+// days: { "2026-05-01": { lat, lon, kmTotal, kmDay, journal, note } }
 
 // ==== STATE ====
 // ==== ADMIN ====
@@ -622,10 +623,17 @@ var _quotaState={count:0,bytes:0,level:'ok'};
 
 function refreshQuotaState(callback){
   if(!window._fbDb||!window._fbGet){if(callback)callback();return;}
-  window._fbGet(window._fbRef(window._fbDb,'photos'))
+  window._fbGet(window._fbRef(window._fbDb,'days'))
     .then(function(snap){
-      var tree=snap.exists()?snap.val():{};
-      var r=Utils.computeQuotaBytes(tree);
+      var daysData=snap.exists()?snap.val():{};
+      // Transform days/{date} structure to photos tree for quota calculation
+      var photosTree={};
+      Object.keys(daysData).forEach(function(date){
+        if(daysData[date]&&daysData[date].photos){
+          photosTree[date]=daysData[date].photos;
+        }
+      });
+      var r=Utils.computeQuotaBytes(photosTree);
       var lvl=Utils.quotaLevel(r.bytes);
       _quotaState={count:r.count,bytes:r.bytes,level:lvl};
       if(callback)callback();
@@ -659,16 +667,15 @@ function setAdminUI(on){
 }
 function exportJournal(fmt){
   try{
-    var journal=state.journal||{};
     var days=state.days||{};
     var stamp=new Date().toISOString().slice(0,10);
     var blob,filename;
     if(fmt==='json'){
-      var payload={exportedAt:new Date().toISOString(),journal:journal,days:days,comments:comments,expenses:expenses};
+      var payload={exportedAt:new Date().toISOString(),days:days,comments:comments,expenses:expenses};
       blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
       filename='carnet-eurovelo1-'+stamp+'.json';
     }else{
-      var dates=Object.keys(journal).concat(Object.keys(days)).filter(function(v,i,a){return a.indexOf(v)===i;}).sort();
+      var dates=Object.keys(days).sort();
       var lines=['# Carnet de voyage — EuroVelo 1','','_Exporté le '+stamp+'_',''];
       dates.forEach(function(d){
         lines.push('## '+d);
@@ -679,9 +686,9 @@ function exportJournal(fmt){
           if(dd.kmTotal!=null)meta.push('total '+dd.kmTotal+' km');
           if(meta.length)lines.push('_'+meta.join(' · ')+'_');
         }
-        var r=ratings[d];if(r)lines.push('Note : '+'★'.repeat(r)+'☆'.repeat(5-r));
-        var t=tags[d];if(t&&t.length)lines.push('Tags : '+t.join(', '));
-        var txt=journal[d];if(txt)lines.push('',txt);
+        if(dd&&dd.rating)lines.push('Note : '+'★'.repeat(dd.rating)+'☆'.repeat(5-dd.rating));
+        if(dd&&dd.tags&&dd.tags.length)lines.push('Tags : '+dd.tags.join(', '));
+        if(dd&&dd.journal)lines.push('',dd.journal);
         lines.push('');
       });
       blob=new Blob([lines.join('\n')],{type:'text/markdown'});
@@ -742,13 +749,15 @@ function openProfileModal(){
   document.getElementById('profileStatJournal').textContent=published;
   document.getElementById('profileStatComments').textContent='…';
   if(window._fbDb&&window._fbGet){
-    window._fbGet(window._fbRef(window._fbDb,'comments'))
+    window._fbGet(window._fbRef(window._fbDb,'days'))
       .then(function(snap){
         var count=0;
         if(snap.exists()){
-          var tree=snap.val();
-          Object.values(tree).forEach(function(stageComments){
-            count+=Object.keys(stageComments).length;
+          var daysData=snap.val();
+          Object.values(daysData).forEach(function(dayData){
+            if(dayData&&dayData.comments){
+              count+=Object.keys(dayData.comments).length;
+            }
           });
         }
         document.getElementById('profileStatComments').textContent=count;
@@ -853,11 +862,8 @@ function updatePosition(){
 
     // Mettre à jour state.days
     if(!state.days)state.days={};
-    var existingNote=(state.days[todayISO]&&state.days[todayISO].note)||'';
-    state.days[todayISO]={lat:lat,lon:lon,kmTotal:Math.round(kmTotal),kmDay:kmDay,note:existingNote,ts:Date.now()};
-
-    // Créer une entrée journal vide si pas encore de texte
-    if(!state.journal[todayISO]) state.journal[todayISO]='';
+    var existing=state.days[todayISO]||{};
+    state.days[todayISO]={lat:lat,lon:lon,kmTotal:Math.round(kmTotal),kmDay:kmDay,note:existing.note||'',ts:Date.now(),journal:existing.journal||''};
 
     saveNow();
     updateMap();
@@ -888,13 +894,15 @@ function save(){
   if(!window._fbDb||!isAdmin)return;
   clearTimeout(saveTimer);
   saveTimer=setTimeout(function(){
-    window._fbSet(window._fbRef(window._fbDb,'state'),state);
+    window._fbSet(window._fbRef(window._fbDb,'days'),state.days);
+    window._fbSet(window._fbRef(window._fbDb,'meta'),meta);
   },60000);
 }
 function saveNow(){
   if(!window._fbDb||!isAdmin)return;
   clearTimeout(saveTimer);
-  window._fbSet(window._fbRef(window._fbDb,'state'),state);
+  window._fbSet(window._fbRef(window._fbDb,'days'),state.days);
+  window._fbSet(window._fbRef(window._fbDb,'meta'),meta);
 }
 function patchJournal(){
   var entries=document.querySelectorAll('#journalList .journal-entry');
@@ -902,7 +910,7 @@ function patchJournal(){
     var date=entry.dataset.date;
     if(!date)return;
     var ta=entry.querySelector('.j-ta');
-    if(ta&&document.activeElement!==ta){ta.value=state.journal[date]||'';}
+    if(ta&&document.activeElement!==ta){ta.value=(state.days[date]&&state.days[date].journal)||'';}
     patchPhotos(date);
   });
 }
@@ -910,7 +918,7 @@ function patchJournal(){
 let fbInitialized=false;
 let lastCompletedCount=0;
 let journalDirty=false;
-var _unsubState=null, _unsubComments=null, _unsubExpenses=null;
+var _unsubDays=null, _unsubMeta=null, _unsubExpenses=null;
 
 function activeTab(){
   var p=document.querySelector('.page.active');
@@ -919,10 +927,16 @@ function activeTab(){
 
 function initFirebase(){
   if(!window._fbDb)return;
-  if(_unsubState)_unsubState();
-  _unsubState=window._fbOnValue(window._fbRef(window._fbDb,'state'),function(snapshot){
-    var data=snapshot.val();
-    if(data){state=Object.assign({completed:{},journal:{},ratings:{},tags:{},days:{}},data);}
+  if(_unsubDays)_unsubDays();
+  if(_unsubMeta)_unsubMeta();
+  _unsubDays=window._fbOnValue(window._fbRef(window._fbDb,'days'),function(snapshot){
+    var data=snapshot.val()||{};
+    state.days=data;
+    // Extract comments from days snapshot
+    Object.keys(data).forEach(function(date){
+      var d=data[date];
+      comments[date]=(d&&d.comments)||{};
+    });
     saveLocalCache();
     setSyncDot(isOnline?'online':'offline');
     var daysCount=Object.keys(state.days||{}).length;
@@ -937,6 +951,10 @@ function initFirebase(){
       patchJournal();
     }
     lastCompletedCount=daysCount;
+  });
+  _unsubMeta=window._fbOnValue(window._fbRef(window._fbDb,'meta'),function(snapshot){
+    var data=snapshot.val()||{};
+    meta={completed:data.completed||{}};
   });
 }
 
@@ -1497,7 +1515,7 @@ function uploadPhoto(i){
       compressImage(files[idx],function(b64){
         if(!b64){uploadNext(idx+1);return;}
         var id='p'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
-        window._fbSet(window._fbRef(window._fbDb,'photos/'+i+'/'+id),b64)
+        window._fbSet(window._fbRef(window._fbDb,'days/'+i+'/photos/'+id),b64)
           .then(function(){
             if(!photos[i])photos[i]={};
             photos[i][id]=b64;
@@ -1523,7 +1541,7 @@ function deletePhoto(i,id){
     message:'Cette photo sera définitivement supprimée. Action irréversible.'
   }).then(function(ok){
     if(!ok)return;
-    window._fbRemove(window._fbRef(window._fbDb,'photos/'+i+'/'+id))
+    window._fbRemove(window._fbRef(window._fbDb,'days/'+i+'/photos/'+id))
       .then(function(){refreshQuotaState();})
       .catch(function(err){console.error('[deletePhoto] remove failed',err);});
     if(photos[i])delete photos[i][id];
@@ -1611,7 +1629,7 @@ function postComment(i){
   patchStageComments(parseInt(i));
   saveCommentsCache();
   if(txtEl)txtEl.value='';
-  tryWrite('set','comments/'+i+'/'+id,data);
+  tryWrite('set','days/'+i+'/comments/'+id,data);
 }
 
 function deleteComment(i,id){
@@ -1622,7 +1640,7 @@ function deleteComment(i,id){
   }).then(function(ok){
     if(!ok)return;
     if(comments[i]){delete comments[i][id];patchStageComments(parseInt(i));saveCommentsCache();}
-    tryWrite('remove','comments/'+i+'/'+id);
+    tryWrite('remove','days/'+i+'/comments/'+id);
   });
 }
 
@@ -1816,15 +1834,6 @@ function fetchWeather(){
 }
 
 
-function initComments(){
-  if(_unsubComments)_unsubComments();
-  _unsubComments=window._fbOnValue(window._fbRef(window._fbDb,'comments'),function(snap){
-    comments=snap.val()||{};
-    saveCommentsCache();
-    Object.keys(comments).forEach(function(i){patchStageComments(parseInt(i));});
-  });
-}
-
 var photosLoaded={};   // {stageIndex: true} — étapes déjà chargées
 var photosUnsub={};    // {stageIndex: unsubscribe fn} — listeners actifs
 var photoObserver=null;
@@ -1843,7 +1852,7 @@ function getVisitorId(){
 
 function addBravo(date){
   var vid=getVisitorId();
-  var ref=window._fbRef(window._fbDb,'bravos/'+date+'/'+vid);
+  var ref=window._fbRef(window._fbDb,'days/'+date+'/bravos/'+vid);
   window._fbSet(ref,true).catch(function(err){
     console.error('[addBravo]',err);
   });
@@ -1851,7 +1860,7 @@ function addBravo(date){
 
 function loadBravos(date){
   if(!window._fbDb||!window._fbOnValue)return;
-  var ref=window._fbRef(window._fbDb,'bravos/'+date);
+  var ref=window._fbRef(window._fbDb,'days/'+date+'/bravos');
   var unsub=window._fbOnValue(ref,function(snap){
     var data=snap.val()||{};
     var count=Object.keys(data).length;
@@ -1870,7 +1879,7 @@ function loadBravos(date){
 function loadPhotosForStage(i){
   if(photosLoaded[i]||!window._fbDb)return;
   photosLoaded[i]=true;
-  var unsub=window._fbOnValue(window._fbRef(window._fbDb,'photos/'+i),function(snap){
+  var unsub=window._fbOnValue(window._fbRef(window._fbDb,'days/'+i+'/photos'),function(snap){
     photos[i]=snap.val()||{};
     patchPhotos(i);
   });
@@ -1921,7 +1930,7 @@ function renderJournal(){
     var entry=document.createElement('div');
     entry.className='journal-entry';
     entry.dataset.date=date;
-    var txt=state.journal[date]||'';
+    var txt=(state.days[date]&&state.days[date].journal)||'';
     var dateLabel=new Date(date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
     var kmInfo=d.kmDay?'\uD83D\uDEB4 '+Math.round(d.kmDay)+' km \u2014 total '+Math.round(d.kmTotal)+' km':'';
     var edate=escAttr(date);
@@ -1937,7 +1946,7 @@ function renderJournal(){
           '<button class="btn btn-danger" onclick="deleteJournalEntry(\''+edate+'\')">&#x1f5d1; Supprimer</button>'+
         '</div>';
     }
-    var taAttr=isAdmin?' oninput="state.journal[\''+edate+'\']=this.value;save()"':' readonly';
+    var taAttr=isAdmin?' oninput="state.days[\''+edate+'\'].journal=this.value;save()"':' readonly';
     var taHtml='';
     if(isAdmin){
       taHtml='<textarea class="j-ta" placeholder="Raconte ta journ\u00e9e..."'+taAttr+'>'+Utils.escHtml(txt)+'</textarea>';
@@ -1975,14 +1984,11 @@ function deleteStage(date){
   }).then(function(ok){
     if(!ok)return;
     delete state.days[date];
-    delete state.journal[date];
-    delete state.ratings[date];
-    delete state.tags[date];
     saveNow();
     if(window._fbDb&&window._fbRemove&&window._fbRef){
-      window._fbRemove(window._fbRef(window._fbDb,'photos/'+date))
+      window._fbRemove(window._fbRef(window._fbDb,'days/'+date+'/photos'))
         .catch(function(err){console.error('[deleteStage] remove photos failed',err);});
-      window._fbRemove(window._fbRef(window._fbDb,'comments/'+date))
+      window._fbRemove(window._fbRef(window._fbDb,'days/'+date+'/comments'))
         .catch(function(err){console.error('[deleteStage] remove comments failed',err);});
     }
     renderStages();
@@ -1992,9 +1998,9 @@ function deleteStage(date){
 }
 function openJournalEntry(date){
   if(!isAdmin)return;
-  if(!state.journal)state.journal={};
-  if(state.journal[date]===undefined)state.journal[date]='';
-  if(state.days&&state.days[date]&&state.days[date].journalDeleted){
+  if(!state.days)state.days={};
+  if(!state.days[date])state.days[date]={};
+  if(state.days[date].journalDeleted){
     delete state.days[date].journalDeleted;
   }
   saveNow();
@@ -2026,10 +2032,12 @@ function deleteJournalEntry(date){
     okLabel:'Supprimer'
   }).then(function(ok){
     if(!ok)return;
-    delete state.journal[date];
-    delete state.ratings[date];
-    delete state.tags[date];
-    if(state.days[date])state.days[date].journalDeleted=true;
+    if(state.days[date]){
+      delete state.days[date].journal;
+      delete state.days[date].rating;
+      delete state.days[date].tags;
+      state.days[date].journalDeleted=true;
+    }
     saveNow();
     renderJournal();
   });
@@ -2082,15 +2090,22 @@ document.addEventListener('click',function(){
 });
 
 function saveLocalCache(){
-  try{localStorage.setItem('ev1-state-cache',JSON.stringify(state));}catch(e){
-    console.warn('localStorage plein, cache non sauvegardé');
+  try{localStorage.setItem('ev1-days-cache',JSON.stringify(state.days));}catch(e){
+    console.warn('localStorage plein, days cache non sauvegardé');
+  }
+  try{localStorage.setItem('ev1-meta-cache',JSON.stringify(meta));}catch(e){
+    console.warn('localStorage plein, meta cache non sauvegardé');
   }
 }
 
 function loadLocalCache(){
   try{
-    var s=localStorage.getItem('ev1-state-cache');
-    if(s){var d=JSON.parse(s);state=Object.assign({completed:{},journal:{},ratings:{},tags:{},days:{}},d);}
+    var d=localStorage.getItem('ev1-days-cache');
+    if(d)state.days=JSON.parse(d)||{};
+  }catch(e){}
+  try{
+    var m=localStorage.getItem('ev1-meta-cache');
+    if(m)meta=JSON.parse(m)||{completed:{}};
   }catch(e){}
   try{
     var c=localStorage.getItem('ev1-comments-cache');
@@ -2124,9 +2139,9 @@ function queueWrite(path, data){
 }
 function _inferType(path){
   if(typeof path==='string'){
-    if(path.startsWith('comments')) return 'commentaire';
+    if(path.startsWith('days')&&path.includes('/comments')) return 'commentaire';
+    if(path.startsWith('days')) return 'journal';
     if(path.startsWith('expenses')) return 'dépense';
-    if(path.startsWith('state')) return 'journal';
   }
   return 'élément';
 }
@@ -2202,7 +2217,8 @@ var _origSaveNow=saveNow;
 saveNow=function(){
   saveLocalCache();
   if(!isOnline){
-    queueWrite('state',state);
+    queueWrite('days',state.days);
+    queueWrite('meta',meta);
     setSyncDot('offline');
     return;
   }
@@ -2217,7 +2233,8 @@ function flushState(){
   if(window._fbDb&&isAdmin&&saveTimer){
     clearTimeout(saveTimer);
     saveTimer=null;
-    window._fbSet(window._fbRef(window._fbDb,'state'),state);
+    window._fbSet(window._fbRef(window._fbDb,'days'),state.days);
+    window._fbSet(window._fbRef(window._fbDb,'meta'),meta);
   }
 }
 // beforeunload : fonctionne sur desktop et Android
@@ -2237,7 +2254,7 @@ document.addEventListener('DOMContentLoaded',function(){
   renderJournal();
   setSyncDot(isOnline?'online':'offline');
   setTimeout(function(){
-    initAuth();initFirebase();initPhotos();initComments();initExpenses();fetchWeather();
+    initAuth();initFirebase();initPhotos();initExpenses();fetchWeather();
     if(isOnline)flushQueue();
   },800);
 });
