@@ -1902,9 +1902,9 @@ function renderJournal(){
     var taAttr=isAdmin?' oninput="state.journal[\''+edate+'\']=this.value;save()"':' readonly';
     var taHtml='';
     if(isAdmin){
-      taHtml='<textarea class="j-ta" placeholder="Raconte ta journ\u00e9e..."'+taAttr+'>'+txt+'</textarea>';
+      taHtml='<textarea class="j-ta" placeholder="Raconte ta journ\u00e9e..."'+taAttr+'>'+Utils.escHtml(txt)+'</textarea>';
     } else if(txt){
-      taHtml='<textarea class="j-ta"'+taAttr+'>'+txt+'</textarea>';
+      taHtml='<textarea class="j-ta"'+taAttr+'>'+Utils.escHtml(txt)+'</textarea>';
     }
     var bravosHtml=isAdmin
       ?'<div class="j-bravos"><span class="j-bravo-count"></span></div>'
