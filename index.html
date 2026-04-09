@@ -707,8 +707,8 @@ function logoutAdmin(){
 }
 var _lastActivity=Date.now();
 function resetInactivity(){
-  if(!isAdmin)return;
   _lastActivity=Date.now();
+  if(!isAdmin)return;
   clearTimeout(inactivityTimer);
   inactivityTimer=setTimeout(logoutAdmin,INACTIVITY_MS);
 }
@@ -1092,7 +1092,6 @@ function loadCampings(){
   if(!aheadPts.length){console.warn('[Campings] Aucun point ahead');return;}
   var bbox=ptsBbox(aheadPts,0.1);
   var bboxStr=bbox.w.toFixed(4)+','+bbox.s.toFixed(4)+','+bbox.e.toFixed(4)+','+bbox.n.toFixed(4);
-  console.log('[Campings] bbox=',bboxStr,'pts=',aheadPts.length);
 
   // Requête OpenCampingMap (x-www-form-urlencoded requis)
   Utils.safeFetch('https://opencampingmap.org/getcampsites',{
@@ -1100,8 +1099,8 @@ function loadCampings(){
     headers:{'Content-Type':'application/x-www-form-urlencoded'},
     body:'bbox='+bboxStr
   },{retries:1,timeout:15000})
-    .then(function(r){console.log('[Campings] HTTP',r.status);return r.json();})
-    .then(function(geojson){console.log('[Campings] features:',geojson.features?geojson.features.length:0);renderCampings(geojson,aheadPts);})
+    .then(function(r){return r.json();})
+    .then(function(geojson){renderCampings(geojson,aheadPts);})
     .catch(function(e){
       console.warn('[Campings] OpenCampingMap failed:',e);
       // Fallback : Overpass API
