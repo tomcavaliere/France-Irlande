@@ -2011,7 +2011,7 @@ function publishDay(date){
   if(!isAdmin)return;
   if(!state.days[date])return;
   state.days[date].published=!state.days[date].published;
-  save();
+  saveNow();
   var entry=document.querySelector('#journalList .journal-entry[data-date="'+date+'"]');
   if(!entry)return;
   var badge=entry.querySelector('.j-pub-badge');
