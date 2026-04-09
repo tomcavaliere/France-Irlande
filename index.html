@@ -235,14 +235,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .confirm-actions{display:flex;gap:10px;justify-content:center}
 .confirm-actions .btn{flex:1;padding:10px 14px}
 .btn-danger{background:#e74c3c;color:#fff;border:none}
-.quota-bar{position:fixed;left:0;right:0;bottom:0;z-index:1500;display:none;
-  background:rgba(26,94,31,.95);color:#fff;font-size:11px;padding:6px 12px;
-  text-align:center;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
-  padding-bottom:calc(6px + env(safe-area-inset-bottom,0px))}
-.quota-bar.vis{display:block}
-.quota-bar.warn{background:rgba(230,126,34,.95)}
-.quota-bar.high{background:rgba(231,76,60,.95)}
-.quota-bar.block{background:#c0392b}
 .sync-dot{width:10px;height:10px;border-radius:50%;background:#4caf50;display:inline-block;
   margin-left:6px;vertical-align:middle;animation:blink 2s ease infinite;transition:background .3s;
   cursor:pointer;flex-shrink:0}
@@ -396,7 +388,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 <div id="syncPopover" role="tooltip" aria-live="polite"></div>
 <button class="admin-btn" id="adminBtn" onclick="toggleAdmin()">&#x1f512; Admin</button>
 
-<div class="quota-bar" id="quotaBar">📊 —</div>
 <div class="confirm-modal" id="confirmModal" onclick="if(event.target===this)confirmCancel()">
   <div class="confirm-box">
     <h3 id="confirmTitle">Confirmer</h3>
@@ -472,10 +463,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 
   <div class="page" id="page-journal">
     <div class="sec-title">Carnet de voyage</div>
-    <div id="exportJournalBar" style="display:none;padding:0 12px 8px">
-      <button class="btn btn-p" style="width:100%" onclick="exportJournal('md')">📥 Exporter le journal (.md)</button>
-      <button class="btn" style="width:100%;margin-top:6px" onclick="exportJournal('json')">📦 Exporter (.json complet)</button>
-    </div>
     <div id="journalList"></div>
     <div class="spacer"></div>
   </div>
@@ -561,9 +548,7 @@ const INACTIVITY_MS=3*60*1000;
 var _quotaState={count:0,bytes:0,level:'ok'};
 
 function refreshQuotaBar(){
-  var bar=document.getElementById('quotaBar');
-  if(!bar)return;
-  if(!isAdmin){bar.classList.remove('vis');return;}
+  if(!isAdmin)return;
   if(!window._fbDb||!window._fbGet){return;}
   window._fbGet(window._fbRef(window._fbDb,'photos'))
     .then(function(snap){
@@ -571,11 +556,6 @@ function refreshQuotaBar(){
       var r=Utils.computeQuotaBytes(tree);
       var lvl=Utils.quotaLevel(r.bytes);
       _quotaState={count:r.count,bytes:r.bytes,level:lvl};
-      var pct=(r.bytes/Utils.RTDB_QUOTA_BYTES*100).toFixed(1);
-      bar.textContent='📊 '+r.count+' photos · '+Utils.formatBytes(r.bytes)+' · '+pct+'% / 1 Go';
-      bar.classList.remove('warn','high','block');
-      if(lvl!=='ok')bar.classList.add(lvl);
-      bar.classList.add('vis');
     })
     .catch(function(err){
       console.error('[quota] refresh failed',err);
@@ -595,13 +575,8 @@ function setAdminUI(on){
   if(adminBar)adminBar.style.display=on?'flex':'none';
   var posBar=document.getElementById('posAdminBar');
   if(posBar)posBar.classList.toggle('vis',on);
-  var expBar=document.getElementById('exportJournalBar');
-  if(expBar)expBar.style.display=on?'block':'none';
   if(on){
     refreshQuotaBar();
-  }else{
-    var qb=document.getElementById('quotaBar');
-    if(qb)qb.classList.remove('vis');
   }
   if(!on){
     if(campingsVisible)toggleCampings();
