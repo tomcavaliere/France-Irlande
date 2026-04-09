@@ -1159,38 +1159,31 @@ function loadWater(){
     'node[amenity=water_point]('+bbox.s+','+bbox.w+','+bbox.n+','+bbox.e+');'+
     'node[natural=spring][drinking_water=yes]('+bbox.s+','+bbox.w+','+bbox.n+','+bbox.e+'););out body;';
 
+  var fetchOpts={method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(q)};
+  var safeCfg={retries:2,timeout:25000,backoff:1000,onError:function(e,n){
+    console.warn('[Water] tentative '+n+' échouée:',e.message);
+    btn.textContent='💧 retry…';
+  }};
   var servers=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
-  var attempt=0;
 
-  function tryFetch(){
-    var url=servers[attempt%servers.length];
-    fetch(url,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(q)})
-      .then(function(r){
-        if(r.status===429||r.status===504){throw new Error('HTTP '+r.status);}
-        if(!r.ok)throw new Error('HTTP '+r.status);
-        return r.json();
-      })
-      .then(function(d){
-        waterLoading=false;
-        waterCacheKey=key;
-        waterCacheData=d.elements||[];
-        renderWater(waterCacheData,aheadPts);
-      })
-      .catch(function(e){
-        console.warn('[Water] attempt '+(attempt+1)+':',e.message);
-        attempt++;
-        if(attempt>=4){
-          waterLoading=false;
-          btn.textContent='💧 erreur (réessayer)';
-          return;
-        }
-        // Backoff : 3s, 6s, 9s
-        var delay=attempt*3000;
-        btn.textContent='💧 retry dans '+Math.round(delay/1000)+'s…';
-        setTimeout(tryFetch,delay);
-      });
-  }
-  tryFetch();
+  Utils.safeFetch(servers[0],fetchOpts,safeCfg)
+    .catch(function(e){
+      console.warn('[Water] serveur primaire échoué, essai secondaire:',e.message);
+      btn.textContent='💧 retry serveur 2…';
+      return Utils.safeFetch(servers[1],fetchOpts,safeCfg);
+    })
+    .then(function(r){return r.json();})
+    .then(function(d){
+      waterLoading=false;
+      waterCacheKey=key;
+      waterCacheData=d.elements||[];
+      renderWater(waterCacheData,aheadPts);
+    })
+    .catch(function(e){
+      console.error('[Water] échec total:',e.message);
+      waterLoading=false;
+      btn.textContent='💧 erreur (réessayer)';
+    });
 }
 
 function renderWater(elements,aheadPts){
