@@ -606,9 +606,14 @@ const FRANCE_KM=1358.3;
 const FRANCE_END_IDX=2531;
 
 // ==== STATE ====
-let state={days:{}};
-let meta={completed:{}};
-// days: { "2026-05-01": { lat, lon, kmTotal, kmDay, journal, note } }
+// Position live — remplace getCurrentPos() qui fouillait state.days
+var current = null;          // { lat, lon, kmTotal, kmDay, date, ts } ou null
+
+// Cache des métadonnées d'étapes — chargé à l'ouverture de Carnet
+var stages = {};             // { [date]: { lat, lon, kmTotal, kmDay, note, ts, published, journalDeleted } }
+
+// Caches lazy par date (peuplés à la demande)
+var journals = {};           // { [date]: "texte" }
 
 // ==== STATE ====
 // ==== ADMIN ====
@@ -1456,7 +1461,7 @@ function confirmCancel(){
 function closeModal(){document.getElementById('stageModal').classList.remove('vis');}
 
 // ==== PHOTOS ====
-var photos={};  // {stageIndex: {photoId: base64}}
+var photos={};  // { [date]: { [id]: base64 } }
 
 function openLightbox(id,i){
   var src=(photos[i]&&photos[i][id])||id;
@@ -1580,10 +1585,14 @@ function patchPhotos(i){
 }
 
 // ==== COMMENTAIRES PAR ETAPE ====
-var comments={};  // {stageIndex: {commentId: {name, text, ts}}}
+var comments={};  // { [date]: { [id]: {name, text, ts} } }
 
 function escHtml(s){return Utils.escHtml(s);}
 function formatTime(ts){return Utils.formatTime(ts);}
+function computeKmDay(kmTotal, stg, todayISO) { return Utils.computeKmDay(kmTotal, stg, todayISO); }
+function isOfflineable(path) { return Utils.isOfflineable(path); }
+function actionLabel(path) { return Utils.actionLabel(path); }
+function filterVisibleJournalDates(stg, admin) { return Utils.filterVisibleJournalDates(stg, admin); }
 
 function renderStageCommentsHtml(i){
   var stageCmts=comments[i]||{};
@@ -1834,11 +1843,12 @@ function fetchWeather(){
 }
 
 
-var photosLoaded={};   // {stageIndex: true} — étapes déjà chargées
-var photosUnsub={};    // {stageIndex: unsubscribe fn} — listeners actifs
+// Maps de listeners lazy par date
+var journalsUnsub = {};      // { [date]: fn }
+var commentsUnsub = {};      // { [date]: fn }
+var bravosUnsub = {};        // { [date]: fn }
+var photosUnsub = {};        // { [date]: fn }
 var photoObserver=null;
-
-var _bravoListeners=[];
 
 function getVisitorId(){
   var k='ev1_visitor_id';
@@ -1873,12 +1883,11 @@ function loadBravos(date){
     if(countEl)countEl.textContent=isAdmin?'\uD83D\uDC4F '+count:count;
     if(btn)btn.disabled=voted;
   });
-  _bravoListeners.push(unsub);
+  bravosUnsub[date] = unsub;
 }
 
 function loadPhotosForStage(i){
-  if(photosLoaded[i]||!window._fbDb)return;
-  photosLoaded[i]=true;
+  if(photosUnsub[i]||!window._fbDb)return;
   var unsub=window._fbOnValue(window._fbRef(window._fbDb,'days/'+i+'/photos'),function(snap){
     photos[i]=snap.val()||{};
     patchPhotos(i);
@@ -1915,9 +1924,9 @@ function initPhotos(){
 function renderJournal(){
   if(photoObserver)photoObserver.disconnect();
   Object.values(photosUnsub).forEach(function(unsub){if(typeof unsub==='function')unsub();});
-  photosLoaded={};photosUnsub={};photos={};
-  (_bravoListeners||[]).forEach(function(u){u();});
-  _bravoListeners=[];
+  photosUnsub={};photos={};
+  Object.values(bravosUnsub).forEach(function(u){if(typeof u==='function')u();});
+  bravosUnsub={};
   var c=document.getElementById('journalList');c.innerHTML='';
   var days=state.days||{};
   var dates=Object.keys(days)
