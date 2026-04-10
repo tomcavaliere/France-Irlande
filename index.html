@@ -855,7 +855,8 @@ function updatePosition(){
 
     // Écriture 1 : /current (pointeur live)
     var currentData={lat:lat,lon:lon,kmTotal:kmTotal,kmDay:kmDay,date:todayISO,ts:Date.now()};
-    window._fbSet(window._fbRef(window._fbDb,'current'),currentData);
+    window._fbSet(window._fbRef(window._fbDb,'current'),currentData)
+      .catch(function(err){ console.error('[updatePosition/current]',err); });
 
     // Écriture 2 : /stages/{today} — préserve les champs existants
     var existingStage=stages[todayISO]||{};
@@ -865,7 +866,8 @@ function updatePosition(){
       published:existingStage.published||false,
       ts:Date.now()
     };
-    window._fbSet(window._fbRef(window._fbDb,'stages/'+todayISO),stageData);
+    window._fbSet(window._fbRef(window._fbDb,'stages/'+todayISO),stageData)
+      .catch(function(err){ console.error('[updatePosition/stage]',err); });
 
     updateMap();
     renderStages();
@@ -1875,7 +1877,7 @@ function addBravo(date){
 
 function loadBravos(date){
   if(!window._fbDb||!window._fbOnValue)return;
-  var ref=window._fbRef(window._fbDb,'days/'+date+'/bravos');
+  var ref=window._fbRef(window._fbDb,'bravos/'+date);
   var unsub=window._fbOnValue(ref,function(snap){
     var data=snap.val()||{};
     var count=Object.keys(data).length;
@@ -2056,7 +2058,8 @@ function openJournalEntry(date){
 function publishDay(date){
   if(!isAdmin)return;
   var pub=stages[date]&&stages[date].published;
-  window._fbSet(window._fbRef(window._fbDb,'stages/'+date+'/published'),!pub);
+  window._fbSet(window._fbRef(window._fbDb,'stages/'+date+'/published'),!pub)
+    .catch(function(err){ console.error('[publishDay]',err); });
   // Optimistic UI
   if(stages[date])stages[date].published=!pub;
   var entry=document.querySelector('#journalList .journal-entry[data-date="'+date+'"]');
@@ -2075,9 +2078,11 @@ function deleteJournalEntry(date){
     okLabel:'Supprimer'
   }).then(function(ok){
     if(!ok)return;
-    window._fbRemove(window._fbRef(window._fbDb,'journals/'+date));
-    window._fbSet(window._fbRef(window._fbDb,'stages/'+date+'/journalDeleted'),true);
-    renderJournal();
+    Promise.all([
+      window._fbRemove(window._fbRef(window._fbDb,'journals/'+date)),
+      window._fbSet(window._fbRef(window._fbDb,'stages/'+date+'/journalDeleted'),true)
+    ]).then(function(){ renderJournal(); })
+      .catch(function(err){ console.error('[deleteJournalEntry]',err); });
   });
 }
 
