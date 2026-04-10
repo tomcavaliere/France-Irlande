@@ -230,6 +230,15 @@
     };
   }
 
+  // Calcule les km parcourus aujourd'hui (différence avec la veille la plus récente).
+  function computeKmDay(kmTotal, stages, todayISO) {
+    var dates = Object.keys(stages || {}).filter(function(d) { return d < todayISO; }).sort();
+    if (!dates.length) return Math.max(0, Math.round(kmTotal));
+    var prev = stages[dates[dates.length - 1]];
+    var prevKm = (prev && prev.kmTotal) || 0;
+    return Math.max(0, Math.round(kmTotal - prevKm));
+  }
+
   var api = {
     escAttr: escAttr,
     escHtml: escHtml,
@@ -244,7 +253,8 @@
     formatBytes: formatBytes,
     quotaLevel: quotaLevel,
     RTDB_QUOTA_BYTES: RTDB_QUOTA_BYTES,
-    safeFetch: safeFetch
+    safeFetch: safeFetch,
+    computeKmDay: computeKmDay
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

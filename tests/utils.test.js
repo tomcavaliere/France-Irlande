@@ -7,7 +7,7 @@ const {
   validateComment, validateExpense, validateJournal,
   EXPENSE_CATEGORIES, LIMITS,
   computeQuotaBytes, formatBytes, quotaLevel, RTDB_QUOTA_BYTES,
-  safeFetch
+  safeFetch, computeKmDay
 } = utils;
 
 describe('escAttr', () => {
@@ -387,5 +387,42 @@ describe('safeFetch', () => {
     await expect(
       safeFetch('u', {}, { fetch: null, retries: 0 })
     ).rejects.toThrow('fetch indisponible');
+  });
+});
+
+describe('computeKmDay', () => {
+  it('retourne kmTotal arrondi si aucune étape antérieure', () => {
+    expect(computeKmDay(182.7, {}, '2026-05-03')).toBe(183);
+  });
+
+  it('calcule la différence avec la veille', () => {
+    const stages = { '2026-05-01': { kmTotal: 100 } };
+    expect(computeKmDay(180, stages, '2026-05-02')).toBe(80);
+  });
+
+  it('prend la plus récente étape < today (pas forcément la veille)', () => {
+    const stages = {
+      '2026-04-28': { kmTotal: 50 },
+      '2026-04-30': { kmTotal: 120 }
+    };
+    expect(computeKmDay(200, stages, '2026-05-02')).toBe(80);
+  });
+
+  it('retourne 0 si kmTotal < prevKm (reset GPS)', () => {
+    const stages = { '2026-05-01': { kmTotal: 200 } };
+    expect(computeKmDay(150, stages, '2026-05-02')).toBe(0);
+  });
+
+  it('retourne kmTotal arrondi si stages null/undefined', () => {
+    expect(computeKmDay(42.3, null, '2026-05-01')).toBe(42);
+    expect(computeKmDay(42.3, undefined, '2026-05-01')).toBe(42);
+  });
+
+  it('ignore les étapes du jour même', () => {
+    const stages = {
+      '2026-05-01': { kmTotal: 100 },
+      '2026-05-02': { kmTotal: 150 }
+    };
+    expect(computeKmDay(180, stages, '2026-05-02')).toBe(80);
   });
 });
