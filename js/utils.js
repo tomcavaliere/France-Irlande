@@ -262,7 +262,7 @@
     if (path.indexOf('photos/') === 0) return 'photo';
     if (path.indexOf('comments/') === 0) return 'commentaire';
     if (path.indexOf('bravos/') === 0) return 'bravo';
-    if (path.indexOf('expenses') === 0) return 'dépense';
+    if (path.indexOf('expenses/') === 0) return 'dépense';
     return 'élément';
   }
 
