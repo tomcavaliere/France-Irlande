@@ -1620,8 +1620,7 @@ function postComment(i){
   // Optimistic UI
   if(!comments[i])comments[i]={};
   comments[i][id]=Object.assign({},data,{_pending:true});
-  patchStageComments(parseInt(i));
-  saveCommentsCache();
+  patchStageComments(i);
   if(txtEl)txtEl.value='';
   tryWrite('set','comments/'+i+'/'+id,data);
 }
@@ -1633,7 +1632,7 @@ function deleteComment(i,id){
     message:'Ce commentaire sera définitivement supprimé. Action irréversible.'
   }).then(function(ok){
     if(!ok)return;
-    if(comments[i]){delete comments[i][id];patchStageComments(parseInt(i));saveCommentsCache();}
+    if(comments[i]){delete comments[i][id];patchStageComments(i);}
     tryWrite('remove','comments/'+i+'/'+id);
   });
 }
