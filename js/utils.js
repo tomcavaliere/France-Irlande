@@ -239,6 +239,15 @@
     return Math.max(0, Math.round(kmTotal - prevKm));
   }
 
+  // Indique si un write peut passer par la queue offline.
+  function isOfflineable(path) {
+    if (typeof path !== 'string') return false;
+    if (path === 'current') return true;
+    if (path.indexOf('stages/') === 0) return true;
+    if (path.indexOf('journals/') === 0) return true;
+    return false;
+  }
+
   var api = {
     escAttr: escAttr,
     escHtml: escHtml,
@@ -254,7 +263,8 @@
     quotaLevel: quotaLevel,
     RTDB_QUOTA_BYTES: RTDB_QUOTA_BYTES,
     safeFetch: safeFetch,
-    computeKmDay: computeKmDay
+    computeKmDay: computeKmDay,
+    isOfflineable: isOfflineable
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

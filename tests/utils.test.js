@@ -7,7 +7,7 @@ const {
   validateComment, validateExpense, validateJournal,
   EXPENSE_CATEGORIES, LIMITS,
   computeQuotaBytes, formatBytes, quotaLevel, RTDB_QUOTA_BYTES,
-  safeFetch, computeKmDay
+  safeFetch, computeKmDay, isOfflineable
 } = utils;
 
 describe('escAttr', () => {
@@ -424,5 +424,47 @@ describe('computeKmDay', () => {
       '2026-05-02': { kmTotal: 150 }
     };
     expect(computeKmDay(180, stages, '2026-05-02')).toBe(80);
+  });
+});
+
+describe('isOfflineable', () => {
+  it('autorise current', () => {
+    expect(utils.isOfflineable('current')).toBe(true);
+  });
+
+  it('autorise stages/ et ses sous-paths', () => {
+    expect(utils.isOfflineable('stages/2026-05-01')).toBe(true);
+    expect(utils.isOfflineable('stages/2026-05-01/note')).toBe(true);
+    expect(utils.isOfflineable('stages/2026-05-01/published')).toBe(true);
+  });
+
+  it('autorise journals/', () => {
+    expect(utils.isOfflineable('journals/2026-05-01')).toBe(true);
+  });
+
+  it('refuse photos/', () => {
+    expect(utils.isOfflineable('photos/2026-05-01/abc')).toBe(false);
+  });
+
+  it('refuse comments/', () => {
+    expect(utils.isOfflineable('comments/2026-05-01/xyz')).toBe(false);
+  });
+
+  it('refuse bravos/', () => {
+    expect(utils.isOfflineable('bravos/2026-05-01/vid')).toBe(false);
+  });
+
+  it('refuse expenses/', () => {
+    expect(utils.isOfflineable('expenses/abc')).toBe(false);
+  });
+
+  it('refuse chaîne vide', () => {
+    expect(utils.isOfflineable('')).toBe(false);
+  });
+
+  it('refuse null/undefined/nombre', () => {
+    expect(utils.isOfflineable(null)).toBe(false);
+    expect(utils.isOfflineable(undefined)).toBe(false);
+    expect(utils.isOfflineable(42)).toBe(false);
   });
 });
