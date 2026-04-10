@@ -2109,16 +2109,16 @@ document.addEventListener('click',function(){
 });
 
 function saveLocalCache(){
-  try{localStorage.setItem('ev1-current-cache',JSON.stringify(current));}catch(e){}
-  try{localStorage.setItem('ev1-stages-cache',JSON.stringify(stages));}catch(e){}
+  try{localStorage.setItem('ev1-current-cache',JSON.stringify(current));}catch(e){console.warn('[cache] current non sauvegardé',e);}
+  try{localStorage.setItem('ev1-stages-cache',JSON.stringify(stages));}catch(e){console.warn('[cache] stages non sauvegardé',e);}
   try{localStorage.setItem('ev1-journals-cache',JSON.stringify(journals));}
-  catch(e){console.warn('localStorage plein, journals cache non sauvegardé');}
+  catch(e){console.warn('[cache] journals non sauvegardé',e);}
 }
 
 function loadLocalCache(){
-  try{var c=localStorage.getItem('ev1-current-cache');if(c)current=JSON.parse(c);}catch(e){}
-  try{var s=localStorage.getItem('ev1-stages-cache');if(s)stages=JSON.parse(s)||{};}catch(e){}
-  try{var j=localStorage.getItem('ev1-journals-cache');if(j)journals=JSON.parse(j)||{};}catch(e){}
+  try{var c=localStorage.getItem('ev1-current-cache');if(c)current=JSON.parse(c);}catch(e){console.warn('[cache] current illisible',e);}
+  try{var s=localStorage.getItem('ev1-stages-cache');if(s)stages=JSON.parse(s)||{};}catch(e){console.warn('[cache] stages illisible',e);}
+  try{var j=localStorage.getItem('ev1-journals-cache');if(j)journals=JSON.parse(j)||{};}catch(e){console.warn('[cache] journals illisible',e);}
 }
 
 var MAX_OFFLINE_QUEUE=200;
