@@ -722,7 +722,8 @@ function toggleAdmin(){
   document.getElementById('pwModal').classList.add('vis');
   setTimeout(function(){document.getElementById('pwEmail').focus()},100);
 }
-function closeAdminDropdown(){
+function closeAdminDropdown(e){
+  if(e&&document.getElementById('adminDropdown').contains(e.target))return;
   var dd=document.getElementById('adminDropdown');
   if(dd)dd.classList.remove('vis');
 }
