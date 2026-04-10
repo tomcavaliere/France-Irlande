@@ -266,6 +266,20 @@
     return 'élément';
   }
 
+  // Dates à afficher dans le carnet. Visiteur : published=true seulement.
+  function filterVisibleJournalDates(stages, isAdmin) {
+    if (!stages || typeof stages !== 'object') return [];
+    return Object.keys(stages)
+      .filter(function(d) {
+        var s = stages[d];
+        if (!s || s.journalDeleted) return false;
+        if (isAdmin) return true;
+        return s.published === true;
+      })
+      .sort()
+      .reverse();
+  }
+
   var api = {
     escAttr: escAttr,
     escHtml: escHtml,
@@ -283,7 +297,8 @@
     safeFetch: safeFetch,
     computeKmDay: computeKmDay,
     isOfflineable: isOfflineable,
-    actionLabel: actionLabel
+    actionLabel: actionLabel,
+    filterVisibleJournalDates: filterVisibleJournalDates
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

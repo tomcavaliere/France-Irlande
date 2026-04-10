@@ -7,7 +7,7 @@ const {
   validateComment, validateExpense, validateJournal,
   EXPENSE_CATEGORIES, LIMITS,
   computeQuotaBytes, formatBytes, quotaLevel, RTDB_QUOTA_BYTES,
-  safeFetch, computeKmDay, isOfflineable, actionLabel
+  safeFetch, computeKmDay, isOfflineable, actionLabel, filterVisibleJournalDates
 } = utils;
 
 describe('escAttr', () => {
@@ -517,5 +517,50 @@ describe('actionLabel', () => {
 
   it('chemin inconnu → élément', () => {
     expect(utils.actionLabel('unknown/path')).toBe('élément');
+  });
+});
+
+describe('filterVisibleJournalDates', () => {
+  const stages = {
+    '2026-05-01': { kmTotal: 50, published: true },
+    '2026-05-02': { kmTotal: 100 },
+    '2026-05-03': { kmTotal: 150, published: true, journalDeleted: true },
+    '2026-05-04': { kmTotal: 200, published: true }
+  };
+
+  it('retourne tableau vide si stages vide', () => {
+    expect(utils.filterVisibleJournalDates({}, true)).toEqual([]);
+    expect(utils.filterVisibleJournalDates({}, false)).toEqual([]);
+  });
+
+  it('admin voit brouillons et publiés', () => {
+    const r = utils.filterVisibleJournalDates(stages, true);
+    expect(r).toContain('2026-05-01');
+    expect(r).toContain('2026-05-02');
+    expect(r).toContain('2026-05-04');
+  });
+
+  it('visiteur ne voit que les publiés', () => {
+    const r = utils.filterVisibleJournalDates(stages, false);
+    expect(r).toContain('2026-05-01');
+    expect(r).toContain('2026-05-04');
+    expect(r).not.toContain('2026-05-02');
+  });
+
+  it('personne ne voit les journalDeleted', () => {
+    expect(utils.filterVisibleJournalDates(stages, true)).not.toContain('2026-05-03');
+    expect(utils.filterVisibleJournalDates(stages, false)).not.toContain('2026-05-03');
+  });
+
+  it('tri décroissant (dernier jour en premier)', () => {
+    const r = utils.filterVisibleJournalDates(stages, true);
+    expect(r[0]).toBe('2026-05-04');
+    expect(r[r.length - 1]).toBe('2026-05-01');
+  });
+
+  it('stages null / non-objet → tableau vide', () => {
+    expect(utils.filterVisibleJournalDates(null, true)).toEqual([]);
+    expect(utils.filterVisibleJournalDates('nope', false)).toEqual([]);
+    expect(utils.filterVisibleJournalDates(undefined, true)).toEqual([]);
   });
 });
