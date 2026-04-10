@@ -696,6 +696,7 @@ function exportJournal(fmt){
 }
 function logoutAdmin(){
   clearTimeout(inactivityTimer);
+  closeAdminDropdown();
   flushJournals();
   if(window._fbAuth)window._fbSignOut(window._fbAuth);
 }
@@ -712,7 +713,7 @@ function toggleAdmin(){
     if(dd.classList.contains('vis')){dd.classList.remove('vis');return;}
     dd.classList.add('vis');
     setTimeout(function(){
-      document.addEventListener('click',closeAdminDropdown,{once:true,capture:true});
+      document.addEventListener('click',closeAdminDropdown,{capture:true});
     },0);
     return;
   }
@@ -724,6 +725,7 @@ function toggleAdmin(){
 }
 function closeAdminDropdown(e){
   if(e&&document.getElementById('adminDropdown').contains(e.target))return;
+  document.removeEventListener('click',closeAdminDropdown,{capture:true});
   var dd=document.getElementById('adminDropdown');
   if(dd)dd.classList.remove('vis');
 }
