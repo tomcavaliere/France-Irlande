@@ -248,6 +248,24 @@
     return false;
   }
 
+  // Label humain pour une path Firebase (pour toasts, queue summary).
+  function actionLabel(path) {
+    if (typeof path !== 'string') return 'élément';
+    if (path === 'current') return 'position';
+    if (path.indexOf('stages/') === 0) {
+      if (path.indexOf('/note') >= 0) return 'note';
+      if (path.indexOf('/published') >= 0) return 'publication';
+      if (path.indexOf('/journalDeleted') >= 0) return 'suppression';
+      return 'étape';
+    }
+    if (path.indexOf('journals/') === 0) return 'journal';
+    if (path.indexOf('photos/') === 0) return 'photo';
+    if (path.indexOf('comments/') === 0) return 'commentaire';
+    if (path.indexOf('bravos/') === 0) return 'bravo';
+    if (path.indexOf('expenses') === 0) return 'dépense';
+    return 'élément';
+  }
+
   var api = {
     escAttr: escAttr,
     escHtml: escHtml,
@@ -264,7 +282,8 @@
     RTDB_QUOTA_BYTES: RTDB_QUOTA_BYTES,
     safeFetch: safeFetch,
     computeKmDay: computeKmDay,
-    isOfflineable: isOfflineable
+    isOfflineable: isOfflineable,
+    actionLabel: actionLabel
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

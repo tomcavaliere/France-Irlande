@@ -7,7 +7,7 @@ const {
   validateComment, validateExpense, validateJournal,
   EXPENSE_CATEGORIES, LIMITS,
   computeQuotaBytes, formatBytes, quotaLevel, RTDB_QUOTA_BYTES,
-  safeFetch, computeKmDay, isOfflineable
+  safeFetch, computeKmDay, isOfflineable, actionLabel
 } = utils;
 
 describe('escAttr', () => {
@@ -466,5 +466,56 @@ describe('isOfflineable', () => {
     expect(utils.isOfflineable(null)).toBe(false);
     expect(utils.isOfflineable(undefined)).toBe(false);
     expect(utils.isOfflineable(42)).toBe(false);
+  });
+});
+
+describe('actionLabel', () => {
+  it('current → position', () => {
+    expect(utils.actionLabel('current')).toBe('position');
+  });
+
+  it('stages/date → étape', () => {
+    expect(utils.actionLabel('stages/2026-05-01')).toBe('étape');
+  });
+
+  it('stages/date/note → note', () => {
+    expect(utils.actionLabel('stages/2026-05-01/note')).toBe('note');
+  });
+
+  it('stages/date/published → publication', () => {
+    expect(utils.actionLabel('stages/2026-05-01/published')).toBe('publication');
+  });
+
+  it('stages/date/journalDeleted → suppression', () => {
+    expect(utils.actionLabel('stages/2026-05-01/journalDeleted')).toBe('suppression');
+  });
+
+  it('journals/date → journal', () => {
+    expect(utils.actionLabel('journals/2026-05-01')).toBe('journal');
+  });
+
+  it('photos/date/id → photo', () => {
+    expect(utils.actionLabel('photos/2026-05-01/abc')).toBe('photo');
+  });
+
+  it('comments/date/id → commentaire', () => {
+    expect(utils.actionLabel('comments/2026-05-01/xyz')).toBe('commentaire');
+  });
+
+  it('bravos/date/vid → bravo', () => {
+    expect(utils.actionLabel('bravos/2026-05-01/vid')).toBe('bravo');
+  });
+
+  it('expenses/id → dépense', () => {
+    expect(utils.actionLabel('expenses/abc')).toBe('dépense');
+  });
+
+  it('non-string → élément', () => {
+    expect(utils.actionLabel(null)).toBe('élément');
+    expect(utils.actionLabel(42)).toBe('élément');
+  });
+
+  it('chemin inconnu → élément', () => {
+    expect(utils.actionLabel('unknown/path')).toBe('élément');
   });
 });
