@@ -1356,6 +1356,7 @@ function renderWater(elements,aheadPts){
 function switchTab(t){
   document.querySelectorAll('.tab').forEach(function(e){e.classList.toggle('active',e.dataset.page===t)});
   document.querySelectorAll('.page').forEach(function(e){e.classList.toggle('active',e.id==='page-'+t)});
+  if(t==='journal'||t==='stages')openCarnetTab();
   if(t==='map'&&map)setTimeout(function(){map.invalidateSize()},100);
   if(t==='journal'&&journalDirty){renderJournal();journalDirty=false;}
   if(t==='depenses')renderExpenses();
@@ -2108,41 +2109,16 @@ document.addEventListener('click',function(){
 });
 
 function saveLocalCache(){
-  try{localStorage.setItem('ev1-days-cache',JSON.stringify(state.days));}catch(e){
-    console.warn('localStorage plein, days cache non sauvegardé');
-  }
-  try{localStorage.setItem('ev1-meta-cache',JSON.stringify(meta));}catch(e){
-    console.warn('localStorage plein, meta cache non sauvegardé');
-  }
+  try{localStorage.setItem('ev1-current-cache',JSON.stringify(current));}catch(e){}
+  try{localStorage.setItem('ev1-stages-cache',JSON.stringify(stages));}catch(e){}
+  try{localStorage.setItem('ev1-journals-cache',JSON.stringify(journals));}
+  catch(e){console.warn('localStorage plein, journals cache non sauvegardé');}
 }
 
 function loadLocalCache(){
-  try{
-    var d=localStorage.getItem('ev1-days-cache');
-    if(d)state.days=JSON.parse(d)||{};
-  }catch(e){}
-  try{
-    var m=localStorage.getItem('ev1-meta-cache');
-    if(m)meta=JSON.parse(m)||{completed:{}};
-  }catch(e){}
-  try{
-    var c=localStorage.getItem('ev1-comments-cache');
-    if(c)comments=JSON.parse(c)||{};
-  }catch(e){}
-  try{
-    var x=localStorage.getItem('ev1-expenses-cache');
-    if(x)expenses=JSON.parse(x)||{};
-  }catch(e){}
-}
-function saveCommentsCache(){
-  try{localStorage.setItem('ev1-comments-cache',JSON.stringify(comments));}catch(e){
-    console.warn('localStorage plein, comments cache non sauvegardé');
-  }
-}
-function saveExpensesCache(){
-  try{localStorage.setItem('ev1-expenses-cache',JSON.stringify(expenses));}catch(e){
-    console.warn('localStorage plein, expenses cache non sauvegardé');
-  }
+  try{var c=localStorage.getItem('ev1-current-cache');if(c)current=JSON.parse(c);}catch(e){}
+  try{var s=localStorage.getItem('ev1-stages-cache');if(s)stages=JSON.parse(s)||{};}catch(e){}
+  try{var j=localStorage.getItem('ev1-journals-cache');if(j)journals=JSON.parse(j)||{};}catch(e){}
 }
 
 var MAX_OFFLINE_QUEUE=200;
@@ -2152,16 +2128,15 @@ function persistQueue(){
   }
 }
 function queueWrite(path, data){
-  // Compat : ancien format = set
-  enqueueOp('set', path, data);
+  if(!isOfflineable(path)){
+    // Photos/commentaires/bravos/expenses not available offline
+    return false;
+  }
+  enqueueOp(data===null?'remove':'set', path, data);
+  return true;
 }
 function _inferType(path){
-  if(typeof path==='string'){
-    if(path.startsWith('days')&&path.includes('/comments')) return 'commentaire';
-    if(path.startsWith('days')) return 'journal';
-    if(path.startsWith('expenses')) return 'dépense';
-  }
-  return 'élément';
+  return actionLabel(path);
 }
 function enqueueOp(op, path, data){
   offlineQueue.push({op:op, path:path, data:data, ts:Date.now(), type:_inferType(path)});
@@ -2227,7 +2202,7 @@ window.addEventListener('offline', function(){
 // ==== INIT ====
 function flushState(){
   saveLocalCache();
-  flushJournals();
+  if(isAdmin)flushJournals();
 }
 // beforeunload : fonctionne sur desktop et Android
 window.addEventListener('beforeunload',flushState);
@@ -2246,7 +2221,7 @@ document.addEventListener('DOMContentLoaded',function(){
   renderJournal();
   setSyncDot(isOnline?'online':'offline');
   setTimeout(function(){
-    initAuth();initFirebase();initPhotos();initExpenses();fetchWeather();
+    initAuth();initFirebase();initExpenses();fetchWeather();
     if(isOnline)flushQueue();
   },800);
 });
