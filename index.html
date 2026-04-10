@@ -1502,7 +1502,7 @@ function uploadPhoto(i){
       compressImage(files[idx],function(b64){
         if(!b64){uploadNext(idx+1);return;}
         var id='p'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
-        window._fbSet(window._fbRef(window._fbDb,'days/'+i+'/photos/'+id),b64)
+        window._fbSet(window._fbRef(window._fbDb,'photos/'+i+'/'+id),b64)
           .then(function(){
             if(!photos[i])photos[i]={};
             photos[i][id]=b64;
@@ -1528,7 +1528,7 @@ function deletePhoto(i,id){
     message:'Cette photo sera définitivement supprimée. Action irréversible.'
   }).then(function(ok){
     if(!ok)return;
-    window._fbRemove(window._fbRef(window._fbDb,'days/'+i+'/photos/'+id))
+    window._fbRemove(window._fbRef(window._fbDb,'photos/'+i+'/'+id))
       .then(function(){refreshQuotaState();})
       .catch(function(err){console.error('[deletePhoto] remove failed',err);});
     if(photos[i])delete photos[i][id];
