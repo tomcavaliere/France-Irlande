@@ -696,7 +696,7 @@ function exportJournal(fmt){
 }
 function logoutAdmin(){
   clearTimeout(inactivityTimer);
-  if(saveTimer){clearTimeout(saveTimer);saveTimer=null;}
+  flushJournals();
   if(window._fbAuth)window._fbSignOut(window._fbAuth);
 }
 var _lastActivity=Date.now();
