@@ -628,16 +628,9 @@ var _quotaState={count:0,bytes:0,level:'ok'};
 
 function refreshQuotaState(callback){
   if(!window._fbDb||!window._fbGet){if(callback)callback();return;}
-  window._fbGet(window._fbRef(window._fbDb,'days'))
+  window._fbGet(window._fbRef(window._fbDb,'photos'))
     .then(function(snap){
-      var daysData=snap.exists()?snap.val():{};
-      // Transform days/{date} structure to photos tree for quota calculation
-      var photosTree={};
-      Object.keys(daysData).forEach(function(date){
-        if(daysData[date]&&daysData[date].photos){
-          photosTree[date]=daysData[date].photos;
-        }
-      });
+      var photosTree=snap.exists()?snap.val():{};
       var r=Utils.computeQuotaBytes(photosTree);
       var lvl=Utils.quotaLevel(r.bytes);
       _quotaState={count:r.count,bytes:r.bytes,level:lvl};
@@ -672,41 +665,34 @@ function setAdminUI(on){
 }
 function exportJournal(fmt){
   try{
-    var days=state.days||{};
     var stamp=new Date().toISOString().slice(0,10);
     var blob,filename;
     if(fmt==='json'){
-      var payload={exportedAt:new Date().toISOString(),days:days,comments:comments,expenses:expenses};
+      var payload={exportedAt:new Date().toISOString(),stages:stages,journals:journals,comments:comments,expenses:expenses};
       blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
       filename='carnet-eurovelo1-'+stamp+'.json';
     }else{
-      var dates=Object.keys(days).sort();
+      var dates=Object.keys(stages).sort();
       var lines=['# Carnet de voyage — EuroVelo 1','','_Exporté le '+stamp+'_',''];
       dates.forEach(function(d){
         lines.push('## '+d);
-        var dd=days[d];
+        var dd=stages[d];
         if(dd){
           var meta=[];
           if(dd.kmDay!=null)meta.push(dd.kmDay+' km');
           if(dd.kmTotal!=null)meta.push('total '+dd.kmTotal+' km');
           if(meta.length)lines.push('_'+meta.join(' · ')+'_');
         }
-        if(dd&&dd.rating)lines.push('Note : '+'★'.repeat(dd.rating)+'☆'.repeat(5-dd.rating));
-        if(dd&&dd.tags&&dd.tags.length)lines.push('Tags : '+dd.tags.join(', '));
-        if(dd&&dd.journal)lines.push('',dd.journal);
+        if(journals[d])lines.push('',journals[d]);
         lines.push('');
       });
       blob=new Blob([lines.join('\n')],{type:'text/markdown'});
       filename='carnet-eurovelo1-'+stamp+'.md';
     }
     var url=URL.createObjectURL(blob);
-    var a=document.createElement('a');
-    a.href=url;a.download=filename;document.body.appendChild(a);a.click();
-    setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},100);
-  }catch(err){
-    console.error('[export] failed',err);
-    alert('Export impossible : '+err.message);
-  }
+    var a=document.createElement('a');a.href=url;a.download=filename;a.click();
+    URL.revokeObjectURL(url);
+  }catch(err){console.error('[export]',err);}
 }
 function logoutAdmin(){
   clearTimeout(inactivityTimer);
@@ -747,22 +733,18 @@ function openProfileModal(){
   closeAdminDropdown();
   var u=window._fbAuth&&window._fbAuth.currentUser;
   document.getElementById('profileEmail').textContent=u?u.email:'—';
-  var stages=state.stages||[];
-  document.getElementById('profileStatStages').textContent=stages.length;
-  var days=state.days||{};
-  var published=Object.values(days).filter(function(d){return d.published===true;}).length;
+  document.getElementById('profileStatStages').textContent=Object.keys(stages).length;
+  var published=Object.values(stages).filter(function(d){return d.published===true;}).length;
   document.getElementById('profileStatJournal').textContent=published;
   document.getElementById('profileStatComments').textContent='…';
   if(window._fbDb&&window._fbGet){
-    window._fbGet(window._fbRef(window._fbDb,'days'))
+    window._fbGet(window._fbRef(window._fbDb,'comments'))
       .then(function(snap){
         var count=0;
         if(snap.exists()){
-          var daysData=snap.val();
-          Object.values(daysData).forEach(function(dayData){
-            if(dayData&&dayData.comments){
-              count+=Object.keys(dayData.comments).length;
-            }
+          var commentsData=snap.val();
+          Object.values(commentsData).forEach(function(dateComments){
+            if(dateComments)count+=Object.keys(dateComments).length;
           });
         }
         document.getElementById('profileStatComments').textContent=count;
@@ -1039,7 +1021,7 @@ function initMap(){
 }
 
 function updateMap(){
-  var pos=state.days?getCurrentPos():null;
+  var pos=getCurrentPos();
   var kmD=pos?pos.kmTotal:0;
   var pct=Math.round((kmD/TOTAL_KM)*100);
 
@@ -1070,19 +1052,14 @@ function updateMap(){
   // Stats header carte
   document.getElementById('mapKmD').textContent=Math.round(kmD);
   document.getElementById('mapKmL').textContent=Math.round(TOTAL_KM-kmD);
-  var nbDays=state.days?Object.keys(state.days).length:0;
+  var nbDays=Object.keys(stages).length;
   document.getElementById('mapDays').textContent='J'+nbDays;
 }
 
 // Retourne la position actuelle (dernier jour enregistré)
 function getCurrentPos(){
-  if(!state.days)return null;
-  var dates=Object.keys(state.days).sort();
-  if(!dates.length)return null;
-  var last=state.days[dates[dates.length-1]];
-  if(!last||!last.lat)return null;
-  var snapped=snapToRoute(last.lat,last.lon);
-  return snapped;
+  if(!current)return null;
+  return snapToRoute(current.lat,current.lon);
 }
 
 function calcKmD(){
@@ -1390,20 +1367,17 @@ function renderStages(){
   var c=document.getElementById('stagesList');
   if(!c)return;
   c.innerHTML='';
-  var days=state.days||{};
-  var dates=Object.keys(days).sort();
+  var dates=Object.keys(stages).sort();
   if(!dates.length){
     c.innerHTML='<div style="text-align:center;color:var(--text-light);font-size:13px;padding:24px 0">'+
       'Les étapes apparaîtront ici après la mise à jour de position chaque soir.</div>';
     updateRecap();return;
   }
-  // Afficher chaque jour en carte
   dates.forEach(function(date,idx){
-    var d=days[date];
+    var d=stages[date];
     var card=document.createElement('div');
     card.className='stage-card';
     card.style.position='relative';
-    // Calculer km du jour
     var kmDay=d.kmDay||0;
     var kmTotal=d.kmTotal||0;
     var seg=d.lat&&d.lon?(snapToRoute(d.lat,d.lon).idx<=FRANCE_END_IDX?'🇫🇷':'🇮🇪'):'';
@@ -1411,12 +1385,12 @@ function renderStages(){
     var edate=escAttr(date);
     var adminStageHtml=isAdmin?
       '<button class="s-del" onclick="deleteStage(\''+edate+'\');event.stopPropagation()">&#x2715;</button>'+
-      '<button class="s-write" onclick="openJournalEntry(\''+edate+'\');event.stopPropagation()">&#x1f4dd; \u00c9crire</button>'
+      '<button class="s-write" onclick="openJournalEntry(\''+edate+'\');event.stopPropagation()">&#x1f4dd; Écrire</button>'
       :'';
     card.innerHTML=
       '<div class="s-hdr"><div>'+
         '<div class="s-day">'+seg+' J'+(idx+1)+' — '+dateLabel+'</div>'+
-        '<div class="s-title">'+escHtml(d.note||'\u00c9tape du jour')+'</div>'+
+        '<div class="s-title">'+escHtml(d.note||'Étape du jour')+'</div>'+
         adminStageHtml+
       '</div></div>'+
       '<div class="s-stats">'+
@@ -1430,9 +1404,8 @@ function renderStages(){
 }
 
 function updateRecap(){
-  var days=state.days||{};
-  var dates=Object.keys(days).sort();
-  var kmD=calcKmD();
+  var dates=Object.keys(stages).sort();
+  var kmD=current?current.kmTotal:0;
   var pct=Math.round((kmD/TOTAL_KM)*100);
   var nbDays=dates.length;
   var avg=nbDays>0?Math.round(kmD/nbDays):0;
@@ -1969,29 +1942,26 @@ function renderJournal(){
   photos={};comments={};
   // (journals NOT cleared — needed for admin editing)
   var c=document.getElementById('journalList');c.innerHTML='';
-  var days=state.days||{};
-  var dates=Object.keys(days)
-    .filter(function(d){return !days[d].journalDeleted&&(isAdmin||days[d].published===true);})
-    .sort().reverse();
+  var dates=filterVisibleJournalDates(stages,isAdmin);
   var hasAny=false;
   dates.forEach(function(date){
-    var d=days[date];
+    var d=stages[date];
     hasAny=true;
     var entry=document.createElement('div');
     entry.className='journal-entry';
     entry.dataset.date=date;
-    var txt=(state.days[date]&&state.days[date].journal)||'';
+    var txt=journals[date]||'';
     var dateLabel=new Date(date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
     var kmInfo=d.kmDay?'\uD83D\uDEB4 '+Math.round(d.kmDay)+' km \u2014 total '+Math.round(d.kmTotal)+' km':'';
     var edate=escAttr(date);
-    var pub=!!(days[date]&&days[date].published);
+    var pub=!!(stages[date]&&stages[date].published);
     var adminActionsHtml='';
     if(isAdmin){
       adminActionsHtml=
         '<div class="j-actions">'+
-          '<span class="'+(pub?'j-badge-pub':'j-badge-draft')+' j-pub-badge">'+(pub?'\u2713 Publi\u00e9':'Brouillon')+'</span>'+
+          '<span class="'+(pub?'j-badge-pub':'j-badge-draft')+' j-pub-badge">'+(pub?'\u2713 Publié':'Brouillon')+'</span>'+
           '<button class="btn btn-o j-pub-btn" onclick="publishDay(\''+edate+'\')">'+
-            (pub?'D\u00e9publier':'Publier')+
+            (pub?'Dépublier':'Publier')+
           '</button>'+
           '<button class="btn btn-danger" onclick="deleteJournalEntry(\''+edate+'\')">&#x1f5d1; Supprimer</button>'+
         '</div>';
@@ -1999,7 +1969,7 @@ function renderJournal(){
     var taAttr=isAdmin?' oninput="onJournalInput(\''+edate+'\',this.value)"':' readonly';
     var taHtml='';
     if(isAdmin){
-      taHtml='<textarea class="j-ta" placeholder="Raconte ta journ\u00e9e..."'+taAttr+'>'+Utils.escHtml(txt)+'</textarea>';
+      taHtml='<textarea class="j-ta" placeholder="Raconte ta journée..."'+taAttr+'>'+Utils.escHtml(txt)+'</textarea>';
     } else if(txt){
       taHtml='<textarea class="j-ta"'+taAttr+'>'+Utils.escHtml(txt)+'</textarea>';
     }
