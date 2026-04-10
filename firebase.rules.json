@@ -1,33 +1,54 @@
 {
   "rules": {
-    "days": {
+    "current": {
+      ".read": true,
+      ".write": "auth != null",
+      ".validate": "newData.hasChildren(['lat','lon','kmTotal','date','ts'])"
+    },
+    "stages": {
       ".read": true,
       "$date": {
         ".write": "auth != null",
-        "photos": {
-          "$id": {
-            ".write": "auth != null",
-            ".validate": "newData.isString() && newData.val().length < 500000"
-          }
-        },
-        "comments": {
-          "$id": {
-            ".write": "!data.exists() || auth != null",
-            ".validate": "newData.child('text').val().length < 500 && newData.child('name').val().length < 30"
-          }
-        },
-        "bravos": {
-          "$visitorId": {
-            ".write": "!data.exists()",
-            ".validate": "newData.val() === true"
-          }
+        ".validate": "newData.hasChildren(['lat','lon','kmTotal'])"
+      }
+    },
+    "journals": {
+      ".read": true,
+      "$date": {
+        ".write": "auth != null",
+        ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 5000)"
+      }
+    },
+    "photos": {
+      ".read": true,
+      "$date": {
+        "$id": {
+          ".write": "auth != null",
+          ".validate": "newData.isString() && newData.val().length < 500000"
         }
       }
     },
-    "meta": {
+    "comments": {
       ".read": true,
-      ".write": "auth != null"
+      "$date": {
+        "$id": {
+          ".write": "!data.exists() || auth != null",
+          ".validate": "newData.child('text').val().length < 500 && newData.child('name').val().length < 30"
+        }
+      }
     },
-    "expenses": { ".read": "auth != null", ".write": "auth != null" }
+    "bravos": {
+      ".read": true,
+      "$date": {
+        "$visitorId": {
+          ".write": "!data.exists()",
+          ".validate": "newData.val() === true"
+        }
+      }
+    },
+    "expenses": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    }
   }
 }
