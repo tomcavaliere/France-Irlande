@@ -490,6 +490,10 @@ describe('actionLabel', () => {
     expect(utils.actionLabel('stages/2026-05-01/journalDeleted')).toBe('suppression');
   });
 
+  it('stages/date/published/note → note (terminal segment)', () => {
+    expect(utils.actionLabel('stages/2026-05-01/published/note')).toBe('note');
+  });
+
   it('journals/date → journal', () => {
     expect(utils.actionLabel('journals/2026-05-01')).toBe('journal');
   });

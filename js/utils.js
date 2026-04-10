@@ -253,9 +253,10 @@
     if (typeof path !== 'string') return 'élément';
     if (path === 'current') return 'position';
     if (path.indexOf('stages/') === 0) {
-      if (path.indexOf('/note') >= 0) return 'note';
-      if (path.indexOf('/published') >= 0) return 'publication';
-      if (path.indexOf('/journalDeleted') >= 0) return 'suppression';
+      var seg = path.split('/').pop();
+      if (seg === 'note') return 'note';
+      if (seg === 'published') return 'publication';
+      if (seg === 'journalDeleted') return 'suppression';
       return 'étape';
     }
     if (path.indexOf('journals/') === 0) return 'journal';
