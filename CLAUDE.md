@@ -9,7 +9,7 @@ Tracé complet : France (Chamonix → Roscoff) + Irlande (Cork → Sligo).
 - **Carte** : Leaflet 1.9.4 (CDN unpkg, mis en cache par le SW).
 - **Backend** : Firebase RTDB `france-irlande-bike`, région `europe-west1`. Lecture publique sauf `expenses` (auth uniquement).
 - **Deploy** : GitHub Pages → `https://tomcavaliere.github.io/France-Irlande/`
-- **PWA** : service worker `sw.js` (cache `ev1-v12`), `manifest.json`.
+- **PWA** : service worker `sw.js` (cache `ev1-v13`), `manifest.json`.
 - **Tests** : Vitest (`npm test` / `npm run test:watch`). Aucun bundler, aucun jsdom — Node pur.
 
 ## Structure du repo
@@ -43,8 +43,8 @@ Le code de `index.html` est organisé en trois couches. **Ne jamais les croiser.
 | Couche | Fonctions | Règle |
 |---|---|---|
 | **Rendu DOM** | `render*()` | Ne lit/écrit que le DOM. Ne touche pas Firebase. |
-| **Métier / état** | mutations de `state`, calculs | Pas de DOM, pas d'I/O directe. |
-| **I/O** | `save()`, `flushState()`, listeners RTDB, `offlineQueue` | Ne manipule jamais le DOM directement. |
+| **Métier / état** | mutations de `current`/`stages`/`journals`, calculs | Pas de DOM, pas d'I/O directe. |
+| **I/O** | `flushJournals()`, `flushState()`, listeners RTDB, `offlineQueue` | Ne manipule jamais le DOM directement. |
 
 `index.html` délègue via des wrappers d'une ligne aux modules purs :
 ```js
@@ -81,6 +81,10 @@ La prod exécute donc exactement le code couvert par les tests.
 | `formatBytes(bytes)` | `bytes → "1.2 MB"` |
 | `quotaLevel(bytes, quota)` | `'ok' / 'warn' / 'high' / 'block'` (seuils 70/85/90 %) |
 | `safeFetch(url, opts, cfg)` | fetch durci : timeout AbortController + retries backoff expo |
+| `computeKmDay(kmTotal, stages, todayISO)` | Km du jour = kmTotal − kmTotal de l'étape précédente |
+| `isOfflineable(path)` | `true` si le path peut passer par la queue offline (`current`, `stages/`, `journals/`) |
+| `actionLabel(path)` | Label humain pour un path Firebase (pour toasts, queue) |
+| `filterVisibleJournalDates(stages, isAdmin)` | Dates visibles dans le carnet (admin : tout sauf deleted ; visiteur : published=true) |
 | `EXPENSE_CATEGORIES` | Liste fermée des catégories |
 | `LIMITS` | Constantes de taille partagées client/Firebase |
 
@@ -89,8 +93,9 @@ La prod exécute donc exactement le code couvert par les tests.
 ## Points non-évidents — ne jamais casser
 
 - **Photos** : base64 dans RTDB (pas Firebase Storage — payant). Lazy load via `IntersectionObserver`. Listeners RTDB désabonnés à chaque `renderJournal()` pour éviter les fuites mémoire.
-- **Journal** : debounce 60 s + `flushState()` déclenché sur `beforeunload` ET `visibilitychange:hidden` (iOS Safari ne déclenche pas `beforeunload`).
-- **Publication journal** : champ `published: boolean` dans `state.days[date]`. Absence du champ = brouillon, invisible pour les visiteurs. `renderJournal()` filtre si `!isAdmin && days[d].published !== true`.
+- **Journal** : debounce 60 s **par date** + `flushJournals()` déclenché via `flushState()` sur `beforeunload` ET `visibilitychange:hidden` (iOS Safari ne déclenche pas `beforeunload`).
+- **Publication journal** : champ `published: boolean` dans `stages[date]`. Absence du champ = brouillon, invisible pour les visiteurs. `renderJournal()` filtre via `filterVisibleJournalDates(stages, isAdmin)`.
+- **Boot visiteur** : charge uniquement `/current` (~100 B). `/stages` chargé à l'ouverture de l'onglet Carnet. Photos, commentaires, bravos et journal chargés lazy par date via `IntersectionObserver` (`loadStageContent`).
 - **Hors-ligne** : state dans `localStorage` + `offlineQueue`. Photos, commentaires et dépenses ne sont **pas** disponibles offline — c'est voulu, pas un bug.
 - **Service worker** : app shell (index.html, js/) → network-first. Libs externes (Leaflet CDN) → cache-first. Firebase / open-meteo / Overpass → jamais mis en cache.
 - **Admin** : déconnexion auto après 3 min d'inactivité.
@@ -100,9 +105,12 @@ La prod exécute donc exactement le code couvert par les tests.
 
 | Nœud | Lecture | Écriture |
 |---|---|---|
-| `state` | publique | auth uniquement |
-| `photos/$stage/$id` | publique | auth + validation taille < 500 000 chars base64 |
-| `comments/$stage/$id` | publique | création sans auth, modif/suppr auth — validation name/text |
+| `current` | publique | auth + validate structure `lat/lon/kmTotal/date/ts` |
+| `stages/$date` | publique | auth + validate `lat/lon/kmTotal` |
+| `journals/$date` | publique | auth + validate string ≤ 5000 |
+| `photos/$date/$id` | publique | auth + validate < 500 000 chars base64 |
+| `comments/$date/$id` | publique | création sans auth, modif/suppr auth — validation name/text |
+| `bravos/$date/$visitorId` | publique | write-once, validate `true` |
 | `expenses` | auth uniquement | auth uniquement |
 
 Quota gratuit : **1 Go**. Surveillé via `computeQuotaBytes` + `quotaLevel` dans `utils.js`.
