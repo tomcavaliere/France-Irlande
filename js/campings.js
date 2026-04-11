@@ -2,6 +2,19 @@
 // Campings (OpenCampingMap + Overpass fallback), Campspace, water points.
 // All POI layers displayed on the Leaflet map.
 
+// Retourne true si le point (lat, lon) est à moins de radiusKm km d'un point du tableau ptSet.
+// ptSet : tableau de [lat, lon, ...], sous-échantillonné tous les 3 éléments.
+function nearTrace(lat, lon, ptSet, radiusKm){
+  var R2=Math.pow(radiusKm/111,2);
+  var cosLat=Math.cos(lat*Math.PI/180);
+  for(var i=0;i<ptSet.length;i+=3){
+    var dlat=ptSet[i][0]-lat;
+    var dlon=(ptSet[i][1]-lon)*cosLat;
+    if(dlat*dlat+dlon*dlon<R2)return true;
+  }
+  return false;
+}
+
 // ==== CAMPINGS ====
 function toggleCampings(){
   campingsVisible=!campingsVisible;
@@ -65,18 +78,8 @@ function renderCampings(geojson,aheadPts){
   if(campingLayer){map.removeLayer(campingLayer);campingLayer=null;}
   if(!geojson.features||!geojson.features.length)return;
 
-  // Filtrer : garder uniquement les campings proches de la trace (max 10km)
+  // Filtrer : garder uniquement les campings proches de la trace (max 5km)
   var ptSet=aheadPts;
-  function nearTrace(lat,lon){
-    var R2=Math.pow(5/111,2); // ~5km en degrés, au carré
-    var cosLat=Math.cos(lat*Math.PI/180);
-    for(var i=0;i<ptSet.length;i+=3){
-      var dlat=ptSet[i][0]-lat;
-      var dlon=(ptSet[i][1]-lon)*cosLat;
-      if(dlat*dlat+dlon*dlon<R2)return true;
-    }
-    return false;
-  }
 
   var campIcon=L.divIcon({className:'',iconSize:[20,20],iconAnchor:[10,10],
     html:'<div style="background:#2e7d32;color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.3)">&#x1f3d5;</div>'});
@@ -84,7 +87,7 @@ function renderCampings(geojson,aheadPts){
   var markers=[];
   geojson.features.forEach(function(f){
     var c=f.geometry.coordinates;
-    if(!nearTrace(c[1],c[0]))return;
+    if(!nearTrace(c[1],c[0],ptSet,5))return;
     var p=f.properties||{};
     var name=p.name||p['name:fr']||'Camping sans nom';
     var tags=[];
@@ -133,19 +136,6 @@ function loadCampspace(){
 
   if(campspaceLayer){map.removeLayer(campspaceLayer);campspaceLayer=null;}
 
-  // nearTrace : max 5km de la trace
-  var ptSet=aheadPts;
-  function nearTrace(lat,lon){
-    var R2=Math.pow(5/111,2);
-    var cosLat=Math.cos(lat*Math.PI/180);
-    for(var i=0;i<ptSet.length;i+=3){
-      var dlat=ptSet[i][0]-lat;
-      var dlon=(ptSet[i][1]-lon)*cosLat;
-      if(dlat*dlat+dlon*dlon<R2)return true;
-    }
-    return false;
-  }
-
   // Pré-filtre bbox rapide
   var bbox=ptsBbox(aheadPts,0.1);
 
@@ -160,7 +150,7 @@ function loadCampspace(){
     // Filtre bbox rapide
     if(lat<bbox.s||lat>bbox.n||lng<bbox.w||lng>bbox.e)continue;
     // Filtre proximité trace
-    if(!nearTrace(lat,lng))continue;
+    if(!nearTrace(lat,lng,aheadPts,5))continue;
     var title=d[2]||'Campspace';
     var price=d[3]||'';
     var href=d[4]?'https://campspace.com/fr/s/'+d[4]:'';
@@ -244,25 +234,13 @@ function renderWater(elements,aheadPts){
   if(waterLayer){map.removeLayer(waterLayer);waterLayer=null;}
   if(!elements.length)return;
 
-  var ptSet=aheadPts;
-  function nearTrace(lat,lon){
-    var R2=Math.pow(1/111,2); // 1km max pour l'eau
-    var cosLat=Math.cos(lat*Math.PI/180);
-    for(var i=0;i<ptSet.length;i+=3){
-      var dlat=ptSet[i][0]-lat;
-      var dlon=(ptSet[i][1]-lon)*cosLat;
-      if(dlat*dlat+dlon*dlon<R2)return true;
-    }
-    return false;
-  }
-
   var waterIcon=L.divIcon({className:'',iconSize:[18,18],iconAnchor:[9,9],
     html:'<div style="background:#1565c0;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.3)">&#x1f4a7;</div>'});
 
   var markers=[];
   elements.forEach(function(el){
     if(!el.lat||!el.lon)return;
-    if(!nearTrace(el.lat,el.lon))return;
+    if(!nearTrace(el.lat,el.lon,aheadPts,1))return;
     var t=el.tags||{};
     var name=t.name||t.description||'';
     var type=t.natural==='spring'?'Source':t.amenity==='water_point'?'Point d\'eau':'Fontaine';

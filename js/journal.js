@@ -88,24 +88,6 @@ function addBravo(date){
   });
 }
 
-function loadBravos(date){
-  if(!window._fbDb||!window._fbOnValue)return;
-  var ref=window._fbRef(window._fbDb,'bravos/'+date);
-  var unsub=window._fbOnValue(ref,function(snap){
-    var data=snap.val()||{};
-    var count=Object.keys(data).length;
-    var vid=getVisitorId();
-    var voted=!!data[vid];
-    var entry=document.querySelector('.journal-entry[data-date="'+date+'"]');
-    if(!entry)return;
-    var countEl=entry.querySelector('.j-bravo-count');
-    var btn=entry.querySelector('.j-bravo-btn');
-    if(countEl)countEl.textContent=isAdmin?'\uD83D\uDC4F '+count:count;
-    if(btn)btn.disabled=voted;
-  });
-  bravosUnsub[date] = unsub;
-}
-
 function patchJournalText(date){
   var entry=document.querySelector('#journalList .journal-entry[data-date="'+date+'"]');
   if(!entry)return;
