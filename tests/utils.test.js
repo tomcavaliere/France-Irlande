@@ -154,6 +154,16 @@ describe('validateComment', () => {
     expect(validateComment(undefined).ok).toBe(false);
     expect(validateComment('string').ok).toBe(false);
   });
+
+  it('trim les espaces sur name/text avant validation', () => {
+    expect(validateComment({ name: '  Tom  ', text: '  Bravo !  ' }).ok).toBe(true);
+  });
+
+  it('rejette les types inattendus (name non-string)', () => {
+    const r = validateComment({ name: 123, text: 'ok' });
+    expect(r.ok).toBe(false);
+    expect(r.error).toContain('nom');
+  });
 });
 
 describe('validateExpense', () => {
@@ -220,6 +230,18 @@ describe('validateExpense', () => {
   it('rejette les inputs non-objets', () => {
     expect(validateExpense(null).ok).toBe(false);
     expect(validateExpense(undefined).ok).toBe(false);
+  });
+
+  it('accepte amount numérique en string', () => {
+    expect(validateExpense({ ...valid, amount: '12.5' }).ok).toBe(true);
+  });
+
+  it('rejette cat avec espaces non exacts (liste fermée stricte)', () => {
+    expect(validateExpense({ ...valid, cat: ' Hébergement ' }).ok).toBe(false);
+  });
+
+  it('rejette date avec espaces même si visuellement ISO', () => {
+    expect(validateExpense({ ...valid, date: ' 2026-05-01 ' }).ok).toBe(false);
   });
 });
 
@@ -388,6 +410,56 @@ describe('safeFetch', () => {
     await expect(
       safeFetch('u', {}, { fetch: null, retries: 0 })
     ).rejects.toThrow('fetch indisponible');
+  });
+
+  it('abort sur timeout', async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn((url, opts) => new Promise((resolve, reject) => {
+      opts.signal.addEventListener('abort', () => reject(new Error('aborted')));
+    }));
+    const p = safeFetch('u', {}, { fetch: fetchMock, retries: 0, timeout: 50 });
+    p.catch(() => {});
+    await vi.advanceTimersByTimeAsync(60);
+    await expect(p).rejects.toThrow('aborted');
+    vi.useRealTimers();
+  });
+
+  it('respecte le backoff exponentiel exact entre retries', async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn().mockRejectedValue(new Error('net'));
+    const p = safeFetch('u', {}, { fetch: fetchMock, retries: 2, backoff: 100 });
+    const assertReject = expect(p).rejects.toThrow('net');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(99);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(199);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    await assertReject;
+    vi.useRealTimers();
+  });
+
+  it('ignore une erreur levée par onError', async () => {
+    const fetchMock = vi.fn()
+      .mockRejectedValueOnce(new Error('fail1'))
+      .mockResolvedValueOnce({ ok: true, status: 200 });
+    const onError = vi.fn(() => { throw new Error('callback boom'); });
+    const r = await safeFetch('u', {}, { fetch: fetchMock, retries: 1, backoff: 0, onError });
+    expect(r.ok).toBe(true);
+    expect(onError).toHaveBeenCalledTimes(1);
+  });
+
+  it('préserve un signal fourni par l’appelant', async () => {
+    const ctrl = new AbortController();
+    const fetchMock = vi.fn((url, opts) => {
+      expect(opts.signal).toBe(ctrl.signal);
+      return Promise.resolve({ ok: true, status: 200 });
+    });
+    const r = await safeFetch('u', { signal: ctrl.signal }, { fetch: fetchMock, retries: 0, timeout: 1 });
+    expect(r.ok).toBe(true);
   });
 });
 
@@ -567,6 +639,14 @@ describe('filterVisibleJournalDates', () => {
     expect(utils.filterVisibleJournalDates(null, true)).toEqual([]);
     expect(utils.filterVisibleJournalDates('nope', false)).toEqual([]);
     expect(utils.filterVisibleJournalDates(undefined, true)).toEqual([]);
+  });
+
+  it('visiteur ignore published truthy non-booléen', () => {
+    const st = {
+      '2026-05-01': { published: 1 },
+      '2026-05-02': { published: true }
+    };
+    expect(utils.filterVisibleJournalDates(st, false)).toEqual(['2026-05-02']);
   });
 });
 
