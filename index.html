@@ -738,7 +738,7 @@ function resetInactivity(){
   inactivityTimer=setTimeout(logoutAdmin,INACTIVITY_MS);
   if(INACTIVITY_MS>INACTIVITY_WARN_BEFORE_MS){
     inactivityWarnTimer=setTimeout(function(){
-      if(isAdmin)showToast('⚠️ Session admin : déconnexion automatique dans '+Math.round(INACTIVITY_WARN_BEFORE_MS/1000)+' secondes. Bougez pour rester connecté.','warn',INACTIVITY_WARN_BEFORE_MS);
+      if(isAdmin)showToast('⚠️ Session admin : déconnexion automatique dans '+Math.round(INACTIVITY_WARN_BEFORE_MS/1000)+' secondes. Effectuez une action pour rester connecté.','warn',INACTIVITY_WARN_BEFORE_MS);
     }, INACTIVITY_MS-INACTIVITY_WARN_BEFORE_MS);
   }
 }

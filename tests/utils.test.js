@@ -639,7 +639,7 @@ describe('commentCooldownRemaining', () => {
     expect(commentCooldownRemaining(sent, now, CD)).toBe(25);
   });
 
-  it('retourne 1 pour moins d\'une seconde restante', () => {
+  it(`retourne 1 pour moins d'une seconde restante`, () => {
     const now = 1000000;
     const sent = now - 29500; // 500ms restantes
     expect(commentCooldownRemaining(sent, now, CD)).toBe(1);
