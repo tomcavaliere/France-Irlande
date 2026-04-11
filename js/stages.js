@@ -70,7 +70,11 @@ function deleteStage(date){
       window._fbRemove(window._fbRef(window._fbDb,'comments/'+date)),
       window._fbRemove(window._fbRef(window._fbDb,'bravos/'+date))
     ])
-      .then(function(){renderStages();renderJournal();updateMap();})
+      .then(function(){
+        Events.emit('state:stages-changed');
+        Events.emit('state:journal-changed');
+        Events.emit('state:current-changed');
+      })
       .catch(function(err){console.error('[deleteStage]',err);});
   });
 }
@@ -80,7 +84,7 @@ function openJournalEntry(date){
     window._fbRemove(window._fbRef(window._fbDb,'stages/'+date+'/journalDeleted'));
   }
   switchTab('journal');
-  renderJournal();
+  Events.emit('state:journal-changed');
   setTimeout(function(){
     var entry=document.querySelector('#journalList .journal-entry[data-date="'+date+'"]');
     if(entry)entry.scrollIntoView({behavior:'smooth',block:'start'});
@@ -112,7 +116,7 @@ function deleteJournalEntry(date){
     Promise.all([
       window._fbRemove(window._fbRef(window._fbDb,'journals/'+date)),
       window._fbSet(window._fbRef(window._fbDb,'stages/'+date+'/journalDeleted'),true)
-    ]).then(function(){ renderJournal(); })
+    ]).then(function(){ Events.emit('state:journal-changed'); })
       .catch(function(err){ console.error('[deleteJournalEntry]',err); });
   });
 }

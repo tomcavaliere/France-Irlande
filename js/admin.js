@@ -227,7 +227,7 @@ function initAuth(){
     setAdminUI(isAdmin);
     if(isAdmin){resetInactivity();initExpenses();}
     else{clearTimeout(inactivityTimer);}
-    renderStages();renderJournal();updateMap();
+    Events.emit('admin:toggled');
   });
 }
 
@@ -264,9 +264,8 @@ function updatePosition(){
     window._fbSet(window._fbRef(window._fbDb,'stages/'+todayISO),stageData)
       .catch(function(err){ console.error('[updatePosition/stage]',err); });
 
-    updateMap();
-    renderStages();
-    if(activeTab()==='journal')renderJournal();
+    Events.emit('state:current-changed');
+    Events.emit('state:stages-changed');
     fetchWeather();
     if(campingsVisible)loadCampings();
     if(campspaceVisible)loadCampspace();

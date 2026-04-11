@@ -48,8 +48,7 @@ function initFirebase(){
   if(_unsubCurrent)_unsubCurrent();
   _unsubCurrent=window._fbOnValue(window._fbRef(window._fbDb,'current'),function(snap){
     current=snap.val();
-    updateMap();
-    updatePositionBadge();
+    Events.emit('state:current-changed');
     saveLocalCache();
     setSyncDot(isOnline?'online':'offline');
   });
@@ -61,15 +60,7 @@ function openCarnetTab(){
   _unsubStages=window._fbOnValue(window._fbRef(window._fbDb,'stages'),function(snap){
     stages=snap.val()||{};
     saveLocalCache();
-    var countChanged=Object.keys(stages).length!==lastCompletedCount;
-    renderStages();
-    if(!fbInitialized){
-      renderJournal();fbInitialized=true;journalDirty=false;
-    } else if(countChanged){
-      if(activeTab()==='journal'){renderJournal();journalDirty=false;}
-      else{journalDirty=true;}
-    }
-    lastCompletedCount=Object.keys(stages).length;
+    Events.emit('state:stages-changed');
   });
 }
 

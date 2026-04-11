@@ -22,7 +22,7 @@ function addExpense(){
   // Optimistic UI
   expenses[id]=Object.assign({},exp,{_pending:true});
   saveExpensesCache();
-  if(activeTab()==='depenses')renderExpenses();
+  Events.emit('state:expenses-changed');
   document.getElementById('depAmount').value='';
   document.getElementById('depDesc').value='';
   tryWrite('set','expenses/'+id,exp);
@@ -39,7 +39,7 @@ function deleteExpense(id){
     if(!ok)return;
     delete expenses[id];
     saveExpensesCache();
-    if(activeTab()==='depenses')renderExpenses();
+    Events.emit('state:expenses-changed');
     tryWrite('remove','expenses/'+id);
   });
 }
@@ -109,6 +109,6 @@ function initExpenses(){
   _unsubExpenses=window._fbOnValue(window._fbRef(window._fbDb,'expenses'),function(snap){
     expenses=snap.val()||{};
     saveExpensesCache();
-    if(activeTab()==='depenses')renderExpenses();
+    Events.emit('state:expenses-changed');
   });
 }
