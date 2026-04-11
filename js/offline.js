@@ -34,18 +34,8 @@ function saveCommentsCache(date,data){
     // Tenir à jour un index des dates mises en cache
     var idxRaw=localStorage.getItem('ev1-cmts-idx');
     var idx=idxRaw?JSON.parse(idxRaw):[];
-    var upd=window.OfflineCore
-      ? window.OfflineCore.upsertBoundedIndex(idx, date, COMMENTS_CACHE_MAX)
-      : (function(){
-        if(idx.indexOf(date)!==-1) return { index: idx, evicted: [] };
-        var next=idx.concat([date]);
-        var evicted=[];
-        if(next.length>COMMENTS_CACHE_MAX){
-          evicted=next.slice(0,next.length-COMMENTS_CACHE_MAX);
-          next=next.slice(next.length-COMMENTS_CACHE_MAX);
-        }
-        return { index: next, evicted: evicted };
-      })();
+    if(!window.OfflineCore) return;
+    var upd=window.OfflineCore.upsertBoundedIndex(idx, date, COMMENTS_CACHE_MAX);
     if(upd.index.indexOf(date)!==-1){
       upd.evicted.forEach(function(d){try{localStorage.removeItem('ev1-cmts-'+d);}catch(_){}});
       localStorage.setItem('ev1-cmts-idx',JSON.stringify(upd.index));
@@ -67,13 +57,8 @@ function loadAllCommentsCache(){
         }
       }catch(e){console.warn('[cache] commentaires illisibles pour '+date,e);}
     });
-    if(window.OfflineCore){
-      comments=window.OfflineCore.hydrateComments(idx, storedByDate, comments);
-    } else {
-      idx.forEach(function(date){
-        if(storedByDate[date]&&!comments[date]) comments[date]=storedByDate[date];
-      });
-    }
+    if(!window.OfflineCore) return;
+    comments=window.OfflineCore.hydrateComments(idx, storedByDate, comments);
   }catch(e){console.warn('[cache] index commentaires illisible',e);}
 }
 
