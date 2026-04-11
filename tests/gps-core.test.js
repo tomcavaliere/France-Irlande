@@ -40,6 +40,19 @@ describe('snapToRoute', () => {
     const r = snapToRoute(ROUTE_PTS[5][0], ROUTE_PTS[5][1], ROUTE_PTS, CUM_KM);
     expect(r.kmTotal).toBe(CUM_KM[r.idx]);
   });
+
+  it('entrée vide/invalide : renvoie un fallback stable', () => {
+    const r = snapToRoute(1, 2, null, null);
+    expect(r).toEqual({ idx: -1, kmTotal: 0, lat: 1, lon: 2 });
+  });
+
+  it('points dupliqués : choisit le premier index le plus proche', () => {
+    const pts = [[45, 6], [45, 6], [45.1, 6.1]];
+    const kms = [0, 1, 2];
+    const r = snapToRoute(45, 6, pts, kms);
+    expect(r.idx).toBe(0);
+    expect(r.kmTotal).toBe(0);
+  });
 });
 
 describe('routePointsAhead', () => {
@@ -65,6 +78,22 @@ describe('routePointsAhead', () => {
     const pts = routePointsAhead(fromIdx, 500, ROUTE_PTS, CUM_KM);
     expect(pts.length).toBeGreaterThanOrEqual(1);
     expect(pts.length).toBeLessThanOrEqual(2);
+  });
+
+  it('distKm=0 : renvoie seulement le point de départ', () => {
+    const pts = routePointsAhead(7, 0, ROUTE_PTS, CUM_KM);
+    expect(pts).toEqual([ROUTE_PTS[7]]);
+  });
+
+  it('fromIdx hors bornes : clamp correctement', () => {
+    const ptsLow = routePointsAhead(-10, 10, ROUTE_PTS, CUM_KM);
+    expect(ptsLow[0]).toEqual(ROUTE_PTS[0]);
+    const ptsHigh = routePointsAhead(9999, 10, ROUTE_PTS, CUM_KM);
+    expect(ptsHigh[0]).toEqual(ROUTE_PTS[ROUTE_PTS.length - 1]);
+  });
+
+  it('entrée invalide : renvoie tableau vide', () => {
+    expect(routePointsAhead(0, 10, null, null)).toEqual([]);
   });
 });
 
@@ -128,6 +157,21 @@ describe('computeStageInfo — simulation de 3 étapes successives', () => {
     const info = computeStageInfo(justAfter[0], justAfter[1], ROUTE_PTS, CUM_KM, TOTAL_KM, FRANCE_END_IDX);
     expect(info.country).toBe('IE');
   });
+
+  it('totalKm=0 : progression forcée à 0', () => {
+    const p = ROUTE_PTS[10];
+    const info = computeStageInfo(p[0], p[1], ROUTE_PTS, CUM_KM, 0, FRANCE_END_IDX);
+    expect(info.progressPct).toBe(0);
+  });
+
+  it('entrée route invalide : fallback sans crash', () => {
+    const info = computeStageInfo(1, 2, [], [], 100, 0);
+    expect(info.idx).toBe(-1);
+    expect(info.kmTotal).toBe(0);
+    expect(info.kmRemaining).toBe(100);
+    expect(info.progressPct).toBe(0);
+    expect(info.country).toBe('FR');
+  });
 });
 
 describe('campingDist', () => {
@@ -161,5 +205,14 @@ describe('campingDist', () => {
     const d = campingDist(0, ROUTE_PTS[10][0], ROUTE_PTS[10][1], ROUTE_PTS, CUM_KM);
     expect(d.trace).toBe(Math.round(d.trace));
     expect(Math.round(d.detour * 10) / 10).toBe(d.detour);
+  });
+
+  it('fromIdx hors bornes : clamp sans crash', () => {
+    const d = campingDist(9999, ROUTE_PTS[10][0], ROUTE_PTS[10][1], ROUTE_PTS, CUM_KM);
+    expect(d.trace).toBe(0);
+  });
+
+  it('entrée invalide : retourne 0/0', () => {
+    expect(campingDist(0, 1, 2, null, null)).toEqual({ trace: 0, detour: 0 });
   });
 });

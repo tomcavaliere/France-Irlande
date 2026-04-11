@@ -5,6 +5,7 @@
 // Retourne true si le point (lat, lon) est à moins de radiusKm km d'un point du tableau ptSet.
 // ptSet : tableau de [lat, lon, ...], sous-échantillonné tous les 3 éléments.
 function nearTrace(lat, lon, ptSet, radiusKm){
+  if(window.CampingsCore) return window.CampingsCore.nearTrace(lat, lon, ptSet, radiusKm);
   var R2=Math.pow(radiusKm/111,2);
   var cosLat=Math.cos(lat*Math.PI/180);
   for(var i=0;i<ptSet.length;i+=3){
@@ -86,26 +87,37 @@ function renderCampings(geojson,aheadPts){
 
   var markers=[];
   geojson.features.forEach(function(f){
-    var c=f.geometry.coordinates;
-    if(!nearTrace(c[1],c[0],ptSet,5))return;
-    var p=f.properties||{};
-    var name=p.name||p['name:fr']||'Camping sans nom';
-    var tags=[];
-    if(p.shower==='yes'||p.showers==='yes')tags.push('🚿');
-    if(p.drinking_water==='yes')tags.push('💧');
-    if(p.toilets==='yes')tags.push('🚽');
-    if(p.power_supply==='yes'||p.electricity==='yes')tags.push('⚡');
-    if(p.internet_access==='wlan')tags.push('📶');
-    if(p.fee==='no')tags.push('Gratuit');
-    var website=p.website||p['contact:website']||'';
-    var safeWebsite=/^https?:\/\//i.test(website)?website:'';
-    var popup='<div class="camp-popup"><b>'+escHtml(name)+'</b>'+
-      (p.operator?'<span style="color:#666;font-size:11px">'+escHtml(p.operator)+'</span><br>':'')+
+    var mapped = window.CampingsCore ? window.CampingsCore.mapCampingFeature(f) : null;
+    if(!mapped){
+      var c=f.geometry.coordinates;
+      var p=f.properties||{};
+      mapped={
+        lat:c[1],
+        lon:c[0],
+        name:p.name||p['name:fr']||'Camping sans nom',
+        operator:p.operator||'',
+        tags:(function(){
+          var t=[];
+          if(p.shower==='yes'||p.showers==='yes')t.push('🚿');
+          if(p.drinking_water==='yes')t.push('💧');
+          if(p.toilets==='yes')t.push('🚽');
+          if(p.power_supply==='yes'||p.electricity==='yes')t.push('⚡');
+          if(p.internet_access==='wlan')t.push('📶');
+          if(p.fee==='no')t.push('Gratuit');
+          return t;
+        })(),
+        website:/^https?:\/\//i.test(p.website||p['contact:website']||'')?(p.website||p['contact:website']||''):''
+      };
+    }
+    if(!nearTrace(mapped.lat,mapped.lon,ptSet,5))return;
+    var tags = mapped.tags || [];
+    var popup='<div class="camp-popup"><b>'+escHtml(mapped.name)+'</b>'+
+      (mapped.operator?'<span style="color:#666;font-size:11px">'+escHtml(mapped.operator)+'</span><br>':'')+
       (tags.length?'<div class="camp-tags">'+tags.map(function(t){return'<span class="camp-tag">'+t+'</span>'}).join('')+'</div>':'')+
-      campingDistHtml(c[1],c[0])+
-      (safeWebsite?'<a href="'+escAttr(safeWebsite)+'" target="_blank" style="color:var(--green);font-size:11px">Site web</a>':'')+
+      campingDistHtml(mapped.lat,mapped.lon)+
+      (mapped.website?'<a href="'+escAttr(mapped.website)+'" target="_blank" style="color:var(--green);font-size:11px">Site web</a>':'')+
       '</div>';
-    var m=L.marker([c[1],c[0]],{icon:campIcon}).bindPopup(popup);
+    var m=L.marker([mapped.lat,mapped.lon],{icon:campIcon}).bindPopup(popup);
     markers.push(m);
   });
 
