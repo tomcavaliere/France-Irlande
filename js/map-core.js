@@ -106,11 +106,6 @@ function getCurrentPos(){
   return snapToRoute(current.lat,current.lon);
 }
 
-function calcKmD(){
-  var pos=getCurrentPos();
-  return pos?pos.kmTotal:0;
-}
-
 function updatePositionBadge(){
   var nbDays=Object.keys(stages).length;
   var el=document.getElementById('mapDays');

@@ -117,7 +117,4 @@ function deleteJournalEntry(date){
   });
 }
 
-function editNote(date, text){
-  if(!isAdmin)return;
-  window._fbSet(window._fbRef(window._fbDb,'stages/'+date+'/note'),text);
-}
+
