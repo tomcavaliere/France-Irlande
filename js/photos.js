@@ -94,12 +94,12 @@ function renderPhotosHtml(i){
     var src=stagePhotos[id];
     var eid=escAttr(id);
     html+='<div class="j-photo-wrap">'+
-      '<img src="'+escAttr(src)+'" onclick="openLightbox(\''+eid+'\',\''+ei+'\')">'+
-      (isAdmin?'<button class="j-photo-del" onclick="deletePhoto(\''+ei+'\',\''+eid+'\')">&#x2715;</button>':'')+
+      '<img src="'+escAttr(src)+'" data-action="openLightbox" data-arg="'+eid+'" data-arg2="'+ei+'">'+
+      (isAdmin?'<button class="j-photo-del" data-action="deletePhoto" data-arg="'+ei+'" data-arg2="'+eid+'">&#x2715;</button>':'')+
       '</div>';
   });
   if(isAdmin){
-    html+='<div class="j-photo-add" id="photos-add-'+ei+'" onclick="uploadPhoto(\''+ei+'\')">'+
+    html+='<div class="j-photo-add" id="photos-add-'+ei+'" data-action="uploadPhoto" data-arg="'+ei+'">'+
       '<span class="j-photo-add-icon">&#x1f4f7;</span><span>Ajouter</span></div>';
   }
   html+='</div>';

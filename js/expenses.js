@@ -83,7 +83,7 @@ function renderExpenses(){
           '</div>'+
           '<div class="dep-meta">'+item.expense.cat+'</div>'+
         '</div>'+
-        '<button class="dep-del" onclick="deleteExpense(\''+item.id+'\')">🗑</button>'+
+        '<button class="dep-del" data-action="deleteExpense" data-arg="'+escAttr(item.id)+'">🗑</button>'+
         '</div>';
     });
   });

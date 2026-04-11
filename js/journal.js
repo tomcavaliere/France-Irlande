@@ -3,8 +3,11 @@
 // lazy content loading, bravos, and visitor ID.
 
 // ==== JOURNAL SAVE ====
-function onJournalInput(date, text){
+// Called via event delegation on <textarea data-event="input">.
+// Signature: (arg, _arg2, el) — reads the current value from the element.
+function onJournalInput(date, _arg2, el){
   if(!isAdmin)return;
+  var text=el?el.value:'';
   journals[date]=text;
   clearTimeout(_journalSaveTimers[date]);
   _journalSaveTimers[date]=setTimeout(function(){
@@ -183,13 +186,13 @@ function renderJournal(){
       adminActionsHtml=
         '<div class="j-actions">'+
           '<span class="'+(pub?'j-badge-pub':'j-badge-draft')+' j-pub-badge">'+(pub?'\u2713 Publié':'Brouillon')+'</span>'+
-          '<button class="btn btn-o j-pub-btn" onclick="publishDay(\''+edate+'\')">'+
+          '<button class="btn btn-o j-pub-btn" data-action="publishDay" data-arg="'+edate+'">'+
             (pub?'Dépublier':'Publier')+
           '</button>'+
-          '<button class="btn btn-danger" onclick="deleteJournalEntry(\''+edate+'\')">&#x1f5d1; Supprimer</button>'+
+          '<button class="btn btn-danger" data-action="deleteJournalEntry" data-arg="'+edate+'">&#x1f5d1; Supprimer</button>'+
         '</div>';
     }
-    var taAttr=isAdmin?' oninput="onJournalInput(\''+edate+'\',this.value)"':' readonly';
+    var taAttr=isAdmin?' data-action="onJournalInput" data-event="input" data-arg="'+edate+'"':' readonly';
     var taHtml='';
     if(isAdmin){
       taHtml='<textarea class="j-ta" placeholder="Raconte ta journée..."'+taAttr+'>'+Utils.escHtml(txt)+'</textarea>';
@@ -198,7 +201,7 @@ function renderJournal(){
     }
     var bravosHtml=isAdmin
       ?'<div class="j-bravos"><span class="j-bravo-count"></span></div>'
-      :'<div class="j-bravos"><button class="j-bravo-btn" onclick="addBravo(\''+edate+'\')">Maith sibh! \uD83D\uDC4F</button><span class="j-bravo-count"></span></div>';
+      :'<div class="j-bravos"><button class="j-bravo-btn" data-action="addBravo" data-arg="'+edate+'">Maith sibh! \uD83D\uDC4F</button><span class="j-bravo-count"></span></div>';
     entry.innerHTML=
       '<div class="j-date">'+dateLabel+'</div>'+
       (kmInfo?'<div class="j-stage">'+kmInfo+'</div>':'')+

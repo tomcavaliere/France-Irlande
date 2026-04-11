@@ -1,6 +1,65 @@
 // ui.js
 // UI utilities: toast notifications, confirm dialog, lightbox,
 // modal, sync dot/popover, tab switching.
+//
+// Also hosts the event-delegation layer : a single set of document-level
+// listeners dispatches click / change / input events to functions declared
+// via `data-action="fnName"` (with optional `data-event="change|input"`,
+// `data-arg`, `data-arg2`, `data-stop`). Only functions listed in
+// ACTION_NAMES are invocable — this is a whitelist, any other name logs a
+// warning and is ignored (defence in depth against XSS pivots).
+//
+// Overlays use `data-close-on-self="fnName"` : the close action fires only
+// when the overlay backdrop itself is the click target (not a descendant).
+
+var ACTION_NAMES = new Set([
+  // Static (index.html)
+  'toggleSyncPopover','toggleAdmin','openProfileModal','closeProfileModal',
+  'logoutAdmin','refreshProfileQuota','exportJournal','confirmAccept',
+  'confirmCancel','checkPw','toggleCampings','toggleCampspace','toggleWater',
+  'onCampRangeChange','updatePosition','addExpense','switchTab','closeLightbox',
+  'closeModal',
+  // Dynamic (rendered by js/*.js)
+  'publishDay','deleteJournalEntry','onJournalInput','addBravo',
+  'deleteExpense','postComment','deleteComment',
+  'openLightbox','deletePhoto','uploadPhoto',
+  'deleteStage','openJournalEntry'
+]);
+
+function invokeAction(name, args){
+  if(!ACTION_NAMES.has(name)){
+    console.warn('[ui] unknown action',name);
+    return;
+  }
+  var fn=window[name];
+  if(typeof fn!=='function'){
+    console.warn('[ui] action not defined',name);
+    return;
+  }
+  return fn.apply(null,args||[]);
+}
+
+function _delegateEvent(e){
+  if(e.type==='click'){
+    var ov=e.target.closest('[data-close-on-self]');
+    if(ov&&e.target===ov){
+      invokeAction(ov.dataset.closeOnSelf,[]);
+      return;
+    }
+  }
+  var el=e.target.closest('[data-action]');
+  if(!el)return;
+  var wanted=el.dataset.event||'click';
+  if(wanted!==e.type)return;
+  if(el.dataset.stop)e.stopPropagation();
+  invokeAction(el.dataset.action,[el.dataset.arg,el.dataset.arg2,el,e]);
+}
+
+function initEventDelegation(){
+  ['click','change','input'].forEach(function(ev){
+    document.addEventListener(ev,_delegateEvent);
+  });
+}
 
 function activeTab(){
   var p=document.querySelector('.page.active');
@@ -90,8 +149,7 @@ function _queueSummary(){
   return {total:offlineQueue.length, lines:lines};
 }
 
-function toggleSyncPopover(e){
-  e.stopPropagation();
+function toggleSyncPopover(){
   var pop=document.getElementById('syncPopover');
   if(!pop)return;
   if(pop.classList.contains('visible')){pop.classList.remove('visible');return;}
@@ -106,7 +164,8 @@ function toggleSyncPopover(e){
   pop.classList.add('visible');
   setTimeout(function(){pop.classList.remove('visible');},4000);
 }
-document.addEventListener('click',function(){
+document.addEventListener('click',function(e){
+  if(e.target.closest('#syncDot'))return;
   var pop=document.getElementById('syncPopover');
   if(pop)pop.classList.remove('visible');
 });

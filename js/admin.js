@@ -202,6 +202,23 @@ function checkPw(){
 ['touchstart','mousedown','keydown'].forEach(function(ev){
   document.addEventListener(ev,resetInactivity,{passive:true});
 });
+
+// Raccourcis clavier du modal de login admin (Enter pour valider / naviguer)
+function _initPwModalKeys(){
+  var emailEl=document.getElementById('pwEmail');
+  var pwEl=document.getElementById('pwInput');
+  if(emailEl)emailEl.addEventListener('keydown',function(e){
+    if(e.key==='Enter'&&pwEl)pwEl.focus();
+  });
+  if(pwEl)pwEl.addEventListener('keydown',function(e){
+    if(e.key==='Enter')checkPw();
+  });
+}
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',_initPwModalKeys);
+}else{
+  _initPwModalKeys();
+}
 // Observer l'état d'authentification Firebase
 function initAuth(){
   if(!window._fbOnAuth||!window._fbAuth)return;

@@ -14,7 +14,7 @@ function renderStageCommentsHtml(i){
       html+='<div class="comment-card">'+
         '<span class="comment-name">'+escHtml(c.name)+'</span>'+
         '<span class="comment-time">'+formatTime(c.ts)+(c._pending?' ⏳':'')+'</span>'+
-        (isAdmin?'<button class="comment-del" onclick="deleteComment(\''+ei+'\',\''+eid+'\')">&#x1f5d1;</button>':'')+
+        (isAdmin?'<button class="comment-del" data-action="deleteComment" data-arg="'+ei+'" data-arg2="'+eid+'">&#x1f5d1;</button>':'')+
         '<div class="comment-text">'+escHtml(c.text)+'</div>'+
         '</div>';
     });
@@ -23,7 +23,7 @@ function renderStageCommentsHtml(i){
     html+='<div class="comment-form" style="margin-top:10px">'+
       '<input type="text" id="cname-'+ei+'" placeholder="Ton pr\u00e9nom" maxlength="'+Utils.LIMITS.COMMENT_NAME+'">'+
       '<textarea id="ctxt-'+ei+'" placeholder="Laisse un commentaire..." maxlength="'+Utils.LIMITS.COMMENT_TEXT+'"></textarea>'+
-      '<button class="btn btn-p comment-send" onclick="postComment(\''+ei+'\')">Envoyer &#x1f4e8;</button>'+
+      '<button class="btn btn-p comment-send" data-action="postComment" data-arg="'+ei+'">Envoyer &#x1f4e8;</button>'+
       '</div>';
   }
   html+='</div>';

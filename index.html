@@ -429,22 +429,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 
 <div class="header">
   <div class="header-c">
-    <h1 id="headerTitle">Annecy → Sligo<span class="sync-dot" id="syncDot" style="display:none" onclick="toggleSyncPopover(event)" title="État de synchronisation" role="button" tabindex="0" aria-label="État de synchronisation — cliquer pour les détails"></span></h1>
+    <h1 id="headerTitle">Annecy → Sligo<span class="sync-dot" id="syncDot" style="display:none" data-action="toggleSyncPopover" title="État de synchronisation" role="button" tabindex="0" aria-label="État de synchronisation — cliquer pour les détails"></span></h1>
     <div class="header-sub" id="headerSub">France → Irlande | 2978 km</div>
   </div>
 </div>
 <div id="syncPopover" role="tooltip" aria-live="polite"></div>
 <div id="toastContainer" role="status" aria-live="polite" aria-atomic="false"></div>
-<button class="admin-btn" id="adminBtn" onclick="toggleAdmin()" aria-label="Menu administration">&#x1f512; Admin</button>
+<button class="admin-btn" id="adminBtn" data-action="toggleAdmin" aria-label="Menu administration">&#x1f512; Admin</button>
 <div id="adminDropdown" role="menu" aria-label="Menu admin">
-  <button onclick="openProfileModal()" role="menuitem">👤 Profil</button>
+  <button data-action="openProfileModal" role="menuitem">👤 Profil</button>
   <hr>
-  <button onclick="logoutAdmin()" role="menuitem">🚪 Déconnexion</button>
+  <button data-action="logoutAdmin" role="menuitem">🚪 Déconnexion</button>
 </div>
 
-<div id="profileModal" onclick="if(event.target===this)closeProfileModal()">
+<div id="profileModal" data-close-on-self="closeProfileModal">
   <div class="profile-box">
-    <h2>Profil admin <button onclick="closeProfileModal()" aria-label="Fermer">✕</button></h2>
+    <h2>Profil admin <button data-action="closeProfileModal" aria-label="Fermer">✕</button></h2>
 
     <div class="profile-section">
       <h3>Compte</h3>
@@ -453,7 +453,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
     </div>
 
     <div class="profile-section">
-      <h3>Stockage RTDB <button class="btn" style="font-size:11px;padding:3px 8px" onclick="refreshProfileQuota()">🔄</button></h3>
+      <h3>Stockage RTDB <button class="btn" style="font-size:11px;padding:3px 8px" data-action="refreshProfileQuota">🔄</button></h3>
       <div class="quota-progress"><div class="quota-progress-fill" id="profileQuotaFill" style="width:0%"></div></div>
       <div class="profile-row" id="profileQuotaText"><span>Chargement…</span></div>
     </div>
@@ -470,20 +470,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
     <div class="profile-section">
       <h3>Export journal</h3>
       <div class="profile-export">
-        <button class="btn btn-p" onclick="exportJournal('md')">⬇ .md</button>
-        <button class="btn" onclick="exportJournal('json')">⬇ .json</button>
+        <button class="btn btn-p" data-action="exportJournal" data-arg="md">⬇ .md</button>
+        <button class="btn" data-action="exportJournal" data-arg="json">⬇ .json</button>
       </div>
     </div>
   </div>
 </div>
 
-<div class="confirm-modal" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle" onclick="if(event.target===this)confirmCancel()">
+<div class="confirm-modal" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle" data-close-on-self="confirmCancel">
   <div class="confirm-box">
     <h3 id="confirmTitle">Confirmer</h3>
     <p id="confirmMsg">Action irréversible.</p>
     <div class="confirm-actions">
-      <button class="btn btn-o" onclick="confirmCancel()">Annuler</button>
-      <button class="btn btn-danger" id="confirmOk" onclick="confirmAccept()">Supprimer</button>
+      <button class="btn btn-o" data-action="confirmCancel">Annuler</button>
+      <button class="btn btn-danger" id="confirmOk" data-action="confirmAccept">Supprimer</button>
     </div>
   </div>
 </div>
@@ -492,10 +492,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
   <div class="pw-box">
     <h3>Connexion admin</h3>
     <p>Connecte-toi avec ton compte Firebase</p>
-    <input type="email" class="pw-input" id="pwEmail" placeholder="Email" onkeydown="if(event.key==='Enter')document.getElementById('pwInput').focus()" style="letter-spacing:normal;margin-bottom:8px">
-    <input type="password" class="pw-input" id="pwInput" placeholder="••••••" onkeydown="if(event.key==='Enter')checkPw()">
+    <input type="email" class="pw-input" id="pwEmail" placeholder="Email" style="letter-spacing:normal;margin-bottom:8px">
+    <input type="password" class="pw-input" id="pwInput" placeholder="••••••">
     <div class="pw-err" id="pwErr">Email ou mot de passe incorrect</div>
-    <button class="btn btn-p" style="width:100%" onclick="checkPw()">Se connecter</button>
+    <button class="btn btn-p" style="width:100%" data-action="checkPw">Se connecter</button>
   </div>
 </div>
 
@@ -509,10 +509,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
     </div>
     <div class="map-admin-bar" id="mapAdminBar" style="display:none">
       <div style="display:flex;align-items:center;gap:6px">
-        <button class="camp-toggle" id="campToggle" onclick="toggleCampings()">&#x1f3d5; Campings</button>
-        <button class="camp-toggle" id="campspaceToggle" onclick="toggleCampspace()" style="background:#fff3e0;color:#e65100;border-color:#ffcc80">&#x1f3e1; Campspace</button>
-        <button class="camp-toggle" id="waterToggle" onclick="toggleWater()" style="background:#e3f2fd;color:#1565c0;border-color:#90caf9">&#x1f4a7; Eau</button>
-        <select id="campRange" onchange="onCampRangeChange()" style="padding:6px 8px;border-radius:10px;border:1.5px solid #e0e0e0;font-size:13px;font-weight:600;background:#fff;color:var(--text-light)">
+        <button class="camp-toggle" id="campToggle" data-action="toggleCampings">&#x1f3d5; Campings</button>
+        <button class="camp-toggle" id="campspaceToggle" data-action="toggleCampspace" style="background:#fff3e0;color:#e65100;border-color:#ffcc80">&#x1f3e1; Campspace</button>
+        <button class="camp-toggle" id="waterToggle" data-action="toggleWater" style="background:#e3f2fd;color:#1565c0;border-color:#90caf9">&#x1f4a7; Eau</button>
+        <select id="campRange" data-action="onCampRangeChange" data-event="change" style="padding:6px 8px;border-radius:10px;border:1.5px solid #e0e0e0;font-size:13px;font-weight:600;background:#fff;color:var(--text-light)">
           <option value="50">50 km</option>
           <option value="100">100 km</option>
           <option value="150" selected>150 km</option>
@@ -523,7 +523,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
       </div>
     </div>
     <div class="pos-admin-bar" id="posAdminBar">
-      <button class="pos-gps-btn" onclick="updatePosition()">&#x1f4cd; Ma position</button>
+      <button class="pos-gps-btn" data-action="updatePosition">&#x1f4cd; Ma position</button>
       <span class="pos-gps-status" id="posGpsStatus">Non localisé</span>
     </div>
     <div class="pos-badge" id="posBadge">
@@ -580,7 +580,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
         <input type="number" id="depAmount" placeholder="Montant (€)" min="0" step="0.01">
         <input type="text" id="depDesc" placeholder="Description">
       </div>
-      <button class="btn btn-p" style="width:100%" onclick="addExpense()">+ Ajouter</button>
+      <button class="btn btn-p" style="width:100%" data-action="addExpense">+ Ajouter</button>
     </div>
     <div id="depList"></div>
     <div class="spacer"></div>
@@ -588,19 +588,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 </div>
 
 <div class="tab-bar">
-  <button class="tab active" data-page="map" onclick="switchTab('map')"><span class="tab-icon">&#x1f5fa;&#xfe0f;</span><span>Carte</span></button>
-  <button class="tab" data-page="stages" id="tabStages" onclick="switchTab('stages')" style="display:none"><span class="tab-icon">&#x1f4cb;</span><span>Etapes</span></button>
-  <button class="tab" data-page="journal" onclick="switchTab('journal')"><span class="tab-icon">&#x1f4d3;</span><span>Journal</span></button>
-  <button class="tab" data-page="depenses" id="tabDepenses" onclick="switchTab('depenses')" style="display:none"><span class="tab-icon">&#x1f4b6;</span><span>Dépenses</span></button>
-  <button class="tab" data-page="info" id="tabInfo" onclick="switchTab('info')" style="display:none"><span class="tab-icon">&#x2139;&#xfe0f;</span><span>Infos</span></button>
+  <button class="tab active" data-page="map" data-action="switchTab" data-arg="map"><span class="tab-icon">&#x1f5fa;&#xfe0f;</span><span>Carte</span></button>
+  <button class="tab" data-page="stages" id="tabStages" data-action="switchTab" data-arg="stages" style="display:none"><span class="tab-icon">&#x1f4cb;</span><span>Etapes</span></button>
+  <button class="tab" data-page="journal" data-action="switchTab" data-arg="journal"><span class="tab-icon">&#x1f4d3;</span><span>Journal</span></button>
+  <button class="tab" data-page="depenses" id="tabDepenses" data-action="switchTab" data-arg="depenses" style="display:none"><span class="tab-icon">&#x1f4b6;</span><span>Dépenses</span></button>
+  <button class="tab" data-page="info" id="tabInfo" data-action="switchTab" data-arg="info" style="display:none"><span class="tab-icon">&#x2139;&#xfe0f;</span><span>Infos</span></button>
 </div>
 
-<div class="lightbox" id="lightbox" onclick="closeLightbox()">
-  <button class="lightbox-close" onclick="closeLightbox()">&#x2715;</button>
+<div class="lightbox" id="lightbox" data-action="closeLightbox">
+  <button class="lightbox-close" data-action="closeLightbox">&#x2715;</button>
   <img id="lightboxImg" src="" alt="">
 </div>
 
-<div class="modal-overlay" id="stageModal" onclick="if(event.target===this)closeModal()">
+<div class="modal-overlay" id="stageModal" data-close-on-self="closeModal">
   <div class="modal"><div class="modal-h"></div><div id="modalBody"></div></div>
 </div>
 

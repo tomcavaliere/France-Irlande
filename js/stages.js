@@ -22,8 +22,8 @@ function renderStages(){
     var dateLabel=new Date(date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'});
     var edate=escAttr(date);
     var adminStageHtml=isAdmin?
-      '<button class="s-del" onclick="deleteStage(\''+edate+'\');event.stopPropagation()">&#x2715;</button>'+
-      '<button class="s-write" onclick="openJournalEntry(\''+edate+'\');event.stopPropagation()">&#x1f4dd; Écrire</button>'
+      '<button class="s-del" data-action="deleteStage" data-arg="'+edate+'" data-stop="1">&#x2715;</button>'+
+      '<button class="s-write" data-action="openJournalEntry" data-arg="'+edate+'" data-stop="1">&#x1f4dd; Écrire</button>'
       :'';
     card.innerHTML=
       '<div class="s-hdr"><div>'+
