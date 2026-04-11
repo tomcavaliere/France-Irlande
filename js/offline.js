@@ -4,6 +4,13 @@
 
 var COMMENTS_CACHE_MAX=50;
 var MAX_OFFLINE_QUEUE=200;
+var _offlineCoreWarned=false;
+
+function _warnOfflineCoreMissing(){
+  if(_offlineCoreWarned)return;
+  _offlineCoreWarned=true;
+  console.warn('[Offline] OfflineCore module non chargé');
+}
 
 function saveLocalCache(){
   try{localStorage.setItem('ev1-current-cache',JSON.stringify(current));}catch(e){console.warn('[cache] current non sauvegardé',e);}
@@ -34,7 +41,7 @@ function saveCommentsCache(date,data){
     // Tenir à jour un index des dates mises en cache
     var idxRaw=localStorage.getItem('ev1-cmts-idx');
     var idx=idxRaw?JSON.parse(idxRaw):[];
-    if(!window.OfflineCore) return;
+    if(!window.OfflineCore){ _warnOfflineCoreMissing(); return; }
     var upd=window.OfflineCore.upsertBoundedIndex(idx, date, COMMENTS_CACHE_MAX);
     if(upd.index.indexOf(date)!==-1){
       upd.evicted.forEach(function(d){try{localStorage.removeItem('ev1-cmts-'+d);}catch(_){}});
@@ -57,7 +64,7 @@ function loadAllCommentsCache(){
         }
       }catch(e){console.warn('[cache] commentaires illisibles pour '+date,e);}
     });
-    if(!window.OfflineCore) return;
+    if(!window.OfflineCore){ _warnOfflineCoreMissing(); return; }
     comments=window.OfflineCore.hydrateComments(idx, storedByDate, comments);
   }catch(e){console.warn('[cache] index commentaires illisible',e);}
 }

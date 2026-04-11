@@ -20,6 +20,7 @@ function fetchWeather(){
   box.innerHTML='<div class="weather-card"><div class="weather-title">☁️ Météo — '+label+'</div>'+
     '<div style="font-size:12px;color:var(--text-light)">Chargement...</div></div>';
   Utils.safeFetch(url,{},{retries:2,timeout:10000}).then(function(r){return r.json();}).then(function(d){
+    if(!window.WeatherCore) throw new Error('WeatherCore module non chargé');
     var days=window.WeatherCore?window.WeatherCore.buildWeatherDays(d.daily):[];
     if(!days.length){ throw new Error('Réponse météo invalide'); }
     var html2='<div class="weather-card">'+

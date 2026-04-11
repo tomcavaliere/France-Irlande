@@ -1,6 +1,7 @@
 // campings.js
 // Campings (OpenCampingMap + Overpass fallback), Campspace, water points.
 // All POI layers displayed on the Leaflet map.
+var _campingsCoreWarned=false;
 
 // Retourne true si le point (lat, lon) est à moins de radiusKm km d'un point du tableau ptSet.
 // ptSet : tableau de [lat, lon, ...], sous-échantillonné tous les 3 éléments.
@@ -87,6 +88,13 @@ function renderCampings(geojson,aheadPts){
 
   var markers=[];
   geojson.features.forEach(function(f){
+    if(!window.CampingsCore){
+      if(!_campingsCoreWarned){
+        _campingsCoreWarned=true;
+        console.warn('[Campings] CampingsCore module non chargé');
+      }
+      return;
+    }
     var mapped = window.CampingsCore ? window.CampingsCore.mapCampingFeature(f) : null;
     if(!mapped) return;
     if(!nearTrace(mapped.lat,mapped.lon,ptSet,5))return;
