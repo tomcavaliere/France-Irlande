@@ -5,8 +5,8 @@ PWA de suivi de voyage EuroVelo 1 : Chamonix → Roscoff (France) puis Cork → 
 Tom journalise, ses proches suivent en live via Firebase RTDB.
 
 ## Architecture
-- **Fichier principal** : `index.html` — HTML + CSS uniquement (~650 lignes). Zéro JS inline.
-- **JS** : 14 modules dans `js/` chargés via `<script>` ordinaires (pas ESM). Ordre de chargement : `route-data → state → ui → offline → admin → map-core → campings → stages → photos → comments → expenses → weather → journal → init`.
+- **Fichier principal** : `index.html` — structure HTML/CSS principale (~650 lignes) avec aussi un peu de JS inline (notamment l'initialisation Firebase via `<script type="module">` et quelques handlers `on*` / `onclick`).
+- **JS** : le JS applicatif principal est réparti en 14 fichiers dans `js/`, chargés majoritairement via `<script>` classiques. Ordre de chargement : `route-data → state → ui → offline → admin → map-core → campings → stages → photos → comments → expenses → weather → journal → init`.
 - **État global** : toutes les variables mutables dans `js/state.js`.
 - **Modules purs testés** : `js/gps-core.js` (`GPSCore`) et `js/utils.js` (`Utils`).
 - **Backend** : Firebase RTDB `france-irlande-bike` (région `europe-west1`).
