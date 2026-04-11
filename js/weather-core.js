@@ -27,7 +27,7 @@
   function weatherDayLabel(i, isoDate){
     if (i === 0) return 'Aujourd\'hui';
     if (i === 1) return 'Demain';
-    return new Date(String(isoDate || '') + 'T12:00:00').toLocaleDateString('fr-FR',{weekday:'short'});
+    return new Date((isoDate || '') + 'T12:00:00').toLocaleDateString('fr-FR',{weekday:'short'});
   }
 
   function buildWeatherDays(daily){

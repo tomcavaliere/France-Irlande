@@ -89,6 +89,7 @@ function renderCampings(geojson,aheadPts){
   geojson.features.forEach(function(f){
     var mapped = window.CampingsCore ? window.CampingsCore.mapCampingFeature(f) : null;
     if(!mapped){
+      if(!f || !f.geometry || !Array.isArray(f.geometry.coordinates) || f.geometry.coordinates.length < 2) return;
       var c=f.geometry.coordinates;
       var p=f.properties||{};
       mapped={
