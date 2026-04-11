@@ -1,10 +1,24 @@
-const CACHE = 'ev1-v13';
+const CACHE = 'ev1-v14';
 const PRECACHE = [
   '/',
   '/index.html',
   '/campspace-data.js',
   '/js/gps-core.js',
   '/js/utils.js',
+  '/js/route-data.js',
+  '/js/state.js',
+  '/js/ui.js',
+  '/js/offline.js',
+  '/js/admin.js',
+  '/js/map-core.js',
+  '/js/campings.js',
+  '/js/stages.js',
+  '/js/photos.js',
+  '/js/comments.js',
+  '/js/expenses.js',
+  '/js/weather.js',
+  '/js/journal.js',
+  '/js/init.js',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
 ];
