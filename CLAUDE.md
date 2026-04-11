@@ -186,5 +186,4 @@ Avant d'implémenter une feature documentée ici : **lire le spec en entier** av
 ## Faiblesses connues (backlog)
 
 - Photos/commentaires/dépenses indisponibles hors-ligne
-- Quota RTDB non alerté en production (logique présente dans utils.js, UI non branchée)
 - `.github/copilot-instructions.md` obsolète (référence l'ancienne architecture monofichier)
