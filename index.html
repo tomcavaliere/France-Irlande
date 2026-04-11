@@ -571,18 +571,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
     <div class="dep-form">
       <div class="dep-row">
         <input type="date" id="depDate">
-        <select id="depCat">
-          <option value="Hébergement">🏕 Hébergement</option>
-          <option value="Nourriture">🍔 Nourriture</option>
-          <option value="Transport">🚢 Transport</option>
-          <option value="Équipement">🔧 Équipement</option>
-          <option value="Loisirs">🍺 Loisirs</option>
-          <option value="Autre">📦 Autre</option>
-        </select>
+        <select id="depCat"></select>
       </div>
       <div class="dep-row">
         <input type="number" id="depAmount" placeholder="Montant (€)" min="0" step="0.01">
-        <input type="text" id="depDesc" placeholder="Description" maxlength="100">
+        <input type="text" id="depDesc" placeholder="Description">
       </div>
       <button class="btn btn-p" style="width:100%" onclick="addExpense()">+ Ajouter</button>
     </div>
