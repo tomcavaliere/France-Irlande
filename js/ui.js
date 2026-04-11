@@ -97,7 +97,7 @@ function toggleSyncPopover(e){
   if(pop.classList.contains('visible')){pop.classList.remove('visible');return;}
   var summary=_queueSummary();
   if(!isOnline){
-    pop.innerHTML='<strong>🔴 Hors-ligne</strong>Les modifications seront synchronisées au retour du réseau.';
+    pop.innerHTML='<strong>🔴 Hors-ligne</strong> Les modifications seront synchronisées au retour du réseau.';
   } else if(summary){
     pop.innerHTML='<strong>🟡 '+summary.total+' élément'+(summary.total>1?'s':'')+' en attente</strong>'+summary.lines.join('<br>');
   } else {

@@ -229,7 +229,7 @@ function renderJournal(){
   });
   if(!hasAny){
     c.innerHTML='<div style="text-align:center;color:var(--text-light);font-size:13px;padding:32px 0">'+
-      'Le journal appara\u00eEtra ici apr\u00e8s la mise \u00e0 jour de position.</div>';
+      'Le journal appara\u00eetra ici apr\u00e8s la mise \u00e0 jour de position.</div>';
   }
   observeJournalEntries();
 }
