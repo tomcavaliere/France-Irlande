@@ -569,7 +569,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
       </div>
       <div class="dep-row">
         <input type="number" id="depAmount" placeholder="Montant (€)" min="0" step="0.01">
-        <input type="text" id="depDesc" placeholder="Description" maxlength="50">
+        <input type="text" id="depDesc" placeholder="Description" maxlength="100">
       </div>
       <button class="btn btn-p" style="width:100%" onclick="addExpense()">+ Ajouter</button>
     </div>
@@ -698,6 +698,9 @@ function logoutAdmin(){
   clearTimeout(inactivityTimer);
   closeAdminDropdown();
   flushJournals();
+  saveExpensesCache();
+  if(_unsubExpenses){_unsubExpenses();_unsubExpenses=null;}
+  expenses={};
   if(window._fbAuth)window._fbSignOut(window._fbAuth);
 }
 var _lastActivity=Date.now();
@@ -815,7 +818,7 @@ function initAuth(){
   window._fbOnAuth(window._fbAuth,function(user){
     isAdmin=!!user;
     setAdminUI(isAdmin);
-    if(isAdmin){resetInactivity();}
+    if(isAdmin){resetInactivity();initExpenses();}
     else{clearTimeout(inactivityTimer);}
     renderStages();renderJournal();updateMap();
   });
@@ -1163,11 +1166,12 @@ function renderCampings(geojson,aheadPts){
     if(p.internet_access==='wlan')tags.push('📶');
     if(p.fee==='no')tags.push('Gratuit');
     var website=p.website||p['contact:website']||'';
-    var popup='<div class="camp-popup"><b>'+name+'</b>'+
-      (p.operator?'<span style="color:#666;font-size:11px">'+p.operator+'</span><br>':'')+
+    var safeWebsite=/^https?:\/\//i.test(website)?website:'';
+    var popup='<div class="camp-popup"><b>'+escHtml(name)+'</b>'+
+      (p.operator?'<span style="color:#666;font-size:11px">'+escHtml(p.operator)+'</span><br>':'')+
       (tags.length?'<div class="camp-tags">'+tags.map(function(t){return'<span class="camp-tag">'+t+'</span>'}).join('')+'</div>':'')+
       campingDistHtml(c[1],c[0])+
-      (website?'<a href="'+website+'" target="_blank" style="color:var(--green);font-size:11px">Site web</a>':'')+
+      (safeWebsite?'<a href="'+escAttr(safeWebsite)+'" target="_blank" style="color:var(--green);font-size:11px">Site web</a>':'')+
       '</div>';
     var m=L.marker([c[1],c[0]],{icon:campIcon}).bindPopup(popup);
     markers.push(m);
@@ -1343,8 +1347,8 @@ function renderWater(elements,aheadPts){
     if(t.seasonal==='yes')tags.push('Saisonnier');
     if(t.access==='private')tags.push('Privé');
     var dist=campingDistHtml(el.lat,el.lon);
-    var popup='<div class="camp-popup"><b style="color:#1565c0">'+(name||type)+'</b>'+
-      (name?'<span style="color:#666;font-size:11px">'+type+'</span><br>':'')+
+    var popup='<div class="camp-popup"><b style="color:#1565c0">'+escHtml(name||type)+'</b>'+
+      (name?'<span style="color:#666;font-size:11px">'+escHtml(type)+'</span><br>':'')+
       (tags.length?'<div class="camp-tags">'+tags.map(function(t){return'<span class="camp-tag" style="background:#e3f2fd;color:#1565c0">'+t+'</span>'}).join('')+'</div>':'')+
       dist+'</div>';
     markers.push(L.marker([el.lat,el.lon],{icon:waterIcon}).bindPopup(popup));
@@ -1600,7 +1604,7 @@ function renderStageCommentsHtml(i){
   if(!isAdmin){
     html+='<div class="comment-form" style="margin-top:10px">'+
       '<input type="text" id="cname-'+ei+'" placeholder="Ton pr\u00e9nom" maxlength="30">'+
-      '<textarea id="ctxt-'+ei+'" placeholder="Laisse un commentaire..."></textarea>'+
+      '<textarea id="ctxt-'+ei+'" placeholder="Laisse un commentaire..." maxlength="'+Utils.LIMITS.COMMENT_TEXT+'"></textarea>'+
       '<button class="btn btn-p comment-send" onclick="postComment(\''+ei+'\')">Envoyer &#x1f4e8;</button>'+
       '</div>';
   }
@@ -1611,10 +1615,17 @@ function renderStageCommentsHtml(i){
 function postComment(i){
   var nameEl=document.getElementById('cname-'+i);
   var txtEl=document.getElementById('ctxt-'+i);
+  var sendBtn=document.querySelector('#scmts-'+i+' .comment-send');
   var name=nameEl?nameEl.value.trim():'';
   var text=txtEl?txtEl.value.trim():'';
-  if(!name){if(nameEl)nameEl.focus();return;}
-  if(!text){if(txtEl)txtEl.focus();return;}
+  var v=Utils.validateComment({name:name,text:text});
+  if(!v.ok){
+    if(!name&&nameEl){nameEl.focus();}
+    else if(!text&&txtEl){txtEl.focus();}
+    return;
+  }
+  // Verrou anti-double-clic
+  if(sendBtn)sendBtn.disabled=true;
   var id='c'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
   var data={name:name,text:text,ts:Date.now()};
   // Optimistic UI
@@ -1622,7 +1633,11 @@ function postComment(i){
   comments[i][id]=Object.assign({},data,{_pending:true});
   patchStageComments(i);
   if(txtEl)txtEl.value='';
-  tryWrite('set','comments/'+i+'/'+id,data);
+  tryWrite('set','comments/'+i+'/'+id,data).then(function(){
+    if(sendBtn)sendBtn.disabled=false;
+  }).catch(function(){
+    if(sendBtn)sendBtn.disabled=false;
+  });
 }
 
 function deleteComment(i,id){
@@ -2123,6 +2138,14 @@ function loadLocalCache(){
   try{var j=localStorage.getItem('ev1-journals-cache');if(j)journals=JSON.parse(j)||{};}catch(e){console.warn('[cache] journals illisible',e);}
 }
 
+function saveExpensesCache(){
+  try{localStorage.setItem('ev1-expenses-cache',JSON.stringify(expenses));}catch(e){console.warn('[cache] expenses non sauvegardé',e);}
+}
+
+function loadExpensesCache(){
+  try{var e=localStorage.getItem('ev1-expenses-cache');if(e)expenses=JSON.parse(e)||{};}catch(e){console.warn('[cache] expenses illisible',e);}
+}
+
 var MAX_OFFLINE_QUEUE=200;
 function persistQueue(){
   try{localStorage.setItem('offlineQueue',JSON.stringify(offlineQueue));}catch(e){
@@ -2218,12 +2241,13 @@ document.addEventListener('DOMContentLoaded',function(){
     navigator.serviceWorker.register('./sw.js').catch(function(){});
   }
   loadLocalCache();
+  loadExpensesCache();
   initMap();
   renderStages();
   renderJournal();
   setSyncDot(isOnline?'online':'offline');
   setTimeout(function(){
-    initAuth();initFirebase();initExpenses();fetchWeather();
+    initAuth();initFirebase();fetchWeather();
     if(isOnline)flushQueue();
   },800);
 });
