@@ -282,6 +282,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 .readonly-overlay{pointer-events:none;opacity:.7}
 
+/* Toast notifications */
+#toastContainer{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  z-index:10000;display:flex;flex-direction:column;align-items:center;gap:8px;
+  pointer-events:none;max-width:90vw}
+.toast{background:#333;color:#fff;border-radius:8px;padding:10px 18px;font-size:13px;
+  line-height:1.5;box-shadow:0 4px 16px rgba(0,0,0,.25);opacity:0;pointer-events:none;
+  transition:opacity .25s;max-width:400px;text-align:center;word-break:break-word}
+.toast.vis{opacity:1}
+.toast.warn{background:#e67e22}
+.toast.error{background:#e74c3c}
+.toast.success{background:#27ae60}
+
 /* Photos journal */
 .j-photos{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .j-photo-wrap{position:relative;width:90px;height:90px;border-radius:10px;overflow:hidden;flex-shrink:0}
@@ -414,16 +426,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 
 <div class="header">
   <div class="header-c">
-    <h1 id="headerTitle">Annecy → Sligo<span class="sync-dot" id="syncDot" style="display:none" onclick="toggleSyncPopover(event)" title="État de synchronisation"></span></h1>
+    <h1 id="headerTitle">Annecy → Sligo<span class="sync-dot" id="syncDot" style="display:none" onclick="toggleSyncPopover(event)" title="État de synchronisation" role="button" tabindex="0" aria-label="État de synchronisation — cliquer pour les détails"></span></h1>
     <div class="header-sub" id="headerSub">France → Irlande | 2978 km</div>
   </div>
 </div>
 <div id="syncPopover" role="tooltip" aria-live="polite"></div>
-<button class="admin-btn" id="adminBtn" onclick="toggleAdmin()">&#x1f512; Admin</button>
-<div id="adminDropdown">
-  <button onclick="openProfileModal()">👤 Profil</button>
+<div id="toastContainer" role="status" aria-live="polite" aria-atomic="false"></div>
+<button class="admin-btn" id="adminBtn" onclick="toggleAdmin()" aria-label="Menu administration">&#x1f512; Admin</button>
+<div id="adminDropdown" role="menu" aria-label="Menu admin">
+  <button onclick="openProfileModal()" role="menuitem">👤 Profil</button>
   <hr>
-  <button onclick="logoutAdmin()">🚪 Déconnexion</button>
+  <button onclick="logoutAdmin()" role="menuitem">🚪 Déconnexion</button>
 </div>
 
 <div id="profileModal" onclick="if(event.target===this)closeProfileModal()">
@@ -461,7 +474,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
   </div>
 </div>
 
-<div class="confirm-modal" id="confirmModal" onclick="if(event.target===this)confirmCancel()">
+<div class="confirm-modal" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle" onclick="if(event.target===this)confirmCancel()">
   <div class="confirm-box">
     <h3 id="confirmTitle">Confirmer</h3>
     <p id="confirmMsg">Action irréversible.</p>
@@ -619,7 +632,9 @@ var journals = {};           // { [date]: "texte" }
 // ==== ADMIN ====
 let isAdmin = false;
 let inactivityTimer=null;
+let inactivityWarnTimer=null;
 const INACTIVITY_MS=3*60*1000;
+const INACTIVITY_WARN_BEFORE_MS=45*1000; // avertissement 45s avant la déconnexion
 
 // ==== QUOTA RTDB ====
 // Dernière mesure connue du quota photos. Rafraîchie à chaque login admin,
@@ -655,7 +670,17 @@ function setAdminUI(on){
   if(adminBar)adminBar.style.display=on?'flex':'none';
   var posBar=document.getElementById('posAdminBar');
   if(posBar)posBar.classList.toggle('vis',on);
-  if(on){ refreshQuotaState(); }
+  if(on){
+    refreshQuotaState(function(){
+      if(_quotaState.level==='block'){
+        showToast('🚨 Quota RTDB critique (≥ 90%) ! Upload de photos bloqué. Supprime des photos.','error',8000);
+      } else if(_quotaState.level==='high'){
+        showToast('🔴 Quota RTDB élevé (≥ 85%). Pense à supprimer d\'anciennes photos.','warn',6000);
+      } else if(_quotaState.level==='warn'){
+        showToast('🟡 Quota RTDB à '+Utils.formatBytes(_quotaState.bytes)+' (≥ 70% utilisé).','warn',5000);
+      }
+    });
+  }
   if(!on){
     if(campingsVisible)toggleCampings();
     if(campspaceVisible)toggleCampspace();
@@ -696,6 +721,7 @@ function exportJournal(fmt){
 }
 function logoutAdmin(){
   clearTimeout(inactivityTimer);
+  clearTimeout(inactivityWarnTimer);
   closeAdminDropdown();
   flushJournals();
   saveExpensesCache();
@@ -708,7 +734,13 @@ function resetInactivity(){
   _lastActivity=Date.now();
   if(!isAdmin)return;
   clearTimeout(inactivityTimer);
+  clearTimeout(inactivityWarnTimer);
   inactivityTimer=setTimeout(logoutAdmin,INACTIVITY_MS);
+  if(INACTIVITY_MS>INACTIVITY_WARN_BEFORE_MS){
+    inactivityWarnTimer=setTimeout(function(){
+      if(isAdmin)showToast('⚠️ Session admin : déconnexion automatique dans '+Math.round(INACTIVITY_WARN_BEFORE_MS/1000)+' secondes. Bougez pour rester connecté.','warn',INACTIVITY_WARN_BEFORE_MS);
+    }, INACTIVITY_MS-INACTIVITY_WARN_BEFORE_MS);
+  }
 }
 function toggleAdmin(){
   if(isAdmin){
@@ -1612,6 +1644,10 @@ function renderStageCommentsHtml(i){
   return html;
 }
 
+function _commentCooldownKey(date){return'ev1-cmt-last-'+date;}
+function _getLastCommentTs(date){return parseInt(localStorage.getItem(_commentCooldownKey(date)))||0;}
+function _setLastCommentTs(date){localStorage.setItem(_commentCooldownKey(date),String(Date.now()));}
+
 function postComment(i){
   var nameEl=document.getElementById('cname-'+i);
   var txtEl=document.getElementById('ctxt-'+i);
@@ -1624,6 +1660,13 @@ function postComment(i){
     else if(!text&&txtEl){txtEl.focus();}
     return;
   }
+  // Cooldown anti-spam : 30s entre deux commentaires sur la même étape
+  var lastSent=_getLastCommentTs(i);
+  if(Utils.isCommentOnCooldown(lastSent)){
+    var secs=Utils.commentCooldownRemaining(lastSent);
+    showToast('Merci ! Attends encore '+secs+' seconde'+(secs>1?'s':'')+' avant de commenter à nouveau.','warn');
+    return;
+  }
   // Verrou anti-double-clic
   if(sendBtn)sendBtn.disabled=true;
   var id='c'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
@@ -1633,6 +1676,7 @@ function postComment(i){
   comments[i][id]=Object.assign({},data,{_pending:true});
   patchStageComments(i);
   if(txtEl)txtEl.value='';
+  _setLastCommentTs(i);
   tryWrite('set','comments/'+i+'/'+id,data).then(function(){
     if(sendBtn)sendBtn.disabled=false;
   }).catch(function(){
@@ -1919,6 +1963,7 @@ function loadStageContent(date){
 
   commentsUnsub[date]=window._fbOnValue(window._fbRef(window._fbDb,'comments/'+date),function(snap){
     comments[date]=snap.val()||{};
+    saveCommentsCache(date,comments[date]);
     patchStageComments(date);
   });
 
@@ -2093,6 +2138,26 @@ function setSyncDot(mode){
   dot.classList.toggle('queued', mode==='queued');
 }
 
+// Affiche une notification temporaire non-bloquante.
+// type : 'info' (défaut) | 'warn' | 'error' | 'success'
+// durationMs : durée d'affichage en ms (défaut 4000).
+function showToast(msg, type, durationMs){
+  var container=document.getElementById('toastContainer');
+  if(!container)return;
+  var el=document.createElement('div');
+  el.className='toast'+(type&&type!=='info'?' '+type:'');
+  el.textContent=msg;
+  container.appendChild(el);
+  // Forcer un reflow avant d'ajouter .vis pour déclencher la transition CSS
+  el.getBoundingClientRect();
+  el.classList.add('vis');
+  var dur=(durationMs!=null)?durationMs:4000;
+  setTimeout(function(){
+    el.classList.remove('vis');
+    setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},300);
+  },dur);
+}
+
 function _queueSummary(){
   if(!offlineQueue.length) return null;
   var counts={};
@@ -2144,6 +2209,44 @@ function saveExpensesCache(){
 
 function loadExpensesCache(){
   try{var e=localStorage.getItem('ev1-expenses-cache');if(e)expenses=JSON.parse(e)||{};}catch(e){console.warn('[cache] expenses illisible',e);}
+}
+
+// Cache commentaires par étape (lecture hors-ligne). Taille limitée : 50 étapes max.
+var COMMENTS_CACHE_MAX=50;
+function saveCommentsCache(date,data){
+  var key='ev1-cmts-'+date;
+  try{
+    localStorage.setItem(key,JSON.stringify(data));
+    // Tenir à jour un index des dates mises en cache
+    var idxRaw=localStorage.getItem('ev1-cmts-idx');
+    var idx=idxRaw?JSON.parse(idxRaw):[];
+    if(idx.indexOf(date)===-1){
+      idx.push(date);
+      if(idx.length>COMMENTS_CACHE_MAX){
+        var evicted=idx.splice(0,idx.length-COMMENTS_CACHE_MAX);
+        evicted.forEach(function(d){try{localStorage.removeItem('ev1-cmts-'+d);}catch(_){}});
+      }
+      localStorage.setItem('ev1-cmts-idx',JSON.stringify(idx));
+    }
+  }catch(e){console.warn('[cache] commentaires non sauvegardés pour '+date,e);}
+}
+function loadAllCommentsCache(){
+  try{
+    var idxRaw=localStorage.getItem('ev1-cmts-idx');
+    if(!idxRaw)return;
+    var idx=JSON.parse(idxRaw);
+    idx.forEach(function(date){
+      try{
+        var raw=localStorage.getItem('ev1-cmts-'+date);
+        if(raw){
+          var data=JSON.parse(raw);
+          if(data&&typeof data==='object'&&!comments[date]){
+            comments[date]=data;
+          }
+        }
+      }catch(e){console.warn('[cache] commentaires illisibles pour '+date,e);}
+    });
+  }catch(e){console.warn('[cache] index commentaires illisible',e);}
 }
 
 var MAX_OFFLINE_QUEUE=200;
@@ -2242,6 +2345,7 @@ document.addEventListener('DOMContentLoaded',function(){
   }
   loadLocalCache();
   loadExpensesCache();
+  loadAllCommentsCache();
   initMap();
   renderStages();
   renderJournal();

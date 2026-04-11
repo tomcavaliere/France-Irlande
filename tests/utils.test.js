@@ -7,7 +7,8 @@ const {
   validateComment, validateExpense, validateJournal,
   EXPENSE_CATEGORIES, LIMITS,
   computeQuotaBytes, formatBytes, quotaLevel, RTDB_QUOTA_BYTES,
-  safeFetch, computeKmDay, isOfflineable, actionLabel, filterVisibleJournalDates
+  safeFetch, computeKmDay, isOfflineable, actionLabel, filterVisibleJournalDates,
+  COMMENT_COOLDOWN_MS, isCommentOnCooldown, commentCooldownRemaining
 } = utils;
 
 describe('escAttr', () => {
@@ -566,5 +567,87 @@ describe('filterVisibleJournalDates', () => {
     expect(utils.filterVisibleJournalDates(null, true)).toEqual([]);
     expect(utils.filterVisibleJournalDates('nope', false)).toEqual([]);
     expect(utils.filterVisibleJournalDates(undefined, true)).toEqual([]);
+  });
+});
+
+describe('COMMENT_COOLDOWN_MS', () => {
+  it('expose un cooldown positif (>= 5s)', () => {
+    expect(COMMENT_COOLDOWN_MS).toBeGreaterThanOrEqual(5000);
+  });
+});
+
+describe('isCommentOnCooldown', () => {
+  const CD = 30000; // 30s
+
+  it('retourne false si lastSentTs est 0 (jamais envoyé)', () => {
+    expect(isCommentOnCooldown(0, Date.now(), CD)).toBe(false);
+  });
+
+  it('retourne false si lastSentTs est null ou undefined', () => {
+    expect(isCommentOnCooldown(null, Date.now(), CD)).toBe(false);
+    expect(isCommentOnCooldown(undefined, Date.now(), CD)).toBe(false);
+  });
+
+  it('retourne true si dans le cooldown (5s après envoi, cooldown 30s)', () => {
+    const now = 1000000;
+    const sent = now - 5000; // envoyé il y a 5s
+    expect(isCommentOnCooldown(sent, now, CD)).toBe(true);
+  });
+
+  it('retourne false si le cooldown est écoulé (31s après envoi, cooldown 30s)', () => {
+    const now = 1000000;
+    const sent = now - 31000;
+    expect(isCommentOnCooldown(sent, now, CD)).toBe(false);
+  });
+
+  it('retourne false exactement au bord (cooldown = elapsed)', () => {
+    const now = 1000000;
+    const sent = now - CD;
+    expect(isCommentOnCooldown(sent, now, CD)).toBe(false);
+  });
+
+  it('utilise COMMENT_COOLDOWN_MS par défaut si cooldownMs absent', () => {
+    const now = 1000000;
+    const sent = now - 5000;
+    // Doit être en cooldown avec le cooldown par défaut (30s)
+    expect(isCommentOnCooldown(sent, now)).toBe(true);
+  });
+
+  it('utilise Date.now() si nowTs absent', () => {
+    const sent = Date.now() - 5000; // envoyé il y a 5s
+    expect(isCommentOnCooldown(sent)).toBe(true);
+  });
+
+  it('retourne false si sent est très vieux (1 heure)', () => {
+    const now = 1000000;
+    const sent = now - 3600000;
+    expect(isCommentOnCooldown(sent, now, CD)).toBe(false);
+  });
+});
+
+describe('commentCooldownRemaining', () => {
+  const CD = 30000;
+
+  it('retourne 0 si lastSentTs est 0 ou absent', () => {
+    expect(commentCooldownRemaining(0, Date.now(), CD)).toBe(0);
+    expect(commentCooldownRemaining(null, Date.now(), CD)).toBe(0);
+  });
+
+  it('retourne le nombre de secondes restantes arrondi au supérieur', () => {
+    const now = 1000000;
+    const sent = now - 5000; // envoyé il y a 5s, 25s restants
+    expect(commentCooldownRemaining(sent, now, CD)).toBe(25);
+  });
+
+  it('retourne 1 pour moins d\'une seconde restante', () => {
+    const now = 1000000;
+    const sent = now - 29500; // 500ms restantes
+    expect(commentCooldownRemaining(sent, now, CD)).toBe(1);
+  });
+
+  it('retourne 0 si le cooldown est terminé', () => {
+    const now = 1000000;
+    const sent = now - 35000;
+    expect(commentCooldownRemaining(sent, now, CD)).toBe(0);
   });
 });

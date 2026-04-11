@@ -36,13 +36,13 @@
           ".write": "!data.exists() || auth != null",
           ".validate": "newData.hasChildren(['text', 'name', 'ts'])",
           "text": {
-            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length < 500"
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 500"
           },
           "name": {
-            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length < 30"
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 30"
           },
           "ts": {
-            ".validate": "newData.isNumber()"
+            ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= (now + 60000)"
           },
           "$other": { ".validate": false }
         }
@@ -60,7 +60,26 @@
     },
     "expenses": {
       ".read": "auth != null",
-      ".write": "auth != null"
+      ".write": "auth != null",
+      "$id": {
+        ".validate": "newData.hasChildren(['amount','cat','date','ts'])",
+        "amount": {
+          ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() < 10000"
+        },
+        "cat": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 50"
+        },
+        "date": {
+          ".validate": "newData.isString() && newData.val().matches(/^\\d{4}-\\d{2}-\\d{2}$/)"
+        },
+        "ts": {
+          ".validate": "newData.isNumber() && newData.val() > 0"
+        },
+        "desc": {
+          ".validate": "newData.isString() && newData.val().length <= 100"
+        },
+        "$other": { ".validate": false }
+      }
     }
   }
 }

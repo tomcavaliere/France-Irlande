@@ -267,6 +267,29 @@
     return 'élément';
   }
 
+  // Durée du cooldown entre deux commentaires consécutifs sur la même étape (ms).
+  var COMMENT_COOLDOWN_MS = 30 * 1000;
+
+  // Retourne true si l'utilisateur est encore en période de cooldown.
+  // - lastSentTs : timestamp (ms) du dernier commentaire envoyé (0 si jamais envoyé).
+  // - nowTs      : timestamp courant (ms), injectable pour les tests.
+  // - cooldownMs : durée du cooldown (défaut COMMENT_COOLDOWN_MS).
+  function isCommentOnCooldown(lastSentTs, nowTs, cooldownMs) {
+    if (!lastSentTs || lastSentTs <= 0) return false;
+    var cd = (cooldownMs != null) ? cooldownMs : COMMENT_COOLDOWN_MS;
+    var now = (nowTs != null) ? nowTs : Date.now();
+    return (now - lastSentTs) < cd;
+  }
+
+  // Nombre de secondes restantes avant la fin du cooldown (0 si aucun cooldown actif).
+  function commentCooldownRemaining(lastSentTs, nowTs, cooldownMs) {
+    if (!lastSentTs || lastSentTs <= 0) return 0;
+    var cd = (cooldownMs != null) ? cooldownMs : COMMENT_COOLDOWN_MS;
+    var now = (nowTs != null) ? nowTs : Date.now();
+    var remaining = cd - (now - lastSentTs);
+    return remaining > 0 ? Math.ceil(remaining / 1000) : 0;
+  }
+
   // Dates à afficher dans le carnet. Visiteur : published=true seulement.
   function filterVisibleJournalDates(stages, isAdmin) {
     if (!stages || typeof stages !== 'object') return [];
@@ -299,7 +322,10 @@
     computeKmDay: computeKmDay,
     isOfflineable: isOfflineable,
     actionLabel: actionLabel,
-    filterVisibleJournalDates: filterVisibleJournalDates
+    filterVisibleJournalDates: filterVisibleJournalDates,
+    COMMENT_COOLDOWN_MS: COMMENT_COOLDOWN_MS,
+    isCommentOnCooldown: isCommentOnCooldown,
+    commentCooldownRemaining: commentCooldownRemaining
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
