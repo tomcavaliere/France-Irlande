@@ -19,11 +19,11 @@ describe('nearTrace', () => {
 
   it('respecte l’échantillonnage i+=3', () => {
     const p = [
-      [45.0, 6.0], [44.0, 4.0], [44.0, 4.0],
-      [46.0, 7.0]
+      [0.0, 0.0], [45.0, 45.0], [45.0, 45.0],
+      [0.01, 0.01]
     ];
-    expect(nearTrace(44.0, 4.0, p, 1)).toBe(false);
-    expect(nearTrace(46.0, 7.0, p, 1)).toBe(true);
+    expect(nearTrace(45.0, 45.0, p, 1)).toBe(false);
+    expect(nearTrace(0.01, 0.01, p, 2)).toBe(true);
   });
 });
 

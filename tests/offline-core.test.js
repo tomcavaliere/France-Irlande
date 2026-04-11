@@ -27,6 +27,13 @@ describe('upsertBoundedIndex', () => {
     expect(r.index).toEqual(['a']);
     expect(r.evicted).toEqual([]);
   });
+
+  it('ignore une clé non-string', () => {
+    const r1 = upsertBoundedIndex(['a'], null, 3);
+    const r2 = upsertBoundedIndex(['a'], 42, 3);
+    expect(r1.index).toEqual(['a']);
+    expect(r2.index).toEqual(['a']);
+  });
 });
 
 describe('trimQueue', () => {

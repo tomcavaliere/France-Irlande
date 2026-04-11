@@ -95,7 +95,7 @@ function renderCampings(geojson,aheadPts){
       }
       return;
     }
-    var mapped = window.CampingsCore ? window.CampingsCore.mapCampingFeature(f) : null;
+    var mapped = window.CampingsCore.mapCampingFeature(f);
     if(!mapped) return;
     if(!nearTrace(mapped.lat,mapped.lon,ptSet,5))return;
     var tags = mapped.tags || [];

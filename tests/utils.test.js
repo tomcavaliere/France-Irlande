@@ -418,9 +418,9 @@ describe('safeFetch', () => {
       opts.signal.addEventListener('abort', () => reject(new Error('aborted')));
     }));
     const p = safeFetch('u', {}, { fetch: fetchMock, retries: 0, timeout: 50 });
-    const assertReject = expect(p).rejects.toThrow('aborted');
+    p.catch(() => {});
     await vi.advanceTimersByTimeAsync(60);
-    await assertReject;
+    await expect(p).rejects.toThrow('aborted');
     vi.useRealTimers();
   });
 
