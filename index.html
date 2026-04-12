@@ -10,33 +10,7 @@
 <meta name="theme-color" content="#1a5e1f">
 <link rel="manifest" href="manifest.json">
 <title>EuroVelo 1 — Cork → Sligo</title>
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, onValue, set, remove, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  const firebaseConfig = {
-    apiKey: "AIzaSyA_1xAPK0D5_Mc_cuzJiKT04i9KzrEEDRc",
-    authDomain: "france-irlande-bike.firebaseapp.com",
-    databaseURL: "https://france-irlande-bike-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "france-irlande-bike",
-    storageBucket: "france-irlande-bike.firebasestorage.app",
-    messagingSenderId: "803737104785",
-    appId: "1:803737104785:web:b2770a4d862ab90ee06a30"
-  };
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-  const auth = getAuth(app);
-  window._fbDb = db;
-  window._fbRef = ref;
-  window._fbSet = set;
-  window._fbRemove = remove;
-  window._fbOnValue = onValue;
-  window._fbGet = get;
-  window._fbAuth = auth;
-  window._fbSignIn = signInWithEmailAndPassword;
-  window._fbSignOut = signOut;
-  window._fbOnAuth = onAuthStateChanged;
-</script>
+<script type="module" src="js/firebase-init.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script defer src="campspace-data.js"></script>

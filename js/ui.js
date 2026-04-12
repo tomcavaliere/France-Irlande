@@ -12,28 +12,44 @@
 // Overlays use `data-close-on-self="fnName"` : the close action fires only
 // when the overlay backdrop itself is the click target (not a descendant).
 
-var ACTION_NAMES = new Set([
-  // Static (index.html)
-  'toggleSyncPopover','toggleAdmin','openProfileModal','closeProfileModal',
-  'logoutAdmin','refreshProfileQuota','exportJournal','confirmAccept',
-  'confirmCancel','checkPw','toggleCampings','toggleCampspace','toggleWater',
-  'onCampRangeChange','updatePosition','addExpense','switchTab','closeLightbox',
-  'closeModal',
-  // Dynamic (rendered by js/*.js)
-  'publishDay','deleteJournalEntry','onJournalInput','addBravo',
-  'deleteExpense','postComment','deleteComment',
-  'openLightbox','deletePhoto','uploadPhoto',
-  'deleteStage','openJournalEntry'
-]);
+var ACTIONS={
+  toggleSyncPopover:function(){toggleSyncPopover();},
+  toggleAdmin:function(){toggleAdmin();},
+  openProfileModal:function(){openProfileModal();},
+  closeProfileModal:function(){closeProfileModal();},
+  logoutAdmin:function(){logoutAdmin();},
+  refreshProfileQuota:function(){refreshProfileQuota();},
+  exportJournal:function(a){exportJournal(a);},
+  confirmAccept:function(){confirmAccept();},
+  confirmCancel:function(){confirmCancel();},
+  checkPw:function(){checkPw();},
+  toggleCampings:function(){toggleCampings();},
+  toggleCampspace:function(){toggleCampspace();},
+  toggleWater:function(){toggleWater();},
+  onCampRangeChange:function(a,b,el,e){onCampRangeChange(a,b,el,e);},
+  updatePosition:function(){updatePosition();},
+  addExpense:function(){addExpense();},
+  switchTab:function(a){switchTab(a);},
+  closeLightbox:function(){closeLightbox();},
+  closeModal:function(){closeModal();},
+  publishDay:function(a){publishDay(a);},
+  deleteJournalEntry:function(a){deleteJournalEntry(a);},
+  onJournalInput:function(a,b,el,e){onJournalInput(a,b,el,e);},
+  addBravo:function(a){addBravo(a);},
+  deleteExpense:function(a){deleteExpense(a);},
+  postComment:function(a){postComment(a);},
+  deleteComment:function(a,b){deleteComment(a,b);},
+  openLightbox:function(a,b){openLightbox(a,b);},
+  deletePhoto:function(a,b){deletePhoto(a,b);},
+  uploadPhoto:function(a){uploadPhoto(a);},
+  deleteStage:function(a){deleteStage(a);},
+  openJournalEntry:function(a){openJournalEntry(a);}
+};
 
 function invokeAction(name, args){
-  if(!ACTION_NAMES.has(name)){
-    console.warn('[ui] unknown action',name);
-    return;
-  }
-  var fn=window[name];
+  var fn=ACTIONS[name];
   if(typeof fn!=='function'){
-    console.warn('[ui] action not defined',name);
+    console.warn('[ui] unknown action',name);
     return;
   }
   return fn.apply(null,args||[]);

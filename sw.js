@@ -1,4 +1,4 @@
-const CACHE = 'ev1-v15';
+const CACHE = 'ev1-v16';
 const PRECACHE = [
   '/',
   '/index.html',
@@ -10,6 +10,7 @@ const PRECACHE = [
   '/js/campings-core.js',
   '/js/route-data.js',
   '/js/state.js',
+  '/js/events-core.js',
   '/js/ui.js',
   '/js/offline.js',
   '/js/admin.js',
