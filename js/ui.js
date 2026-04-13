@@ -42,6 +42,8 @@ var ACTIONS={
   openLightbox:function(a,b){openLightbox(a,b);},
   deletePhoto:function(a,b){deletePhoto(a,b);},
   uploadPhoto:function(a){uploadPhoto(a);},
+  uploadVideo:function(a){uploadVideo(a);},
+  deleteVideo:function(a,b){deleteVideo(a,b);},
   deleteStage:function(a){deleteStage(a);},
   openJournalEntry:function(a){openJournalEntry(a);}
 };
@@ -117,11 +119,29 @@ function closeModal(){document.getElementById('stageModal').classList.remove('vi
 
 // ==== LIGHTBOX ====
 function openLightbox(id,i){
-  var src=(photos[i]&&photos[i][id])||id;
-  document.getElementById('lightboxImg').src=src;
-  document.getElementById('lightbox').classList.add('vis');
+  var isVideo=id&&id.charAt(0)==='v';
+  var lb=document.getElementById('lightbox');
+  var img=document.getElementById('lightboxImg');
+  var vid=document.getElementById('lightboxVideo');
+  if(isVideo){
+    var src=(videos[i]&&videos[i][id])||'';
+    vid.src=src;
+    img.style.display='none';
+    vid.style.display='';
+  }else{
+    var src=(photos[i]&&photos[i][id])||id;
+    img.src=src;
+    img.style.display='';
+    vid.style.display='none';
+    if(vid){vid.pause();vid.src='';}
+  }
+  lb.classList.add('vis');
 }
-function closeLightbox(){document.getElementById('lightbox').classList.remove('vis');}
+function closeLightbox(){
+  var vid=document.getElementById('lightboxVideo');
+  if(vid){vid.pause();vid.src='';}
+  document.getElementById('lightbox').classList.remove('vis');
+}
 
 // ==== SYNC DOT ====
 function setSyncDot(mode){
