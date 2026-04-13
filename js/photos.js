@@ -55,7 +55,7 @@ function uploadPhoto(i){
           .then(function(){
             if(!photos[i])photos[i]={};
             photos[i][id]=b64;
-            patchPhotos(i);
+            patchMedia(i);
             refreshQuotaState();
             uploadNext(idx+1);
           })
@@ -81,34 +81,51 @@ function deletePhoto(i,id){
       .then(function(){refreshQuotaState();})
       .catch(function(err){console.error('[deletePhoto] remove failed',err);});
     if(photos[i])delete photos[i][id];
-    patchPhotos(i);
+    patchMedia(i);
   });
 }
 
-function renderPhotosHtml(i){
-  var stagePhotos=photos[i]||{};
-  var ids=Object.keys(stagePhotos);
-  var ei=escAttr(i);
-  var html='<div class="j-photos" id="photos-'+ei+'">';
-  ids.forEach(function(id){
-    var src=stagePhotos[id];
-    var eid=escAttr(id);
-    html+='<div class="j-photo-wrap">'+
-      '<img src="'+escAttr(src)+'" data-action="openLightbox" data-arg="'+eid+'" data-arg2="'+ei+'">'+
-      (isAdmin?'<button class="j-photo-del" data-action="deletePhoto" data-arg="'+ei+'" data-arg2="'+eid+'">&#x2715;</button>':'')+
-      '</div>';
+function renderMediaHtml(date){
+  var stagePhotos=photos[date]||{};
+  var stageVideos=videos[date]||{};
+  var ed=escAttr(date);
+  var items=[];
+  Object.keys(stagePhotos).forEach(function(id){
+    items.push({id:id,type:'photo',src:stagePhotos[id]});
+  });
+  Object.keys(stageVideos).forEach(function(id){
+    items.push({id:id,type:'video',src:stageVideos[id]});
+  });
+  items.sort(function(a,b){return a.id<b.id?-1:a.id>b.id?1:0;});
+  var html='<div class="j-photos" id="photos-'+ed+'">';
+  items.forEach(function(item){
+    var eid=escAttr(item.id);
+    if(item.type==='photo'){
+      html+='<div class="j-photo-wrap">'+
+        '<img src="'+escAttr(item.src)+'" data-action="openLightbox" data-arg="'+eid+'" data-arg2="'+ed+'">'+
+        (isAdmin?'<button class="j-photo-del" data-action="deletePhoto" data-arg="'+ed+'" data-arg2="'+eid+'">&#x2715;</button>':'')+
+        '</div>';
+    }else{
+      html+='<div class="j-photo-wrap j-video-wrap">'+
+        '<video src="'+escAttr(item.src)+'" preload="metadata" muted playsinline></video>'+
+        '<button class="j-video-play" data-action="openLightbox" data-arg="'+eid+'" data-arg2="'+ed+'">&#x25B6;</button>'+
+        (isAdmin?'<button class="j-photo-del" data-action="deleteVideo" data-arg="'+ed+'" data-arg2="'+eid+'">&#x2715;</button>':'')+
+        '</div>';
+    }
   });
   if(isAdmin){
-    html+='<div class="j-photo-add" id="photos-add-'+ei+'" data-action="uploadPhoto" data-arg="'+ei+'">'+
-      '<span class="j-photo-add-icon">&#x1f4f7;</span><span>Ajouter</span></div>';
+    html+='<div class="j-photo-add" id="photos-add-'+ed+'" data-action="uploadPhoto" data-arg="'+ed+'">'+
+      '<span class="j-photo-add-icon">&#x1f4f7;</span><span>Photo</span></div>';
+    html+='<div class="j-photo-add" id="videos-add-'+ed+'" data-action="uploadVideo" data-arg="'+ed+'">'+
+      '<span class="j-photo-add-icon">&#x1f3a5;</span><span>Vidéo</span></div>';
   }
   html+='</div>';
   return html;
 }
-function patchPhotos(i){
-  var container=document.getElementById('photos-'+i);
+function patchMedia(date){
+  var container=document.getElementById('photos-'+date);
   if(!container)return;
   var tmp=document.createElement('div');
-  tmp.innerHTML=renderPhotosHtml(i);
+  tmp.innerHTML=renderMediaHtml(date);
   container.replaceWith(tmp.firstChild);
 }
