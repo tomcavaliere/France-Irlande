@@ -38,7 +38,7 @@ function patchJournal(){
     if(!date)return;
     var ta=entry.querySelector('.j-ta');
     if(ta&&document.activeElement!==ta){ta.value=journals[date]||'';}
-    patchPhotos(date);
+    patchMedia(date);
   });
 }
 
@@ -115,6 +115,11 @@ function loadStageContent(date){
     patchPhotos(date);
   });
 
+  videosUnsub[date]=window._fbOnValue(window._fbRef(window._fbDb,'videos/'+date),function(snap){
+    videos[date]=snap.val()||{};
+    patchMedia(date);
+  });
+
   commentsUnsub[date]=window._fbOnValue(window._fbRef(window._fbDb,'comments/'+date),function(snap){
     comments[date]=snap.val()||{};
     saveCommentsCache(date,comments[date]);
@@ -150,13 +155,13 @@ function observeJournalEntries(){
 function renderJournal(){
   if(photoObserver)photoObserver.disconnect();
   // Teardown all lazy listeners
-  [journalsUnsub, photosUnsub, commentsUnsub, bravosUnsub].forEach(function(map){
+  [journalsUnsub, photosUnsub, videosUnsub, commentsUnsub, bravosUnsub].forEach(function(map){
     Object.values(map).forEach(function(unsub){
       if(typeof unsub==='function')unsub();
     });
   });
-  journalsUnsub={};photosUnsub={};commentsUnsub={};bravosUnsub={};
-  photos={};comments={};
+  journalsUnsub={};photosUnsub={};videosUnsub={};commentsUnsub={};bravosUnsub={};
+  photos={};videos={};comments={};
   // (journals NOT cleared — needed for admin editing)
   var c=document.getElementById('journalList');c.innerHTML='';
   var dates=filterVisibleJournalDates(stages,isAdmin);
@@ -197,7 +202,7 @@ function renderJournal(){
       '<div class="j-date">'+dateLabel+'</div>'+
       (kmInfo?'<div class="j-stage">'+kmInfo+'</div>':'')+
       taHtml+
-      renderPhotosHtml(date)+
+      renderMediaHtml(date)+
       bravosHtml+
       adminActionsHtml+
       renderStageCommentsHtml(date);
