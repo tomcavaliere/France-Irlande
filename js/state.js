@@ -52,6 +52,9 @@ var _confirmResolve = null;
 // ==== PHOTOS ====
 var photos = {};  // { [date]: { [id]: base64 } }
 
+// ==== VIDEOS ====
+var videos = {};  // { [date]: { [id]: url } }
+
 // ==== COMMENTAIRES ====
 var comments = {};  // { [date]: { [id]: {name, text, ts} } }
 
@@ -63,6 +66,7 @@ var journalsUnsub = {};      // { [date]: fn }
 var commentsUnsub = {};      // { [date]: fn }
 var bravosUnsub = {};        // { [date]: fn }
 var photosUnsub = {};        // { [date]: fn }
+var videosUnsub = {};        // { [date]: fn }
 var photoObserver = null;
 
 // ==== OFFLINE ====
