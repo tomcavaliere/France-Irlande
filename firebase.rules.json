@@ -28,6 +28,15 @@
         }
       }
     },
+    "videos": {
+      ".read": true,
+      "$date": {
+        "$id": {
+          ".write": "auth != null",
+          ".validate": "newData.isString() && newData.val().length < 500"
+        }
+      }
+    },
     "comments": {
       ".read": true,
       "$date": {
