@@ -33,7 +33,7 @@
       "$date": {
         "$id": {
           ".write": "auth != null",
-          ".validate": "newData.isString() && newData.val().length < 500"
+          ".validate": "newData.isString() && newData.val().length < 500 && newData.val().matches(/^https:\\/\\/firebasestorage\\.googleapis\\.com\\/.*$/)"
         }
       }
     },

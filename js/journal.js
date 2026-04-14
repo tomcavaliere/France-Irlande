@@ -112,7 +112,7 @@ function loadStageContent(date){
 
   photosUnsub[date]=window._fbOnValue(window._fbRef(window._fbDb,'photos/'+date),function(snap){
     photos[date]=snap.val()||{};
-    patchPhotos(date);
+    patchMedia(date);
   });
 
   videosUnsub[date]=window._fbOnValue(window._fbRef(window._fbDb,'videos/'+date),function(snap){

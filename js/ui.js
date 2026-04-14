@@ -123,13 +123,14 @@ function openLightbox(id,i){
   var lb=document.getElementById('lightbox');
   var img=document.getElementById('lightboxImg');
   var vid=document.getElementById('lightboxVideo');
+  var src;
   if(isVideo){
-    var src=(videos[i]&&videos[i][id])||'';
+    src=(videos[i]&&videos[i][id])||'';
     vid.src=src;
     img.style.display='none';
     vid.style.display='';
   }else{
-    var src=(photos[i]&&photos[i][id])||id;
+    src=(photos[i]&&photos[i][id])||id;
     img.src=src;
     img.style.display='';
     vid.style.display='none';
