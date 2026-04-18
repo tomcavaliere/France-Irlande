@@ -100,8 +100,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .pos-badge.vis{display:block}
 .pos-badge-t{font-size:13px;font-weight:600;color:var(--green)}
 .pos-badge-s{font-size:11px;color:var(--text-light);margin-top:2px}
-.pos-bar{height:6px;background:#e0e0e0;border-radius:3px;margin-top:8px;overflow:hidden}
+.pos-bar{position:relative;height:6px;background:#e0e0e0;border-radius:3px;margin-top:8px;overflow:hidden}
 .pos-bar-f{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--green),var(--orange));transition:width .5s}
+.pos-bike{position:absolute;left:0;top:50%;transform:translate(-50%,-50%);font-size:16px;line-height:1;transition:left .5s;filter:drop-shadow(0 1px 1px rgba(0,0,0,.2))}
 
 .recap{background:linear-gradient(135deg,var(--green),var(--green-light));border-radius:var(--radius);
   padding:16px;color:#fff;margin-bottom:16px;box-shadow:var(--shadow)}
@@ -563,7 +564,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
     <div class="pos-badge" id="posBadge">
       <div class="pos-badge-t" id="posT">Prochaine : Cork → Kinsale</div>
       <div class="pos-badge-s" id="posS">0 km parcourus</div>
-      <div class="pos-bar"><div class="pos-bar-f" id="posB" style="width:0%"></div></div>
+      <div class="pos-bar">
+        <div class="pos-bar-f" id="posB" style="width:0%"></div>
+        <div class="pos-bike" id="posBike" aria-hidden="true">🚴‍♂️</div>
+      </div>
     </div>
   </div>
 

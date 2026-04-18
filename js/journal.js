@@ -183,7 +183,7 @@ function renderJournal(){
     var dateLabel=new Date(date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
     var elevGain=Math.max(0,Math.round(Number(d.elevGain)||0));
     var kmInfo=d.kmDay
-      ?'\uD83D\uDEB4 '+Math.round(d.kmDay)+' km \u2014 total '+Math.round(d.kmTotal)+' km'+(elevGain?' \u00b7 \u26f0\ufe0f D+ '+elevGain+' m':'')
+      ?'\uD83D\uDEB4 '+Math.round(d.kmDay)+' km'+(elevGain?' \u00b7 \u26f0\ufe0f D+ '+elevGain+' m':'')
       :'';
     var edate=escAttr(date);
     var pub=!!(stages[date]&&stages[date].published);
