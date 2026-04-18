@@ -111,8 +111,10 @@ function updateMap(){
   var kmD=pos?pos.kmTotal:0;
   var pct=Math.round((kmD/TOTAL_KM)*100);
   var progressPercentClamped=Math.max(0,Math.min(100,pct));
+  var bikeMinPct=2;
+  var bikeMaxPct=98;
   // Garde le vélo entièrement visible dans la barre à 0% et 100%.
-  var bikeIndicatorPercent=Math.max(2,Math.min(98,progressPercentClamped));
+  var bikeIndicatorPercent=Math.max(bikeMinPct,Math.min(bikeMaxPct,progressPercentClamped));
 
   // Trace orange jusqu'à la position
   if(pos){
