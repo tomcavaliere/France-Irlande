@@ -3,10 +3,15 @@
 
 var _videoUploadsInProgress = 0;
 
+function _setUploadBanner(visible){
+  var el=document.getElementById('uploadBanner');
+  if(el)el.classList.toggle('vis',visible);
+}
+
 window.addEventListener('beforeunload', function(e){
   if(_videoUploadsInProgress > 0){
     e.preventDefault();
-    e.returnValue = 'Un upload vidéo est en cours. Quitter la page annulera l\'upload.';
+    e.returnValue = '';
   }
 });
 
@@ -32,6 +37,7 @@ function uploadVideo(date){
     var sRef=window._fbStorageRef(window._fbStorage,'videos/'+date+'/'+id);
     var uploadTask=window._fbUploadResumable(sRef,file);
     _videoUploadsInProgress++;
+    _setUploadBanner(true);
     uploadTask.on('state_changed',
       function(snapshot){
         var pct=Math.round(snapshot.bytesTransferred/snapshot.totalBytes*100);
@@ -39,6 +45,7 @@ function uploadVideo(date){
       },
       function(err){
         _videoUploadsInProgress--;
+        if(_videoUploadsInProgress===0)_setUploadBanner(false);
         console.error('[uploadVideo] upload failed',err);
         if(addBtn)addBtn.classList.remove('j-uploading');
         if(progressSpan)progressSpan.textContent='Vidéo';
@@ -53,6 +60,7 @@ function uploadVideo(date){
           })
           .then(function(url){
             _videoUploadsInProgress--;
+            if(_videoUploadsInProgress===0)_setUploadBanner(false);
             if(!videos[date])videos[date]={};
             videos[date][id]=url;
             patchMedia(date);
@@ -61,6 +69,7 @@ function uploadVideo(date){
           })
           .catch(function(err){
             _videoUploadsInProgress--;
+            if(_videoUploadsInProgress===0)_setUploadBanner(false);
             console.error('[uploadVideo] post-upload failed',err);
             if(addBtn)addBtn.classList.remove('j-uploading');
             if(progressSpan)progressSpan.textContent='Vidéo';
