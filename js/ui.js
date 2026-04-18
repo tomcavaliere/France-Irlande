@@ -128,7 +128,7 @@ function openLightbox(id,i){
     src=(videos[i]&&videos[i][id])||'';
     vid.src=src;
     img.style.display='none';
-    vid.style.display='';
+    vid.style.display='block';
   }else{
     src=(photos[i]&&photos[i][id])||id;
     img.src=src;
