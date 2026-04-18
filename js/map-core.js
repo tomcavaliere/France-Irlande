@@ -62,6 +62,7 @@ function initMap(){
   map.fitBounds(allBounds,{padding:[60,30]});
 
   initChateaux();
+  initIrelandSites();
   updateMap();
 }
 
@@ -122,6 +123,36 @@ function initChateaux(){
   chateaux.forEach(function(c){
     L.marker([c.lat,c.lon],{icon:icon})
       .bindPopup('<div class="chateau-popup"><b>'+c.name+'</b></div>')
+      .addTo(map);
+  });
+}
+
+// Wild Atlantic Way — sites incontournables Cork → Sligo
+function initIrelandSites(){
+  var icon=L.divIcon({className:'',iconSize:[26,26],iconAnchor:[13,13],
+    html:'<div class="marker-ireland">&#x2618;&#xfe0f;</div>'});
+
+  var sites=[
+    {lat:51.706,lon:-8.521, name:'Kinsale',            desc:'Ville colorée, patrimoine maritime'},
+    {lat:51.451,lon:-9.826, name:'Mizen Head',          desc:'Pointe la plus au sud d\u2019Irlande, falaises et phare'},
+    {lat:51.773,lon:-10.539,name:'Skellig Michael',     desc:'UNESCO — monastère m\u00e9di\u00e9val perch\u00e9, site Star Wars'},
+    {lat:52.099,lon:-10.459,name:'Slea Head',           desc:'Falaises, vue sur les Blasket Islands'},
+    {lat:52.177,lon:-10.336,name:'Gallarus Oratory',    desc:'Oratoire en pierres s\u00e8ches du VIIIe s., intact'},
+    {lat:52.141,lon:-10.268,name:'Dingle',              desc:'Ville vivante, sessions de musique irlandaise'},
+    {lat:52.972,lon:-9.427, name:'Cliffs of Moher',     desc:'214 m de falaises sur 8 km'},
+    {lat:53.015,lon:-9.062, name:'The Burren',          desc:'Paysage calcaire lunaire unique au monde'},
+    {lat:53.022,lon:-9.383, name:'Doolin',              desc:'Village de musique traditionnelle irlandaise'},
+    {lat:53.271,lon:-9.057, name:'Galway',              desc:'Capitale culturelle, Latin Quarter'},
+    {lat:53.560,lon:-9.888, name:'Kylemore Abbey',      desc:'Abbaye n\u00e9o-gothique au bord d\u2019un lac noir'},
+    {lat:53.490,lon:-10.025,name:'Clifden',             desc:'Capitale du Connemara, panoramas sauvages'},
+    {lat:53.762,lon:-9.659, name:'Croagh Patrick',      desc:'Montagne sacr\u00e9e de Saint Patrick (764 m)'},
+    {lat:53.970,lon:-10.199,name:'Achill Island \u2014 Keem Bay',desc:'Plage turquoise entour\u00e9e de falaises'},
+    {lat:54.359,lon:-8.392, name:'Ben Bulben',          desc:'Table mountain de Yeats, silhouette iconique'},
+  ];
+
+  sites.forEach(function(s){
+    L.marker([s.lat,s.lon],{icon:icon})
+      .bindPopup('<div class="ireland-popup"><b>'+s.name+'</b><span>'+s.desc+'</span></div>')
       .addTo(map);
   });
 }
