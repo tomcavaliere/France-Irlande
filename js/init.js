@@ -30,6 +30,10 @@ function _subscribeEvents(){
       else journalDirty=true;
     }
   });
+  Events.on('state:tracks-changed',function(){
+    renderTrackPolylines();
+    renderStages();
+  });
   Events.on('state:journal-changed',function(){
     if(activeTab()==='journal'){renderJournal();journalDirty=false;}
     else journalDirty=true;

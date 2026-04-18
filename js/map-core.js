@@ -168,3 +168,25 @@ function updatePositionBadge(){
   var el=document.getElementById('mapDays');
   if(el)el.textContent='J'+nbDays;
 }
+
+// Affiche une L.polyline orange par étape ayant un tracé GPX réel dans /tracks.
+// Style : orange plein, épaisseur 3px. Z-order : au-dessus du tracé prévu,
+// en dessous du marqueur de position. Visible par tous.
+function renderTrackPolylines(){
+  if(!map)return;
+  if(tracksLayer){tracksLayer.clearLayers();}
+  else{
+    tracksLayer=L.layerGroup().addTo(map);
+    // Assurer le z-order : tracksLayer ajouté après le tracé prévu mais avant posMarker
+    if(posMarker&&map.hasLayer(posMarker)){
+      posMarker.remove();
+      posMarker.addTo(map);
+    }
+  }
+  if(!tracks)return;
+  Object.keys(tracks).forEach(function(date){
+    var t=tracks[date];
+    if(!t||!Array.isArray(t.coords)||!t.coords.length)return;
+    L.polyline(t.coords,{color:'#e8772e',weight:3,opacity:1}).addTo(tracksLayer);
+  });
+}
