@@ -52,6 +52,13 @@ function initFirebase(){
     saveLocalCache();
     setSyncDot(isOnline?'online':'offline');
   });
+  // Charger /tracks dès le bootstrap pour afficher les tracés GPX
+  // sur la carte sans devoir ouvrir l'onglet Carnet.
+  if(_unsubTracks)_unsubTracks();
+  _unsubTracks=window._fbOnValue(window._fbRef(window._fbDb,'tracks'),function(snap){
+    tracks=snap.val()||{};
+    Events.emit('state:tracks-changed');
+  });
 }
 
 function openCarnetTab(){
@@ -62,13 +69,6 @@ function openCarnetTab(){
     saveLocalCache();
     Events.emit('state:stages-changed');
   });
-  // Charger /tracks en même temps que /stages (même cycle de vie)
-  if(!_unsubTracks){
-    _unsubTracks=window._fbOnValue(window._fbRef(window._fbDb,'tracks'),function(snap){
-      tracks=snap.val()||{};
-      Events.emit('state:tracks-changed');
-    });
-  }
 }
 
 // ==== BRAVOS ====
