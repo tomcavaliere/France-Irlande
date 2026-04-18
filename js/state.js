@@ -7,7 +7,7 @@
 var current = null;          // { lat, lon, kmTotal, kmDay, date, ts } ou null
 
 // Cache des métadonnées d'étapes — chargé à l'ouverture de Carnet
-var stages = {};             // { [date]: { lat, lon, kmTotal, kmDay, note, ts, published, journalDeleted } }
+var stages = {};             // { [date]: { lat, lon, kmTotal, kmDay, elevGain, note, ts, published, journalDeleted } }
 
 // Caches lazy par date (peuplés à la demande)
 var journals = {};           // { [date]: "texte" }
@@ -56,7 +56,7 @@ var photos = {};  // { [date]: { [id]: base64 } }
 var videos = {};  // { [date]: { [id]: url } }
 
 // ==== TRACKS GPX ====
-var tracks = {};             // { [date]: { coords, kmDay, ts } }
+var tracks = {};             // { [date]: { coords, kmDay, elevGain, ts } }
 var _unsubTracks = null;     // unsub Firebase listener /tracks
 var tracksLayer = null;      // L.layerGroup des polylines oranges (réelles)
 

@@ -9,7 +9,10 @@
       ".read": true,
       "$date": {
         ".write": "auth != null",
-        ".validate": "newData.hasChildren(['lat','lon','kmTotal'])"
+        ".validate": "newData.hasChildren(['lat','lon','kmTotal'])",
+        "elevGain": {
+          ".validate": "!newData.exists() || (newData.isNumber() && newData.val() >= 0)"
+        }
       }
     },
     "journals": {
@@ -71,7 +74,10 @@
       ".read": true,
       "$date": {
         ".write": "auth != null",
-        ".validate": "newData.hasChildren(['coords','kmDay','ts'])"
+        ".validate": "newData.hasChildren(['coords','kmDay','ts'])",
+        "elevGain": {
+          ".validate": "!newData.exists() || (newData.isNumber() && newData.val() >= 0)"
+        }
       }
     },
     "expenses": {

@@ -18,6 +18,7 @@ function renderStages(){
     card.style.position='relative';
     var kmDay=d.kmDay||0;
     var kmTotal=d.kmTotal||0;
+    var elevGain=Math.max(0,Math.round(Number(d.elevGain)||0));
     var seg=d.lat&&d.lon?(snapToRoute(d.lat,d.lon).idx<=FRANCE_END_IDX?'🇫🇷':'🇮🇪'):'';
     var dateLabel=new Date(date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'});
     var edate=escAttr(date);
@@ -43,6 +44,7 @@ function renderStages(){
       '<div class="s-stats">'+
         '<span class="s-stat">&#x1f6b4; '+Math.round(kmDay)+' km/jour</span>'+
         '<span class="s-stat">&#x1f4cd; '+Math.round(kmTotal)+' km total</span>'+
+        (elevGain?'<span class="s-stat">&#x26f0;&#xfe0f; D+ '+elevGain+' m</span>':'')+
       '</div>';
     if(!isAdmin)card.onclick=function(){switchTab('journal');};
     c.appendChild(card);
@@ -79,13 +81,13 @@ function _processGPXFile(date,file){
       return;
     }
     // Écriture dans /tracks/{date}
-    var trackData={coords:gpxData.coords,kmDay:gpxData.kmDay,ts:Date.now()};
+    var trackData={coords:gpxData.coords,kmDay:gpxData.kmDay,elevGain:gpxData.elevGain,ts:Date.now()};
     window._fbSet(window._fbRef(window._fbDb,'tracks/'+date),trackData)
       .then(function(){
         return _applyKmRecompute();
       })
       .then(function(){
-        showToast('Tracé GPX ajouté — '+gpxData.kmDay+' km','ok');
+        showToast('Tracé GPX ajouté — '+gpxData.kmDay+' km · D+ '+gpxData.elevGain+' m','ok');
       })
       .catch(function(err){
         console.error('[uploadGPX]',err);
@@ -123,10 +125,11 @@ function _applyKmRecompute(){
   var writes=[];
   Object.keys(result.stageUpdates).forEach(function(d){
     var upd=result.stageUpdates[d];
-    writes.push(
-      window._fbSet(window._fbRef(window._fbDb,'stages/'+d+'/kmDay'),upd.kmDay),
-      window._fbSet(window._fbRef(window._fbDb,'stages/'+d+'/kmTotal'),upd.kmTotal)
-    );
+      writes.push(
+        window._fbSet(window._fbRef(window._fbDb,'stages/'+d+'/kmDay'),upd.kmDay),
+        window._fbSet(window._fbRef(window._fbDb,'stages/'+d+'/kmTotal'),upd.kmTotal),
+        window._fbSet(window._fbRef(window._fbDb,'stages/'+d+'/elevGain'),upd.elevGain)
+      );
   });
   if(current){
     writes.push(
@@ -215,5 +218,4 @@ function deleteJournalEntry(date){
       .catch(function(err){ console.error('[deleteJournalEntry]',err); });
   });
 }
-
 
