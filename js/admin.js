@@ -67,6 +67,7 @@ function exportJournal(fmt){
           var meta=[];
           if(dd.kmDay!=null)meta.push(dd.kmDay+' km');
           if(dd.kmTotal!=null)meta.push('total '+dd.kmTotal+' km');
+          if(dd.elevGain!=null&&Number(dd.elevGain)>0)meta.push('D+ '+Math.round(Number(dd.elevGain))+' m');
           if(meta.length)lines.push('_'+meta.join(' · ')+'_');
         }
         if(journals[d])lines.push('',journals[d]);

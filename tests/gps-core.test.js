@@ -249,9 +249,9 @@ describe('haversineKm', () => {
 const GPX_VALIDE = `<?xml version="1.0"?>
 <gpx version="1.1">
   <trk><trkseg>
-    <trkpt lat="48.8566" lon="2.3522"></trkpt>
-    <trkpt lat="48.8600" lon="2.3600"></trkpt>
-    <trkpt lat="48.8700" lon="2.3700"></trkpt>
+    <trkpt lat="48.8566" lon="2.3522"><ele>100</ele></trkpt>
+    <trkpt lat="48.8600" lon="2.3600"><ele>130</ele></trkpt>
+    <trkpt lat="48.8700" lon="2.3700"><ele>120</ele></trkpt>
   </trkseg></trk>
 </gpx>`;
 
@@ -271,6 +271,8 @@ describe('parseGPX', () => {
     expect(result.kmDay).toBeLessThan(5);
     // kmDay arrondi au dixième
     expect(result.kmDay).toBe(Math.round(result.kmDay * 10) / 10);
+    // D+ : 100 -> 130 (+30), puis 130 -> 120 (descente ignorée)
+    expect(result.elevGain).toBe(30);
   });
 
   it('GPX vide → null', () => {
@@ -292,6 +294,18 @@ describe('parseGPX', () => {
     expect(result).not.toBeNull();
     expect(result.coords).toHaveLength(1);
     expect(result.kmDay).toBe(0);
+    expect(result.elevGain).toBe(0);
+  });
+
+  it('élévations absentes ou invalides → elevGain = 0', () => {
+    const gpx = `<gpx><trk><trkseg>
+      <trkpt lat="48.0" lon="2.0"><ele>abc</ele></trkpt>
+      <trkpt lat="48.1" lon="2.1"></trkpt>
+      <trkpt lat="48.2" lon="2.2"><ele>150</ele></trkpt>
+    </trkseg></trk></gpx>`;
+    const result = parseGPX(gpx);
+    expect(result).not.toBeNull();
+    expect(result.elevGain).toBe(0);
   });
 });
 
@@ -318,6 +332,9 @@ describe('recomputeAllKm', () => {
     expect(stageUpdates['2026-07-01'].kmDay).toBe(0);
     expect(stageUpdates['2026-07-02'].kmDay).toBeGreaterThan(0);
     expect(stageUpdates['2026-07-03'].kmDay).toBeGreaterThan(0);
+    expect(stageUpdates['2026-07-01'].elevGain).toBe(0);
+    expect(stageUpdates['2026-07-02'].elevGain).toBe(0);
+    expect(stageUpdates['2026-07-03'].elevGain).toBe(0);
     expect(currentKmTotal).toBeCloseTo(CUM_KM[10], 0);
   });
 
@@ -328,7 +345,7 @@ describe('recomputeAllKm', () => {
       '2026-07-03': { lat: pt10[0], lon: pt10[1], kmTotal: CUM_KM[10], kmDay: 0 }
     };
     const tracks = {
-      '2026-07-02': { kmDay: 50, coords: [], ts: Date.now() }
+      '2026-07-02': { kmDay: 50, elevGain: 640, coords: [], ts: Date.now() }
     };
     const { stageUpdates, currentKmTotal } = recomputeAllKm(stages, tracks, ROUTE_PTS, CUM_KM);
 
@@ -336,6 +353,9 @@ describe('recomputeAllKm', () => {
     expect(stageUpdates['2026-07-02'].kmDay).toBe(50);
     // Étape 3 se base sur le kmTotal cumulé depuis GPX
     expect(stageUpdates['2026-07-03'].kmTotal).toBeGreaterThan(50);
+    // D+ porté par l'étape avec GPX
+    expect(stageUpdates['2026-07-02'].elevGain).toBe(640);
+    expect(stageUpdates['2026-07-03'].elevGain).toBe(0);
     // currentKmTotal doit correspondre au total de la dernière étape
     expect(currentKmTotal).toBeCloseTo(stageUpdates['2026-07-03'].kmTotal, 1);
   });
@@ -346,15 +366,17 @@ describe('recomputeAllKm', () => {
       '2026-07-02': { lat: pt5[0], lon: pt5[1], kmTotal: 100, kmDay: 100 }
     };
     // Avec GPX
-    const tracksAvec = { '2026-07-02': { kmDay: 75, coords: [], ts: 1 } };
+    const tracksAvec = { '2026-07-02': { kmDay: 75, elevGain: 500, coords: [], ts: 1 } };
     const avecGPX = recomputeAllKm(stages, tracksAvec, ROUTE_PTS, CUM_KM);
     expect(avecGPX.stageUpdates['2026-07-02'].kmDay).toBe(75);
+    expect(avecGPX.stageUpdates['2026-07-02'].elevGain).toBe(500);
 
     // Sans GPX (suppression)
     const sansTracks = recomputeAllKm(stages, {}, ROUTE_PTS, CUM_KM);
     // Retour au snap : kmDay ≈ CUM_KM[5] - CUM_KM[0]
     const snapKmDay = CUM_KM[5] - CUM_KM[0];
     expect(sansTracks.stageUpdates['2026-07-02'].kmDay).toBeCloseTo(snapKmDay, 0);
+    expect(sansTracks.stageUpdates['2026-07-02'].elevGain).toBe(0);
   });
 
   it('étape de repos (position identique à la précédente) → kmDay = 0', () => {

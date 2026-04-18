@@ -119,13 +119,14 @@
     return R * c;
   }
 
-  // Parse un fichier GPX (string XML) et retourne { coords, kmDay } ou null si invalide.
+  // Parse un fichier GPX (string XML) et retourne { coords, kmDay, elevGain } ou null si invalide.
   // Utilise DOMParser en navigateur, regex en Node.js (tests Vitest).
   // @param {string} xmlString
-  // @returns {{ coords: Array<[number,number]>, kmDay: number }|null}
+  // @returns {{ coords: Array<[number,number]>, kmDay: number, elevGain: number }|null}
   function parseGPX(xmlString){
     if (typeof xmlString !== 'string' || !xmlString.trim()) return null;
     var coords = [];
+    var elevations = [];
 
     if (typeof DOMParser !== 'undefined'){
       // Navigateur : parsing XML natif
@@ -134,22 +135,33 @@
       for (var i = 0; i < trkpts.length; i++){
         var lat = parseFloat(trkpts[i].getAttribute('lat'));
         var lon = parseFloat(trkpts[i].getAttribute('lon'));
-        if (!isNaN(lat) && !isNaN(lon)) coords.push([lat, lon]);
+        if (!isNaN(lat) && !isNaN(lon)) {
+          coords.push([lat, lon]);
+          var eleNode = trkpts[i].getElementsByTagName('ele')[0];
+          var ele = eleNode ? parseFloat(eleNode.textContent) : NaN;
+          elevations.push(isNaN(ele) ? null : ele);
+        }
       }
     } else {
       // Fallback regex pour Node.js / tests Vitest.
       // jsdom n'est pas utilisé dans la suite de tests (vitest run, Node pur),
       // donc DOMParser n'est pas disponible dans cet environnement.
-      var trkptRe = /<trkpt\b([^>]*)>/g;
+      var trkptRe = /<trkpt\b([^>]*?)(?:\/>|>([\s\S]*?)<\/trkpt>)/g;
       var m;
       while ((m = trkptRe.exec(xmlString)) !== null){
         var attrs = m[1];
+        var body = m[2] || '';
         var latM = /\blat="([^"]+)"/.exec(attrs);
         var lonM = /\blon="([^"]+)"/.exec(attrs);
         if (latM && lonM){
           var lat = parseFloat(latM[1]);
           var lon = parseFloat(lonM[1]);
-          if (!isNaN(lat) && !isNaN(lon)) coords.push([lat, lon]);
+          if (!isNaN(lat) && !isNaN(lon)) {
+            coords.push([lat, lon]);
+            var eleM = /<ele>\s*([^<\s]+)\s*<\/ele>/.exec(body);
+            var ele = eleM ? parseFloat(eleM[1]) : NaN;
+            elevations.push(isNaN(ele) ? null : ele);
+          }
         }
       }
     }
@@ -160,16 +172,25 @@
     for (var j = 1; j < coords.length; j++){
       total += haversineKm(coords[j-1][0], coords[j-1][1], coords[j][0], coords[j][1]);
     }
+    var elevGain = 0;
+    for (var k = 1; k < elevations.length; k++){
+      var prevEle = elevations[k-1];
+      var curEle = elevations[k];
+      if (prevEle == null || curEle == null) continue;
+      var delta = curEle - prevEle;
+      if (delta > 0) elevGain += delta;
+    }
     return {
       coords: coords,
-      kmDay: Math.round(total * 10) / 10
+      kmDay: Math.round(total * 10) / 10,
+      elevGain: Math.round(elevGain)
     };
   }
 
   // Recalcule kmDay et kmTotal de toutes les étapes en tenant compte des tracés GPX réels.
   // Sans effets de bord — retourne les mises à jour à écrire dans Firebase.
   // @param {Object} stages  — { [date]: { lat, lon, kmTotal, kmDay, ... } }
-  // @param {Object} tracks  — { [date]: { kmDay, coords, ts } }
+  // @param {Object} tracks  — { [date]: { kmDay, elevGain, coords, ts } }
   // @param {Array}  routePts — points du tracé prévu
   // @param {Array}  cumKm   — distances cumulées du tracé
   // @returns {{ stageUpdates: Object, currentKmTotal: number }}
@@ -183,9 +204,11 @@
     dates.forEach(function(date){
       var d = stages[date];
       var kmDay;
+      var elevGain = 0;
       if (tracks[date]){
         // Tracé GPX réel disponible : utiliser sa distance
         kmDay = tracks[date].kmDay;
+        elevGain = Math.max(0, Math.round(Number(tracks[date].elevGain) || 0));
       } else {
         // Pas de GPX : snap sur le tracé prévu, différence avec l'étape précédente.
         // Vérifier que les coordonnées sont valides pour éviter un snap erroné sur (0, 0).
@@ -201,7 +224,8 @@
       var kmTotal = prevKmTotal + kmDay;
       stageUpdates[date] = {
         kmDay: Math.round(kmDay * 10) / 10,
-        kmTotal: Math.round(kmTotal * 10) / 10
+        kmTotal: Math.round(kmTotal * 10) / 10,
+        elevGain: elevGain
       };
       prevKmTotal = kmTotal;
     });
