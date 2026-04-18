@@ -47,19 +47,26 @@ function initMap(){
   var ferryStart=FULL_ROUTE_FR[FULL_ROUTE_FR.length-1];
   var ferryEnd=FULL_ROUTE_IRE[0];
   var ferryWavePts=[];
-  var ferrySteps=14;
+  var FERRY_INTERPOLATION_STEPS=14;
+  var FERRY_WAVE_FREQUENCY=8;
+  var FERRY_WAVE_AMPLITUDE=0.10;
   var dLat=ferryEnd[0]-ferryStart[0];
   var dLon=ferryEnd[1]-ferryStart[1];
-  var norm=Math.sqrt(dLat*dLat+dLon*dLon)||1;
-  var pLat=-dLon/norm;
-  var pLon=dLat/norm;
-  for(var i=0;i<=ferrySteps;i++){
-    var t=i/ferrySteps;
-    var wave=Math.sin(t*Math.PI*8)*0.10;
-    ferryWavePts.push([
-      ferryStart[0]+dLat*t+pLat*wave,
-      ferryStart[1]+dLon*t+pLon*wave
-    ]);
+  var norm=Math.sqrt(dLat*dLat+dLon*dLon);
+  if(norm<=1e-9){
+    console.error('[map] ferry endpoints are identical');
+    ferryWavePts=[ferryStart,ferryEnd];
+  }else{
+    var pLat=-dLon/norm;
+    var pLon=dLat/norm;
+    for(var i=0;i<=FERRY_INTERPOLATION_STEPS;i++){
+      var t=i/FERRY_INTERPOLATION_STEPS;
+      var wave=Math.sin(t*Math.PI*FERRY_WAVE_FREQUENCY)*FERRY_WAVE_AMPLITUDE;
+      ferryWavePts.push([
+        ferryStart[0]+dLat*t+pLat*wave,
+        ferryStart[1]+dLon*t+pLon*wave
+      ]);
+    }
   }
   L.polyline(ferryWavePts,{color:'#75c8ff',weight:9,opacity:.35,lineCap:'round'}).addTo(map);
   L.polyline(ferryWavePts,{color:'#1e88ff',weight:4,opacity:.95,dashArray:'10,10',lineCap:'round'}).addTo(map);
