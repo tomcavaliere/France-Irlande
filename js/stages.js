@@ -21,9 +21,18 @@ function renderStages(){
     var seg=d.lat&&d.lon?(snapToRoute(d.lat,d.lon).idx<=FRANCE_END_IDX?'🇫🇷':'🇮🇪'):'';
     var dateLabel=new Date(date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'});
     var edate=escAttr(date);
+    var hasTrack=!!(tracks&&tracks[date]);
+    var gpxHtml='';
+    if(isAdmin){
+      gpxHtml=hasTrack
+        ?'<button class="s-gpx s-gpx-ok" data-action="uploadGPX" data-arg="'+edate+'" data-stop="1" title="Re-uploader le tracé GPX">&#x1f4ce; GPX &#x2713;</button>'+
+          '<button class="s-gpx-del" data-action="deleteGPX" data-arg="'+edate+'" data-stop="1" title="Supprimer le tracé GPX">&#x1f5d1;&#xfe0f;</button>'
+        :'<button class="s-gpx" data-action="uploadGPX" data-arg="'+edate+'" data-stop="1" title="Uploader le tracé GPX">&#x1f4ce; GPX</button>';
+    }
     var adminStageHtml=isAdmin?
       '<button class="s-del" data-action="deleteStage" data-arg="'+edate+'" data-stop="1">&#x2715;</button>'+
-      '<button class="s-write" data-action="openJournalEntry" data-arg="'+edate+'" data-stop="1">&#x1f4dd; Écrire</button>'
+      '<button class="s-write" data-action="openJournalEntry" data-arg="'+edate+'" data-stop="1">&#x1f4dd; Écrire</button>'+
+      gpxHtml
       :'';
     card.innerHTML=
       '<div class="s-hdr"><div>'+
@@ -39,6 +48,92 @@ function renderStages(){
     c.appendChild(card);
   });
   updateRecap();
+}
+
+// Ouvre le sélecteur de fichier GPX pour la date donnée.
+function uploadGPX(date){
+  if(!isAdmin)return;
+  var input=document.createElement('input');
+  input.type='file';
+  input.accept='.gpx';
+  input.addEventListener('change',function(){
+    var file=input.files&&input.files[0];
+    if(!file)return;
+    _processGPXFile(date,file);
+  });
+  input.click();
+}
+
+// Lit, parse et enregistre un fichier GPX pour une étape.
+function _processGPXFile(date,file){
+  // Désactiver le bouton pendant l'upload
+  var btn=document.querySelector('.s-gpx[data-arg="'+date+'"],.s-gpx-ok[data-arg="'+date+'"]');
+  if(btn){btn.disabled=true;btn.textContent='Upload...';}
+
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var parsed=GPSCore.parseGPX(e.target.result);
+    if(!parsed){
+      showToast('Fichier GPX invalide','error');
+      if(btn){btn.disabled=false;renderStages();}
+      return;
+    }
+    // Écriture dans /tracks/{date}
+    var trackData={coords:parsed.coords,kmDay:parsed.kmDay,ts:Date.now()};
+    window._fbSet(window._fbRef(window._fbDb,'tracks/'+date),trackData)
+      .then(function(){
+        return _applyKmRecompute();
+      })
+      .then(function(){
+        showToast('Tracé GPX ajouté — '+parsed.kmDay+' km','ok');
+      })
+      .catch(function(err){
+        console.error('[uploadGPX]',err);
+        showToast('Erreur lors de l\'upload GPX','error');
+        if(btn){btn.disabled=false;renderStages();}
+      });
+  };
+  reader.onerror=function(){
+    showToast('Fichier GPX invalide','error');
+    if(btn){btn.disabled=false;renderStages();}
+  };
+  reader.readAsText(file);
+}
+
+// Supprime le tracé GPX d'une étape et recalcule les km.
+function deleteGPX(date){
+  if(!isAdmin)return;
+  window._fbRemove(window._fbRef(window._fbDb,'tracks/'+date))
+    .then(function(){
+      return _applyKmRecompute();
+    })
+    .then(function(){
+      showToast('Tracé GPX supprimé','ok');
+    })
+    .catch(function(err){
+      console.error('[deleteGPX]',err);
+      showToast('Erreur lors de la suppression GPX','error');
+    });
+}
+
+// Recalcule kmDay/kmTotal de toutes les étapes et écrit les mises à jour
+// dans /stages/{date} et /current.
+function _applyKmRecompute(){
+  var result=GPSCore.recomputeAllKm(stages,tracks,ALL_ROUTE_PTS,CUM_KM);
+  var writes=[];
+  Object.keys(result.stageUpdates).forEach(function(d){
+    var upd=result.stageUpdates[d];
+    writes.push(
+      window._fbSet(window._fbRef(window._fbDb,'stages/'+d+'/kmDay'),upd.kmDay),
+      window._fbSet(window._fbRef(window._fbDb,'stages/'+d+'/kmTotal'),upd.kmTotal)
+    );
+  });
+  if(current){
+    writes.push(
+      window._fbSet(window._fbRef(window._fbDb,'current/kmTotal'),result.currentKmTotal)
+    );
+  }
+  return Promise.all(writes);
 }
 
 function updateRecap(){

@@ -46,7 +46,9 @@ var ACTIONS={
   deleteVideo:function(a,b){deleteVideo(a,b);},
   deleteStage:function(a){deleteStage(a);},
   openJournalEntry:function(a){openJournalEntry(a);},
-  cancelAllUploads:function(){cancelAllUploads();}
+  cancelAllUploads:function(){cancelAllUploads();},
+  uploadGPX:function(a){uploadGPX(a);},
+  deleteGPX:function(a){deleteGPX(a);}
 };
 
 function invokeAction(name, args){
