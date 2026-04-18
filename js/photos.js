@@ -107,7 +107,7 @@ function renderMediaHtml(date){
         '</div>';
     }else{
       html+='<div class="j-photo-wrap j-video-wrap">'+
-        '<video src="'+escAttr(item.src)+'" preload="metadata" muted playsinline></video>'+
+        '<video src="'+escAttr(item.src)+'#t=0.001" preload="metadata" muted playsinline></video>'+
         '<button class="j-video-play" data-action="openLightbox" data-arg="'+eid+'" data-arg2="'+ed+'">&#x25B6;</button>'+
         (isAdmin?'<button class="j-photo-del" data-action="deleteVideo" data-arg="'+ed+'" data-arg2="'+eid+'">&#x2715;</button>':'')+
         '</div>';
