@@ -43,11 +43,31 @@ function initMap(){
     html:'<div class="marker-n en">&#x1f3c1;</div>'});
   L.marker(FULL_ROUTE_FR[0],{icon:mkStart}).addTo(map);
   L.marker(FULL_ROUTE_IRE[FULL_ROUTE_IRE.length-1],{icon:mkEnd}).addTo(map);
-  // Ferry : marqueur intermédiaire
-  var mkFerry=L.divIcon({className:'',iconSize:[24,24],iconAnchor:[12,12],
-    html:'<div class="marker-n" style="background:#3498db;font-size:14px">&#x26f4;</div>'});
-  L.marker(FULL_ROUTE_FR[FULL_ROUTE_FR.length-1],{icon:mkFerry})
-    .bindPopup('<b>Ferry</b><br>Roscoff → Cork').addTo(map);
+  // Ferry Roscoff → Cork : surlignage bleu en vague + bateau au milieu
+  var ferryStart=FULL_ROUTE_FR[FULL_ROUTE_FR.length-1];
+  var ferryEnd=FULL_ROUTE_IRE[0];
+  var ferryWavePts=[];
+  var ferrySteps=14;
+  var dLat=ferryEnd[0]-ferryStart[0];
+  var dLon=ferryEnd[1]-ferryStart[1];
+  var norm=Math.sqrt(dLat*dLat+dLon*dLon)||1;
+  var pLat=-dLon/norm;
+  var pLon=dLat/norm;
+  for(var i=0;i<=ferrySteps;i++){
+    var t=i/ferrySteps;
+    var wave=Math.sin(t*Math.PI*8)*0.10;
+    ferryWavePts.push([
+      ferryStart[0]+dLat*t+pLat*wave,
+      ferryStart[1]+dLon*t+pLon*wave
+    ]);
+  }
+  L.polyline(ferryWavePts,{color:'#75c8ff',weight:9,opacity:.35,lineCap:'round'}).addTo(map);
+  L.polyline(ferryWavePts,{color:'#1e88ff',weight:4,opacity:.95,dashArray:'10,10',lineCap:'round'}).addTo(map);
+  var mkFerry=L.divIcon({className:'',iconSize:[30,30],iconAnchor:[15,15],
+    html:'<div class="marker-ferry">&#x26f4;</div>'});
+  var ferryMid=ferryWavePts[Math.floor(ferryWavePts.length/2)];
+  L.marker(ferryMid,{icon:mkFerry})
+    .bindPopup('<b>Traversée ferry</b><br>Roscoff → Cork').addTo(map);
 
   // Trace complétée (orange)
   completedLayer=L.polyline([],{color:'#e8772e',weight:5,opacity:.9}).addTo(map);
