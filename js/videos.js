@@ -2,6 +2,7 @@
 // Video upload and deletion — Firebase Storage (file) + RTDB (URL).
 
 var _videoUploadsInProgress = 0;
+var _videoUploadTasks = [];
 
 function _setUploadBanner(visible){
   var el=document.getElementById('uploadBanner');
@@ -36,6 +37,7 @@ function uploadVideo(date){
     if(addBtn)addBtn.classList.add('j-uploading');
     var sRef=window._fbStorageRef(window._fbStorage,'videos/'+date+'/'+id);
     var uploadTask=window._fbUploadResumable(sRef,file);
+    _videoUploadTasks.push(uploadTask);
     _videoUploadsInProgress++;
     _setUploadBanner(true);
     uploadTask.on('state_changed',
@@ -44,7 +46,8 @@ function uploadVideo(date){
         if(progressSpan)progressSpan.textContent=pct+'%';
       },
       function(err){
-        _videoUploadsInProgress--;
+        _videoUploadTasks=_videoUploadTasks.filter(function(t){return t!==uploadTask;});
+        if(_videoUploadsInProgress>0)_videoUploadsInProgress--;
         if(_videoUploadsInProgress===0)_setUploadBanner(false);
         console.error('[uploadVideo] upload failed',err);
         if(addBtn)addBtn.classList.remove('j-uploading');
@@ -59,7 +62,8 @@ function uploadVideo(date){
             ).then(function(){return url;});
           })
           .then(function(url){
-            _videoUploadsInProgress--;
+            _videoUploadTasks=_videoUploadTasks.filter(function(t){return t!==uploadTask;});
+            if(_videoUploadsInProgress>0)_videoUploadsInProgress--;
             if(_videoUploadsInProgress===0)_setUploadBanner(false);
             if(!videos[date])videos[date]={};
             videos[date][id]=url;
@@ -68,7 +72,8 @@ function uploadVideo(date){
             if(progressSpan)progressSpan.textContent='Vidéo';
           })
           .catch(function(err){
-            _videoUploadsInProgress--;
+            _videoUploadTasks=_videoUploadTasks.filter(function(t){return t!==uploadTask;});
+            if(_videoUploadsInProgress>0)_videoUploadsInProgress--;
             if(_videoUploadsInProgress===0)_setUploadBanner(false);
             console.error('[uploadVideo] post-upload failed',err);
             if(addBtn)addBtn.classList.remove('j-uploading');
@@ -78,6 +83,16 @@ function uploadVideo(date){
     );
   };
   input.click();
+}
+
+function cancelAllUploads(){
+  var tasks=_videoUploadTasks.slice();
+  _videoUploadTasks=[];
+  _videoUploadsInProgress=0;
+  _setUploadBanner(false);
+  tasks.forEach(function(t){
+    try{t.cancel();}catch(e){console.error('[cancelAllUploads] cancel failed',e);}
+  });
 }
 
 function deleteVideo(date,id){
