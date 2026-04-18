@@ -67,6 +67,13 @@
         }
       }
     },
+    "tracks": {
+      ".read": true,
+      "$date": {
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['coords','kmDay','ts'])"
+      }
+    },
     "expenses": {
       ".read": "auth != null",
       ".write": "auth != null",

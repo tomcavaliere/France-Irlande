@@ -55,6 +55,11 @@ var photos = {};  // { [date]: { [id]: base64 } }
 // ==== VIDEOS ====
 var videos = {};  // { [date]: { [id]: url } }
 
+// ==== TRACKS GPX ====
+var tracks = {};             // { [date]: { coords, kmDay, ts } }
+var _unsubTracks = null;     // unsub Firebase listener /tracks
+var tracksLayer = null;      // L.layerGroup des polylines oranges (réelles)
+
 // ==== COMMENTAIRES ====
 var comments = {};  // { [date]: { [id]: {name, text, ts} } }
 

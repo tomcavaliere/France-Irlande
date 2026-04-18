@@ -54,8 +54,15 @@ function initMap(){
 
   // Marqueur position actuelle
   posMarker=L.marker([0,0],{
-    icon:L.divIcon({className:'',html:'<div class="marker-pos"></div>',iconSize:[16,16],iconAnchor:[8,8]})
+    icon:L.divIcon({className:'',html:'<div class="marker-pos"></div>',iconSize:[16,16],iconAnchor:[8,8]}),
+    pane:'markerPane'
   });
+
+  // Pane dédié aux tracés GPX réels (entre overlayPane 400 et markerPane 600)
+  if(!map.getPane('tracksPane')){
+    map.createPane('tracksPane');
+    map.getPane('tracksPane').style.zIndex='450';
+  }
 
   // Fit sur les deux traces
   var allBounds=L.polyline(FULL_ROUTE_FR.concat(FULL_ROUTE_IRE)).getBounds();
@@ -167,4 +174,22 @@ function updatePositionBadge(){
   var nbDays=Object.keys(stages).length;
   var el=document.getElementById('mapDays');
   if(el)el.textContent='J'+nbDays;
+}
+
+// Affiche une L.polyline orange par étape ayant un tracé GPX réel dans /tracks.
+// Style : orange plein, épaisseur 3px. Z-order : au-dessus du tracé prévu via
+// le pane 'tracksPane' (z-index 450), en dessous du markerPane (z-index 600).
+// Visible par tous.
+function renderTrackPolylines(){
+  if(!map)return;
+  if(tracksLayer){tracksLayer.clearLayers();}
+  else{
+    tracksLayer=L.layerGroup().addTo(map);
+  }
+  if(!tracks)return;
+  Object.keys(tracks).forEach(function(date){
+    var t=tracks[date];
+    if(!t||!Array.isArray(t.coords)||!t.coords.length)return;
+    L.polyline(t.coords,{color:'#e8772e',weight:3,opacity:1,pane:'tracksPane'}).addTo(tracksLayer);
+  });
 }
