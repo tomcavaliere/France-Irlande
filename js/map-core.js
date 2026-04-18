@@ -61,6 +61,7 @@ function initMap(){
   var allBounds=L.polyline(FULL_ROUTE_FR.concat(FULL_ROUTE_IRE)).getBounds();
   map.fitBounds(allBounds,{padding:[60,30]});
 
+  initChateaux();
   updateMap();
 }
 
@@ -98,6 +99,27 @@ function updateMap(){
   document.getElementById('mapKmL').textContent=Math.round(TOTAL_KM-kmD);
   var nbDays=Object.keys(stages).length;
   document.getElementById('mapDays').textContent='J'+nbDays;
+}
+
+// Châteaux de la Loire — marqueurs touristiques
+function initChateaux(){
+  var icon=L.divIcon({className:'',iconSize:[26,26],iconAnchor:[13,13],
+    html:'<div class="marker-chateau">&#x1f3f0;</div>'});
+
+  var chateaux=[
+    {lat:47.6161,lon:1.5168,name:'Ch\u00e2teau de Chambord',          sub:'Le Grandiose'},
+    {lat:47.3247,lon:1.0697,name:'Ch\u00e2teau de Chenonceau',         sub:'Le Romantique'},
+    {lat:47.4792,lon:1.1825,name:'Ch\u00e2teau de Chaumont-sur-Loire', sub:'L\u2019Artiste'},
+    {lat:47.4098,lon:0.9835,name:'Ch\u00e2teau d\u2019Amboise &amp; Clos Luc\u00e9',sub:'Sur les pas de Vinci'},
+    {lat:47.3423,lon:0.5097,name:'Ch\u00e2teau de Villandry',          sub:'La perfection des jardins'},
+    {lat:47.2608,lon:0.4662,name:'Ch\u00e2teau d\u2019Azay-le-Rideau', sub:'Le Bijou'},
+  ];
+
+  chateaux.forEach(function(c){
+    L.marker([c.lat,c.lon],{icon:icon})
+      .bindPopup('<div class="chateau-popup"><b>'+c.name+'</b><span>'+c.sub+'</span></div>')
+      .addTo(map);
+  });
 }
 
 // Retourne la position actuelle (dernier jour enregistré)
