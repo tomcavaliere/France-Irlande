@@ -47,32 +47,34 @@ function initMap(){
   var ferryStart=FULL_ROUTE_FR[FULL_ROUTE_FR.length-1];
   var ferryEnd=FULL_ROUTE_IRE[0];
   var ferryWavePts=[];
-  var FERRY_INTERPOLATION_STEPS=14;
-  var FERRY_WAVE_FREQUENCY=8;
-  var FERRY_WAVE_AMPLITUDE=0.10;
+  var ferryInterpolationSteps=14;
+  var ferryWaveFrequency=8;
+  var ferryWaveAmplitude=0.10;
   var dLat=ferryEnd[0]-ferryStart[0];
   var dLon=ferryEnd[1]-ferryStart[1];
   var norm=Math.sqrt(dLat*dLat+dLon*dLon);
+  var ferryMid=[(ferryStart[0]+ferryEnd[0])/2,(ferryStart[1]+ferryEnd[1])/2];
   if(norm<=1e-9){
     console.error('[map] ferry endpoints are identical');
-    ferryWavePts=[ferryStart,ferryEnd];
+    ferryMid=[ferryStart[0],ferryStart[1]];
   }else{
     var pLat=-dLon/norm;
     var pLon=dLat/norm;
-    for(var i=0;i<=FERRY_INTERPOLATION_STEPS;i++){
-      var t=i/FERRY_INTERPOLATION_STEPS;
-      var wave=Math.sin(t*Math.PI*FERRY_WAVE_FREQUENCY)*FERRY_WAVE_AMPLITUDE;
+    for(var i=0;i<=ferryInterpolationSteps;i++){
+      var t=i/ferryInterpolationSteps;
+      var wave=Math.sin(t*Math.PI*ferryWaveFrequency)*ferryWaveAmplitude;
       ferryWavePts.push([
         ferryStart[0]+dLat*t+pLat*wave,
         ferryStart[1]+dLon*t+pLon*wave
       ]);
     }
   }
-  L.polyline(ferryWavePts,{color:'#75c8ff',weight:9,opacity:.35,lineCap:'round'}).addTo(map);
-  L.polyline(ferryWavePts,{color:'#1e88ff',weight:4,opacity:.95,dashArray:'10,10',lineCap:'round'}).addTo(map);
+  if(ferryWavePts.length>1){
+    L.polyline(ferryWavePts,{color:'#75c8ff',weight:9,opacity:.35,lineCap:'round'}).addTo(map);
+    L.polyline(ferryWavePts,{color:'#1e88ff',weight:4,opacity:.95,dashArray:'10,10',lineCap:'round'}).addTo(map);
+  }
   var mkFerry=L.divIcon({className:'',iconSize:[30,30],iconAnchor:[15,15],
     html:'<div class="marker-ferry">&#x26f4;</div>'});
-  var ferryMid=ferryWavePts[Math.floor(ferryWavePts.length/2)];
   L.marker(ferryMid,{icon:mkFerry})
     .bindPopup('<b>Traversée ferry</b><br>Roscoff → Cork').addTo(map);
 
