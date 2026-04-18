@@ -72,20 +72,20 @@ function _processGPXFile(date,file){
 
   var reader=new FileReader();
   reader.onload=function(e){
-    var parsed=GPSCore.parseGPX(e.target.result);
-    if(!parsed){
+    var gpxData=GPSCore.parseGPX(e.target.result);
+    if(!gpxData){
       showToast('Fichier GPX invalide','error');
       if(btn){btn.disabled=false;renderStages();}
       return;
     }
     // Écriture dans /tracks/{date}
-    var trackData={coords:parsed.coords,kmDay:parsed.kmDay,ts:Date.now()};
+    var trackData={coords:gpxData.coords,kmDay:gpxData.kmDay,ts:Date.now()};
     window._fbSet(window._fbRef(window._fbDb,'tracks/'+date),trackData)
       .then(function(){
         return _applyKmRecompute();
       })
       .then(function(){
-        showToast('Tracé GPX ajouté — '+parsed.kmDay+' km','ok');
+        showToast('Tracé GPX ajouté — '+gpxData.kmDay+' km','ok');
       })
       .catch(function(err){
         console.error('[uploadGPX]',err);

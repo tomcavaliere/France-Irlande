@@ -137,7 +137,9 @@
         if (!isNaN(lat) && !isNaN(lon)) coords.push([lat, lon]);
       }
     } else {
-      // Fallback regex pour Node.js / tests Vitest (pas de DOM disponible)
+      // Fallback regex pour Node.js / tests Vitest.
+      // jsdom n'est pas utilisé dans la suite de tests (vitest run, Node pur),
+      // donc DOMParser n'est pas disponible dans cet environnement.
       var trkptRe = /<trkpt\b([^>]*)>/g;
       var m;
       while ((m = trkptRe.exec(xmlString)) !== null){
@@ -185,12 +187,16 @@
         // Tracé GPX réel disponible : utiliser sa distance
         kmDay = tracks[date].kmDay;
       } else {
-        // Pas de GPX : snap sur le tracé prévu, différence avec l'étape précédente
-        var snap = snapToRoute(
-          Number(d.lat) || 0, Number(d.lon) || 0,
-          routePts, cumKm
-        );
-        kmDay = Math.max(0, snap.kmTotal - prevKmTotal);
+        // Pas de GPX : snap sur le tracé prévu, différence avec l'étape précédente.
+        // Vérifier que les coordonnées sont valides pour éviter un snap erroné sur (0, 0).
+        var lat = Number(d.lat);
+        var lon = Number(d.lon);
+        if (!isFinite(lat) || !isFinite(lon) || (!lat && !lon)){
+          kmDay = 0;
+        } else {
+          var snap = snapToRoute(lat, lon, routePts, cumKm);
+          kmDay = Math.max(0, snap.kmTotal - prevKmTotal);
+        }
       }
       var kmTotal = prevKmTotal + kmDay;
       stageUpdates[date] = {
