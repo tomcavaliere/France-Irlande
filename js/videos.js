@@ -95,6 +95,12 @@ function cancelAllUploads(){
   });
 }
 
+// Câblage direct — bypass de la délégation document pour cet overlay fixe.
+(function(){
+  var btn=document.getElementById('uploadBannerCancel');
+  if(btn)btn.addEventListener('click',cancelAllUploads);
+})();
+
 function deleteVideo(date,id){
   if(!isAdmin)return;
   confirmDialog({
