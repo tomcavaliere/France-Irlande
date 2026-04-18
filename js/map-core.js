@@ -113,16 +113,15 @@ function initChateaux(){
     {lat:47.4792,lon:1.1825,name:'Ch\u00e2teau de Chaumont-sur-Loire'},
     {lat:47.5001,lon:1.4567,name:'Ch\u00e2teau de Cheverny'},
     {lat:47.4098,lon:0.9835,name:'Ch\u00e2teau royal d\u2019Amboise'},
-    {lat:47.3423,lon:0.5097,name:'Ch\u00e2teau de Villandry',          cc:true},
-    {lat:47.2608,lon:0.4662,name:'Ch\u00e2teau d\u2019Azay-le-Rideau', cc:true},
-    {lat:47.1372,lon:0.3014,name:'Ch\u00e2teau du Rivau',              cc:true},
-    {lat:47.1825,lon:-0.0531,name:'Ch\u00e2teau de Br\u00e9z\u00e9',  cc:true},
+    {lat:47.3423,lon:0.5097,name:'Ch\u00e2teau de Villandry'},
+    {lat:47.2608,lon:0.4662,name:'Ch\u00e2teau d\u2019Azay-le-Rideau'},
+    {lat:47.1372,lon:0.3014,name:'Ch\u00e2teau du Rivau'},
+    {lat:47.1825,lon:-0.0531,name:'Ch\u00e2teau de Br\u00e9z\u00e9'},
   ];
 
   chateaux.forEach(function(c){
-    var sub=c.cc?'<span>&#x2764;&#xfe0f; Coup de c\u0153ur</span>':'';
     L.marker([c.lat,c.lon],{icon:icon})
-      .bindPopup('<div class="chateau-popup"><b>'+c.name+'</b>'+sub+'</div>')
+      .bindPopup('<div class="chateau-popup"><b>'+c.name+'</b></div>')
       .addTo(map);
   });
 }
