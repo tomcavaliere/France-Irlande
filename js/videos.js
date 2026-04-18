@@ -1,6 +1,15 @@
 // videos.js
 // Video upload and deletion — Firebase Storage (file) + RTDB (URL).
 
+var _videoUploadsInProgress = 0;
+
+window.addEventListener('beforeunload', function(e){
+  if(_videoUploadsInProgress > 0){
+    e.preventDefault();
+    e.returnValue = 'Un upload vidéo est en cours. Quitter la page annulera l\'upload.';
+  }
+});
+
 function uploadVideo(date){
   if(!isAdmin)return;
   if(!isOnline){
@@ -22,12 +31,14 @@ function uploadVideo(date){
     if(addBtn)addBtn.classList.add('j-uploading');
     var sRef=window._fbStorageRef(window._fbStorage,'videos/'+date+'/'+id);
     var uploadTask=window._fbUploadResumable(sRef,file);
+    _videoUploadsInProgress++;
     uploadTask.on('state_changed',
       function(snapshot){
         var pct=Math.round(snapshot.bytesTransferred/snapshot.totalBytes*100);
         if(progressSpan)progressSpan.textContent=pct+'%';
       },
       function(err){
+        _videoUploadsInProgress--;
         console.error('[uploadVideo] upload failed',err);
         if(addBtn)addBtn.classList.remove('j-uploading');
         if(progressSpan)progressSpan.textContent='Vidéo';
@@ -41,6 +52,7 @@ function uploadVideo(date){
             ).then(function(){return url;});
           })
           .then(function(url){
+            _videoUploadsInProgress--;
             if(!videos[date])videos[date]={};
             videos[date][id]=url;
             patchMedia(date);
@@ -48,6 +60,7 @@ function uploadVideo(date){
             if(progressSpan)progressSpan.textContent='Vidéo';
           })
           .catch(function(err){
+            _videoUploadsInProgress--;
             console.error('[uploadVideo] post-upload failed',err);
             if(addBtn)addBtn.classList.remove('j-uploading');
             if(progressSpan)progressSpan.textContent='Vidéo';
