@@ -110,8 +110,9 @@ function updateMap(){
   var pos=getCurrentPos();
   var kmD=pos?pos.kmTotal:0;
   var pct=Math.round((kmD/TOTAL_KM)*100);
-  var pctClamped=Math.max(0,Math.min(100,pct));
-  var pctBike=Math.max(2,Math.min(98,pctClamped));
+  var progressPercentClamped=Math.max(0,Math.min(100,pct));
+  // Garde le vélo entièrement visible dans la barre à 0% et 100%.
+  var bikeIndicatorPercent=Math.max(2,Math.min(98,progressPercentClamped));
 
   // Trace orange jusqu'à la position
   if(pos){
@@ -132,8 +133,8 @@ function updateMap(){
     var seg=pos.idx<=FRANCE_END_IDX?'France':'Irlande';
     document.getElementById('posT').textContent=seg+' — '+Math.round(kmD)+' km parcourus';
     document.getElementById('posS').textContent=Math.round(TOTAL_KM-kmD)+' km restants ('+pct+'%)';
-    document.getElementById('posB').style.width=pctClamped+'%';
-    document.getElementById('posBike').style.left=pctBike+'%';
+    document.getElementById('posB').style.width=progressPercentClamped+'%';
+    document.getElementById('posBike').style.left=bikeIndicatorPercent+'%';
   } else {
     badge.classList.remove('vis');
   }
