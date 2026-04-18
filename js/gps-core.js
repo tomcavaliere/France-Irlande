@@ -105,12 +105,116 @@
     return { trace: Math.round(traceKm), detour: Math.round(detourKm * 10) / 10 };
   }
 
+  // Distance en km entre deux points GPS (formule de Haversine).
+  // @param {number} lat1 @param {number} lon1 @param {number} lat2 @param {number} lon2
+  // @returns {number}
+  function haversineKm(lat1, lon1, lat2, lon2){
+    var R = 6371;
+    var dLat = (lat2 - lat1) * Math.PI / 180;
+    var dLon = (lon2 - lon1) * Math.PI / 180;
+    var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  }
+
+  // Parse un fichier GPX (string XML) et retourne { coords, kmDay } ou null si invalide.
+  // Utilise DOMParser en navigateur, regex en Node.js (tests Vitest).
+  // @param {string} xmlString
+  // @returns {{ coords: Array<[number,number]>, kmDay: number }|null}
+  function parseGPX(xmlString){
+    if (typeof xmlString !== 'string' || !xmlString.trim()) return null;
+    var coords = [];
+
+    if (typeof DOMParser !== 'undefined'){
+      // Navigateur : parsing XML natif
+      var doc = (new DOMParser()).parseFromString(xmlString, 'text/xml');
+      var trkpts = doc.getElementsByTagName('trkpt');
+      for (var i = 0; i < trkpts.length; i++){
+        var lat = parseFloat(trkpts[i].getAttribute('lat'));
+        var lon = parseFloat(trkpts[i].getAttribute('lon'));
+        if (!isNaN(lat) && !isNaN(lon)) coords.push([lat, lon]);
+      }
+    } else {
+      // Fallback regex pour Node.js / tests Vitest (pas de DOM disponible)
+      var trkptRe = /<trkpt\b([^>]*)>/g;
+      var m;
+      while ((m = trkptRe.exec(xmlString)) !== null){
+        var attrs = m[1];
+        var latM = /\blat="([^"]+)"/.exec(attrs);
+        var lonM = /\blon="([^"]+)"/.exec(attrs);
+        if (latM && lonM){
+          var lat = parseFloat(latM[1]);
+          var lon = parseFloat(lonM[1]);
+          if (!isNaN(lat) && !isNaN(lon)) coords.push([lat, lon]);
+        }
+      }
+    }
+
+    if (!coords.length) return null;
+
+    var total = 0;
+    for (var j = 1; j < coords.length; j++){
+      total += haversineKm(coords[j-1][0], coords[j-1][1], coords[j][0], coords[j][1]);
+    }
+    return {
+      coords: coords,
+      kmDay: Math.round(total * 10) / 10
+    };
+  }
+
+  // Recalcule kmDay et kmTotal de toutes les étapes en tenant compte des tracés GPX réels.
+  // Sans effets de bord — retourne les mises à jour à écrire dans Firebase.
+  // @param {Object} stages  — { [date]: { lat, lon, kmTotal, kmDay, ... } }
+  // @param {Object} tracks  — { [date]: { kmDay, coords, ts } }
+  // @param {Array}  routePts — points du tracé prévu
+  // @param {Array}  cumKm   — distances cumulées du tracé
+  // @returns {{ stageUpdates: Object, currentKmTotal: number }}
+  function recomputeAllKm(stages, tracks, routePts, cumKm){
+    stages = stages || {};
+    tracks = tracks || {};
+    var dates = Object.keys(stages).sort();
+    var stageUpdates = {};
+    var prevKmTotal = 0;
+
+    dates.forEach(function(date){
+      var d = stages[date];
+      var kmDay;
+      if (tracks[date]){
+        // Tracé GPX réel disponible : utiliser sa distance
+        kmDay = tracks[date].kmDay;
+      } else {
+        // Pas de GPX : snap sur le tracé prévu, différence avec l'étape précédente
+        var snap = snapToRoute(
+          Number(d.lat) || 0, Number(d.lon) || 0,
+          routePts, cumKm
+        );
+        kmDay = Math.max(0, snap.kmTotal - prevKmTotal);
+      }
+      var kmTotal = prevKmTotal + kmDay;
+      stageUpdates[date] = {
+        kmDay: Math.round(kmDay * 10) / 10,
+        kmTotal: Math.round(kmTotal * 10) / 10
+      };
+      prevKmTotal = kmTotal;
+    });
+
+    return {
+      stageUpdates: stageUpdates,
+      currentKmTotal: Math.round(prevKmTotal * 10) / 10
+    };
+  }
+
   var api = {
     snapToRoute: snapToRoute,
     routePointsAhead: routePointsAhead,
     ptsBbox: ptsBbox,
     computeStageInfo: computeStageInfo,
-    campingDist: campingDist
+    campingDist: campingDist,
+    haversineKm: haversineKm,
+    parseGPX: parseGPX,
+    recomputeAllKm: recomputeAllKm
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

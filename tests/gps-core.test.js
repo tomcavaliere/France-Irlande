@@ -8,7 +8,8 @@ import { describe, it, expect } from 'vitest';
 import gpsCore from '../js/gps-core.js';
 import fixture from './fixtures/route-sample.js';
 
-const { snapToRoute, routePointsAhead, ptsBbox, computeStageInfo, campingDist } = gpsCore;
+const { snapToRoute, routePointsAhead, ptsBbox, computeStageInfo, campingDist,
+        haversineKm, parseGPX, recomputeAllKm } = gpsCore;
 
 const { ROUTE_PTS, CUM_KM, TOTAL_KM, FRANCE_END_IDX } = fixture;
 
@@ -214,5 +215,162 @@ describe('campingDist', () => {
 
   it('entrée invalide : retourne 0/0', () => {
     expect(campingDist(0, 1, 2, null, null)).toEqual({ trace: 0, detour: 0 });
+  });
+});
+
+// =====================================================================
+// haversineKm
+// =====================================================================
+describe('haversineKm', () => {
+  it('Paris → Lyon ≈ 392 km', () => {
+    const km = haversineKm(48.8566, 2.3522, 45.7640, 4.8357);
+    expect(km).toBeGreaterThan(390);
+    expect(km).toBeLessThan(400);
+  });
+
+  it('points identiques → 0', () => {
+    expect(haversineKm(48.0, 2.0, 48.0, 2.0)).toBe(0);
+  });
+
+  it('antipodes → ~20 015 km (demi-circonférence terrestre)', () => {
+    const km = haversineKm(0, 0, 0, 180);
+    expect(km).toBeGreaterThan(20000);
+    expect(km).toBeLessThan(20100);
+  });
+
+  it('résultat toujours >= 0', () => {
+    expect(haversineKm(10, 20, 5, 15)).toBeGreaterThanOrEqual(0);
+  });
+});
+
+// =====================================================================
+// parseGPX
+// =====================================================================
+const GPX_VALIDE = `<?xml version="1.0"?>
+<gpx version="1.1">
+  <trk><trkseg>
+    <trkpt lat="48.8566" lon="2.3522"></trkpt>
+    <trkpt lat="48.8600" lon="2.3600"></trkpt>
+    <trkpt lat="48.8700" lon="2.3700"></trkpt>
+  </trkseg></trk>
+</gpx>`;
+
+const GPX_VIDE = '';
+
+const GPX_SANS_TRKPT = `<?xml version="1.0">
+<gpx version="1.1"><trk><trkseg></trkseg></trk></gpx>`;
+
+describe('parseGPX', () => {
+  it('GPX valide → coords + kmDay cohérent', () => {
+    const result = parseGPX(GPX_VALIDE);
+    expect(result).not.toBeNull();
+    expect(result.coords).toHaveLength(3);
+    expect(result.coords[0]).toEqual([48.8566, 2.3522]);
+    expect(result.coords[2]).toEqual([48.8700, 2.3700]);
+    expect(result.kmDay).toBeGreaterThan(0);
+    expect(result.kmDay).toBeLessThan(5);
+    // kmDay arrondi au dixième
+    expect(result.kmDay).toBe(Math.round(result.kmDay * 10) / 10);
+  });
+
+  it('GPX vide → null', () => {
+    expect(parseGPX(GPX_VIDE)).toBeNull();
+  });
+
+  it('GPX sans trkpt → null', () => {
+    expect(parseGPX(GPX_SANS_TRKPT)).toBeNull();
+  });
+
+  it('entrée null/undefined → null', () => {
+    expect(parseGPX(null)).toBeNull();
+    expect(parseGPX(undefined)).toBeNull();
+  });
+
+  it('un seul point → kmDay = 0', () => {
+    const gpx = `<gpx><trk><trkseg><trkpt lat="48.0" lon="2.0"></trkpt></trkseg></trk></gpx>`;
+    const result = parseGPX(gpx);
+    expect(result).not.toBeNull();
+    expect(result.coords).toHaveLength(1);
+    expect(result.kmDay).toBe(0);
+  });
+});
+
+// =====================================================================
+// recomputeAllKm
+// =====================================================================
+describe('recomputeAllKm', () => {
+  // Points de test depuis la fixture réelle
+  const pt0 = ROUTE_PTS[0];   // début du tracé
+  const pt5 = ROUTE_PTS[5];   // ~5e point
+  const pt10 = ROUTE_PTS[10]; // ~10e point
+
+  it('3 étapes sans GPX : km croissants et cohérents avec snapToRoute', () => {
+    const stages = {
+      '2026-07-01': { lat: pt0[0], lon: pt0[1], kmTotal: CUM_KM[0], kmDay: 0 },
+      '2026-07-02': { lat: pt5[0], lon: pt5[1], kmTotal: CUM_KM[5], kmDay: 0 },
+      '2026-07-03': { lat: pt10[0], lon: pt10[1], kmTotal: CUM_KM[10], kmDay: 0 }
+    };
+    const { stageUpdates, currentKmTotal } = recomputeAllKm(stages, {}, ROUTE_PTS, CUM_KM);
+
+    expect(stageUpdates['2026-07-01'].kmTotal).toBeCloseTo(CUM_KM[0], 0);
+    expect(stageUpdates['2026-07-02'].kmTotal).toBeCloseTo(CUM_KM[5], 0);
+    expect(stageUpdates['2026-07-03'].kmTotal).toBeCloseTo(CUM_KM[10], 0);
+    expect(stageUpdates['2026-07-01'].kmDay).toBe(0);
+    expect(stageUpdates['2026-07-02'].kmDay).toBeGreaterThan(0);
+    expect(stageUpdates['2026-07-03'].kmDay).toBeGreaterThan(0);
+    expect(currentKmTotal).toBeCloseTo(CUM_KM[10], 0);
+  });
+
+  it('3 étapes avec GPX sur la 2e : kmDay de l\'étape 2 = GPX', () => {
+    const stages = {
+      '2026-07-01': { lat: pt0[0], lon: pt0[1], kmTotal: CUM_KM[0], kmDay: 0 },
+      '2026-07-02': { lat: pt5[0], lon: pt5[1], kmTotal: CUM_KM[5], kmDay: 0 },
+      '2026-07-03': { lat: pt10[0], lon: pt10[1], kmTotal: CUM_KM[10], kmDay: 0 }
+    };
+    const tracks = {
+      '2026-07-02': { kmDay: 50, coords: [], ts: Date.now() }
+    };
+    const { stageUpdates, currentKmTotal } = recomputeAllKm(stages, tracks, ROUTE_PTS, CUM_KM);
+
+    // Étape 2 utilise la distance GPX
+    expect(stageUpdates['2026-07-02'].kmDay).toBe(50);
+    // Étape 3 se base sur le kmTotal cumulé depuis GPX
+    expect(stageUpdates['2026-07-03'].kmTotal).toBeGreaterThan(50);
+    // currentKmTotal doit correspondre au total de la dernière étape
+    expect(currentKmTotal).toBeCloseTo(stageUpdates['2026-07-03'].kmTotal, 1);
+  });
+
+  it('suppression GPX → retour aux km snappés', () => {
+    const stages = {
+      '2026-07-01': { lat: pt0[0], lon: pt0[1], kmTotal: 0, kmDay: 0 },
+      '2026-07-02': { lat: pt5[0], lon: pt5[1], kmTotal: 100, kmDay: 100 }
+    };
+    // Avec GPX
+    const tracksAvec = { '2026-07-02': { kmDay: 75, coords: [], ts: 1 } };
+    const avecGPX = recomputeAllKm(stages, tracksAvec, ROUTE_PTS, CUM_KM);
+    expect(avecGPX.stageUpdates['2026-07-02'].kmDay).toBe(75);
+
+    // Sans GPX (suppression)
+    const sansTracks = recomputeAllKm(stages, {}, ROUTE_PTS, CUM_KM);
+    // Retour au snap : kmDay ≈ CUM_KM[5] - CUM_KM[0]
+    const snapKmDay = CUM_KM[5] - CUM_KM[0];
+    expect(sansTracks.stageUpdates['2026-07-02'].kmDay).toBeCloseTo(snapKmDay, 0);
+  });
+
+  it('étape de repos (position identique à la précédente) → kmDay = 0', () => {
+    // Deux étapes au même endroit
+    const stages = {
+      '2026-07-01': { lat: pt5[0], lon: pt5[1], kmTotal: CUM_KM[5], kmDay: 0 },
+      '2026-07-02': { lat: pt5[0], lon: pt5[1], kmTotal: CUM_KM[5], kmDay: 0 }
+    };
+    const { stageUpdates } = recomputeAllKm(stages, {}, ROUTE_PTS, CUM_KM);
+    // Même snap → kmDay = 0 pour le repos
+    expect(stageUpdates['2026-07-02'].kmDay).toBe(0);
+  });
+
+  it('stages vides → stageUpdates vide, currentKmTotal = 0', () => {
+    const { stageUpdates, currentKmTotal } = recomputeAllKm({}, {}, ROUTE_PTS, CUM_KM);
+    expect(stageUpdates).toEqual({});
+    expect(currentKmTotal).toBe(0);
   });
 });
