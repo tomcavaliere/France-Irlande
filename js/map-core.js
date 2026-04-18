@@ -47,15 +47,19 @@ function initMap(){
   var ferryStart=FULL_ROUTE_FR[FULL_ROUTE_FR.length-1];
   var ferryEnd=FULL_ROUTE_IRE[0];
   var ferryWavePts=[];
+  // Densité des points de la vague (plus grand = ligne plus lisse).
   var ferryInterpolationSteps=14;
+  // Nombre d'ondulations visuelles entre les deux ports.
   var ferryWaveFrequency=8;
+  // Amplitude lat/lon de la vague autour de la ligne directe.
   var ferryWaveAmplitude=0.10;
+  var ferryDegeneracyThreshold=1e-9;
   var dLat=ferryEnd[0]-ferryStart[0];
   var dLon=ferryEnd[1]-ferryStart[1];
   var norm=Math.sqrt(dLat*dLat+dLon*dLon);
   var ferryMid=[(ferryStart[0]+ferryEnd[0])/2,(ferryStart[1]+ferryEnd[1])/2];
-  if(norm<=1e-9){
-    console.error('[map] ferry endpoints are identical');
+  if(norm<=ferryDegeneracyThreshold){
+    console.error('[map] ferry endpoints are identical or too close, using ferryStart as fallback', ferryStart, ferryEnd);
     ferryMid=[ferryStart[0],ferryStart[1]];
   }else{
     var pLat=-dLon/norm;
