@@ -265,7 +265,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
   z-index:3000;display:none;align-items:center;justify-content:center}
 .pw-modal.vis{display:flex}
 .pw-box{background:#fff;border-radius:16px;padding:24px;width:280px;text-align:center}
-.pw-box h3{font-size:16px;font-weight:700;margin-bottom:6px}
+.pw-box h3{font-size:16px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between}
+.pw-box h3 button{background:none;border:none;font-size:20px;cursor:pointer;color:#888;line-height:1}
 .pw-box p{font-size:12px;color:var(--text-light);margin-bottom:14px}
 .pw-input{width:100%;border:1.5px solid #e0e0e0;border-radius:10px;padding:10px;
   font-size:16px;text-align:center;letter-spacing:3px;outline:none;margin-bottom:10px}
@@ -523,9 +524,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
   </div>
 </div>
 
-<div class="pw-modal" id="pwModal">
+<div class="pw-modal" id="pwModal" data-close-on-self="closePwModal">
   <div class="pw-box">
-    <h3>Connexion admin</h3>
+    <h3>Connexion admin <button data-action="closePwModal" aria-label="Fermer">✕</button></h3>
     <p>Connecte-toi avec ton compte Firebase</p>
     <input type="email" class="pw-input" id="pwEmail" placeholder="Email" style="letter-spacing:normal;margin-bottom:8px">
     <input type="password" class="pw-input" id="pwInput" placeholder="••••••">

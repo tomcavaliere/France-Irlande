@@ -167,6 +167,10 @@ function closeProfileModal(){
   _sessionCountdown=null;
 }
 
+function closePwModal(){
+  document.getElementById('pwModal').classList.remove('vis');
+}
+
 function refreshProfileQuota(){
   document.getElementById('profileQuotaText').innerHTML='<span>Chargement…</span>';
   refreshQuotaState(function(){
