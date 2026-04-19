@@ -203,10 +203,18 @@ function initIrelandSites(){
   });
 }
 
-// Retourne la position actuelle (dernier jour enregistré)
+// Retourne la position actuelle (dernier jour enregistré).
+// lat/lon : coordonnées GPS réelles (pas snappées sur le tracé).
+// idx/kmTotal : index et km cumulés snappés, pour le tracé orange et les calculs de progression.
 function getCurrentPos(){
   if(!current)return null;
-  return snapToRoute(current.lat,current.lon);
+  var snapped=snapToRoute(current.lat,current.lon);
+  return {
+    idx: snapped.idx,
+    kmTotal: snapped.kmTotal,
+    lat: current.lat,
+    lon: current.lon
+  };
 }
 
 function updatePositionBadge(){
