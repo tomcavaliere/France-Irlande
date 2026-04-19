@@ -124,7 +124,7 @@
   // Somme des kmDay de tous les tracés GPX réels.
   // Ignore les entrées invalides (kmDay absent/non numérique).
   // @param {Object} tracks — { [date]: { kmDay, ... } }
-  // @returns {number}
+  // @returns {number} Total des km GPX arrondi à 1 décimale.
   function sumTrackKm(tracks){
     if(!tracks || typeof tracks !== 'object') return 0;
     var total = 0;

@@ -117,7 +117,8 @@ function updateMap(){
   // Garde le vélo entièrement visible dans la barre à 0% et 100%.
   var bikeIndicatorPercent=Math.max(bikeMinPct,Math.min(bikeMaxPct,progressPercentClamped));
 
-  // Tracé orange snappé désactivé : on affiche uniquement les traces GPX réelles.
+  // Tracé orange snappé désactivé : on force toujours le layer à vide,
+  // même avec une position active, car seuls les GPX réels doivent être visibles.
   completedLayer.setLatLngs([]);
   if(pos){
     posMarker.setLatLng([pos.lat,pos.lon]);
