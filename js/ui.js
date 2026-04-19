@@ -17,6 +17,7 @@ var ACTIONS={
   toggleAdmin:function(){toggleAdmin();},
   openProfileModal:function(){openProfileModal();},
   closeProfileModal:function(){closeProfileModal();},
+  closePwModal:function(){closePwModal();},
   logoutAdmin:function(){logoutAdmin();},
   refreshProfileQuota:function(){refreshProfileQuota();},
   exportJournal:function(a){exportJournal(a);},
