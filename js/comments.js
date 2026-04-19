@@ -45,7 +45,11 @@ function postComment(i){
   var text=txtEl?txtEl.value.trim():'';
   var v=Utils.validateComment({name:name,text:text});
   if(!v.ok){
-    if(!name){showVisitorGate();return;}
+    if(!name){
+      showToast('Identifie-toi pour poster un commentaire.','warn');
+      showVisitorGate();
+      return;
+    }
     if(!text&&txtEl){txtEl.focus();}
     return;
   }

@@ -780,7 +780,7 @@ describe('validateVisitorName', () => {
     expect(validateVisitorName('Jean Pierre Dupont').ok).toBe(false);
   });
 
-  it('rejette les espaces en début/fin après trim', () => {
+  it('accepte les espaces en début/fin après trim', () => {
     // Après trim, "  Jean  " → "Jean", valide
     expect(validateVisitorName('  Jean  ')).toEqual({ ok: true });
   });

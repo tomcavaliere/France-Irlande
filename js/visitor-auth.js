@@ -97,10 +97,12 @@ function checkVisitorPw(){
       if(gate)gate.classList.remove('vis');
       showToast('Bienvenue, '+escHtml(name)+' \uD83D\uDEB4','success');
       // Rafraîchir les formulaires de commentaire ouverts
-      document.querySelectorAll('.comment-form-visitor').forEach(function(form){
-        var dateEl=form.closest('[data-stage-date]');
-        if(dateEl)patchStageComments(dateEl.dataset.stageDate);
-      });
+      if(typeof patchStageComments==='function'){
+        document.querySelectorAll('.comment-form-visitor').forEach(function(form){
+          var dateEl=form.closest('[data-stage-date]');
+          if(dateEl)patchStageComments(dateEl.dataset.stageDate);
+        });
+      }
     }else{
       if(errEl){errEl.textContent='Mot de passe incorrect.';errEl.style.display='block';}
       if(pwEl){pwEl.value='';pwEl.focus();}
