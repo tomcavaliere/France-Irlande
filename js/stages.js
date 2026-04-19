@@ -141,15 +141,16 @@ function _applyKmRecompute(){
 
 function updateRecap(){
   var dates=Object.keys(stages).sort();
-  var kmD=current?current.kmTotal:0;
+  var kmD=GPSCore.sumTrackKm(tracks);
+  var kmL=current?GPSCore.haversineKm(current.lat,current.lon,GPSCore.SLIGO_COORDS.lat,GPSCore.SLIGO_COORDS.lon):TOTAL_KM;
   var pct=Math.round((kmD/TOTAL_KM)*100);
   var nbDays=dates.length;
   var avg=nbDays>0?Math.round(kmD/nbDays):0;
   document.getElementById('rKmD').textContent=Math.round(kmD);
-  document.getElementById('rKmL').textContent=Math.round(TOTAL_KM-kmD);
+  document.getElementById('rKmL').textContent=Math.round(kmL);
   document.getElementById('rDays').textContent=nbDays;
   document.getElementById('rAvg').textContent=avg||'—';
-  document.getElementById('rBar').style.width=pct+'%';
+  document.getElementById('rBar').style.width=Math.max(0,Math.min(100,pct))+'%';
   document.getElementById('mapDays').textContent='J'+nbDays;
 }
 
@@ -218,4 +219,3 @@ function deleteJournalEntry(date){
       .catch(function(err){ console.error('[deleteJournalEntry]',err); });
   });
 }
-

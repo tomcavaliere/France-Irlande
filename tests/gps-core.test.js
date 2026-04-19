@@ -9,7 +9,7 @@ import gpsCore from '../js/gps-core.js';
 import fixture from './fixtures/route-sample.js';
 
 const { snapToRoute, routePointsAhead, ptsBbox, computeStageInfo, campingDist,
-        haversineKm, parseGPX, recomputeAllKm } = gpsCore;
+        haversineKm, sumTrackKm, parseGPX, recomputeAllKm } = gpsCore;
 
 const { ROUTE_PTS, CUM_KM, TOTAL_KM, FRANCE_END_IDX } = fixture;
 
@@ -240,6 +240,32 @@ describe('haversineKm', () => {
 
   it('résultat toujours >= 0', () => {
     expect(haversineKm(10, 20, 5, 15)).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('sumTrackKm', () => {
+  it('tracks vides ou invalides → 0', () => {
+    expect(sumTrackKm({})).toBe(0);
+    expect(sumTrackKm(null)).toBe(0);
+  });
+
+  it('additionne les kmDay de plusieurs étapes', () => {
+    const tracks = {
+      '2026-07-01': { kmDay: 80.4, coords: [[1, 2]] },
+      '2026-07-02': { kmDay: 95.2, coords: [[3, 4]] },
+      '2026-07-03': { kmDay: 41.0, coords: [[5, 6]] }
+    };
+    expect(sumTrackKm(tracks)).toBe(216.6);
+  });
+
+  it('ignore gracieusement les entrées sans kmDay valide', () => {
+    const tracks = {
+      '2026-07-01': { kmDay: 70 },
+      '2026-07-02': { coords: [[1, 1]] },
+      '2026-07-03': { kmDay: 'abc' },
+      '2026-07-04': null
+    };
+    expect(sumTrackKm(tracks)).toBe(70);
   });
 });
 

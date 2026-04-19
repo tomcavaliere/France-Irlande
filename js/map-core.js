@@ -108,7 +108,8 @@ function initMap(){
 
 function updateMap(){
   var pos=getCurrentPos();
-  var kmD=pos?pos.kmTotal:0;
+  var kmD=GPSCore.sumTrackKm(tracks);
+  var kmL=pos?GPSCore.haversineKm(pos.lat,pos.lon,GPSCore.SLIGO_COORDS.lat,GPSCore.SLIGO_COORDS.lon):TOTAL_KM;
   var pct=Math.round((kmD/TOTAL_KM)*100);
   var progressPercentClamped=Math.max(0,Math.min(100,pct));
   var bikeMinPct=2;
@@ -116,15 +117,13 @@ function updateMap(){
   // Garde le vélo entièrement visible dans la barre à 0% et 100%.
   var bikeIndicatorPercent=Math.max(bikeMinPct,Math.min(bikeMaxPct,progressPercentClamped));
 
-  // Trace orange jusqu'à la position
+  // Tracé orange snappé désactivé : on force toujours le layer à vide,
+  // même avec une position active, car seuls les GPX réels doivent être visibles.
+  completedLayer.setLatLngs([]);
   if(pos){
-    var orangePts=[];
-    for(var i=0;i<=pos.idx&&i<ALL_ROUTE_PTS.length;i++) orangePts.push(ALL_ROUTE_PTS[i]);
-    completedLayer.setLatLngs(orangePts);
     posMarker.setLatLng([pos.lat,pos.lon]);
     if(!map.hasLayer(posMarker))posMarker.addTo(map);
   } else {
-    completedLayer.setLatLngs([]);
     if(map.hasLayer(posMarker))map.removeLayer(posMarker);
   }
 
@@ -134,7 +133,7 @@ function updateMap(){
     badge.classList.add('vis');
     var seg=pos.idx<=FRANCE_END_IDX?'France':'Irlande';
     document.getElementById('posT').textContent=seg+' — '+Math.round(kmD)+' km parcourus';
-    document.getElementById('posS').textContent=Math.round(TOTAL_KM-kmD)+' km restants ('+pct+'%)';
+    document.getElementById('posS').textContent='~'+Math.round(kmL)+' km restants (vol d\'oiseau)';
     document.getElementById('posB').style.width=progressPercentClamped+'%';
     document.getElementById('posBike').style.left=bikeIndicatorPercent+'%';
   } else {
@@ -143,7 +142,7 @@ function updateMap(){
 
   // Stats header carte
   document.getElementById('mapKmD').textContent=Math.round(kmD);
-  document.getElementById('mapKmL').textContent=Math.round(TOTAL_KM-kmD);
+  document.getElementById('mapKmL').textContent=Math.round(kmL);
   var nbDays=Object.keys(stages).length;
   document.getElementById('mapDays').textContent='J'+nbDays;
 }

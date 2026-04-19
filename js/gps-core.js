@@ -4,6 +4,10 @@
 // et require() dans les tests Vitest (module.exports).
 
 (function(){
+  // Coordonnées d'arrivée à Sligo (dernier point du tracé Irlande),
+  // utilisées pour estimer les km restants à vol d'oiseau.
+  var SLIGO_COORDS = { lat: 54.2775, lon: -8.4714 };
+
   // Snap un point lat/lon au point le plus proche du tracé.
   // routePts: Array<[lat,lon]>, cumKm: Array<number> (longueur identique)
   // Retourne {idx, kmTotal, lat, lon}
@@ -117,6 +121,23 @@
             Math.sin(dLon/2) * Math.sin(dLon/2);
     var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     return R * c;
+  }
+
+  // Somme des kmDay de tous les tracés GPX réels.
+  // Ignore les entrées invalides (kmDay absent/non numérique).
+  // @param {Object} tracks — { [date]: { kmDay, ... } }
+  // @returns {number} Total des km GPX arrondi à 1 décimale.
+  function sumTrackKm(tracks){
+    if(!tracks || typeof tracks !== 'object') return 0;
+    var total = 0;
+    Object.keys(tracks).forEach(function(date){
+      var t = tracks[date];
+      if(!t || typeof t !== 'object') return;
+      var kmDay = Number(t.kmDay);
+      if(!isFinite(kmDay) || kmDay < 0) return;
+      total += kmDay;
+    });
+    return Math.round(total * 10) / 10;
   }
 
   // Parse un fichier GPX (string XML) et retourne { coords, kmDay, elevGain } ou null si invalide.
@@ -243,8 +264,10 @@
     computeStageInfo: computeStageInfo,
     campingDist: campingDist,
     haversineKm: haversineKm,
+    sumTrackKm: sumTrackKm,
     parseGPX: parseGPX,
-    recomputeAllKm: recomputeAllKm
+    recomputeAllKm: recomputeAllKm,
+    SLIGO_COORDS: SLIGO_COORDS
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
