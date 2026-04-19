@@ -62,6 +62,28 @@
     return { ok: true };
   }
 
+  // Valide un nom d'utilisateur visiteur (prénom ou prénom + nom).
+  // - caractères autorisés: lettres (accents inclus), apostrophe, tiret
+  // - format: 1 ou 2 mots séparés par un espace
+  // - longueur max: LIMITS.COMMENT_NAME (30)
+  function validateVisitorUsername(name){
+    if (typeof name !== 'string') {
+      return { ok: false, error: 'Le nom utilisateur est invalide.' };
+    }
+    var normalized = name.replace(/\s+/g, ' ').trim();
+    if (!normalized) {
+      return { ok: false, error: 'Le nom utilisateur est requis.' };
+    }
+    if (normalized.length > LIMITS.COMMENT_NAME) {
+      return { ok: false, error: 'Le nom utilisateur ne doit pas dépasser ' + LIMITS.COMMENT_NAME + ' caractères.' };
+    }
+    var re = /^([A-Za-zÀ-ÖØ-öø-ÿ]+(?:['-][A-Za-zÀ-ÖØ-öø-ÿ]+)*)(?: ([A-Za-zÀ-ÖØ-öø-ÿ]+(?:['-][A-Za-zÀ-ÖØ-öø-ÿ]+)*))?$/;
+    if (!re.test(normalized)) {
+      return { ok: false, error: 'Format attendu : prénom ou prénom nom.' };
+    }
+    return { ok: true, value: normalized };
+  }
+
   // Valide une dépense {amount, cat, date, desc}. Retourne {ok, error?}.
   // - amount: nombre fini, strictement > 0, < 10000
   // - cat: dans EXPENSE_CATEGORIES
@@ -310,6 +332,7 @@
     formatTime: formatTime,
     summarizeExpenses: summarizeExpenses,
     validateComment: validateComment,
+    validateVisitorUsername: validateVisitorUsername,
     validateExpense: validateExpense,
     validateJournal: validateJournal,
     EXPENSE_CATEGORIES: EXPENSE_CATEGORIES,

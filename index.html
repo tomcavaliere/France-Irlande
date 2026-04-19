@@ -272,6 +272,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
   font-size:16px;text-align:center;letter-spacing:3px;outline:none;margin-bottom:10px}
 .pw-input:focus{border-color:var(--green)}
 .pw-err{color:#e74c3c;font-size:12px;margin-bottom:8px;display:none}
+.visitor-auth-modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(8,18,10,.86);
+  z-index:3900;display:none;align-items:center;justify-content:center;padding:20px}
+.visitor-auth-modal.vis{display:flex}
+.visitor-auth-box{background:#fff;border-radius:16px;padding:22px 18px;width:100%;max-width:360px;text-align:center}
+.visitor-auth-box h3{font-size:18px;font-weight:700;color:var(--green);margin-bottom:6px}
+.visitor-auth-box p{font-size:13px;color:var(--text-light);line-height:1.4;margin-bottom:12px}
+.visitor-auth-box .pw-input{letter-spacing:normal;text-align:left}
 .confirm-modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);
   z-index:3500;display:none;align-items:center;justify-content:center;padding:20px}
 .confirm-modal.vis{display:flex}
@@ -353,6 +360,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 /* Commentaires */
 .comment-form{background:var(--card);border-radius:var(--radius);padding:14px;
   margin-bottom:14px;box-shadow:var(--shadow)}
+.comment-user{font-size:12px;color:var(--text-light);margin-bottom:8px}
 .comment-form input{width:100%;border:1px solid #e0e0e0;border-radius:10px;padding:10px;
   font-family:inherit;font-size:14px;margin-bottom:8px;outline:none}
 .comment-form input:focus{border-color:var(--green)}
@@ -532,6 +540,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
     <input type="password" class="pw-input" id="pwInput" placeholder="••••••">
     <div class="pw-err" id="pwErr">Email ou mot de passe incorrect</div>
     <button class="btn btn-p" style="width:100%" data-action="checkPw">Se connecter</button>
+  </div>
+</div>
+
+<div class="visitor-auth-modal" id="visitorAuthModal">
+  <div class="visitor-auth-box">
+    <h3>Accès au carnet</h3>
+    <p>Renseigne ton prénom (ou prénom nom) et le mot de passe partagé.</p>
+    <input type="text" class="pw-input" id="visitorUsername" placeholder="Prénom ou prénom nom" maxlength="30" autocomplete="name">
+    <input type="password" class="pw-input" id="visitorPassword" placeholder="Mot de passe partagé" autocomplete="current-password">
+    <div class="pw-err" id="visitorAuthErr">Nom utilisateur ou mot de passe invalide.</div>
+    <button class="btn btn-p" style="width:100%" data-action="submitVisitorAuth">Entrer</button>
   </div>
 </div>
 

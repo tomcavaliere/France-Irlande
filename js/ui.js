@@ -24,6 +24,7 @@ var ACTIONS={
   confirmAccept:function(){confirmAccept();},
   confirmCancel:function(){confirmCancel();},
   checkPw:function(){checkPw();},
+  submitVisitorAuth:function(){submitVisitorAuth();},
   toggleCampings:function(){toggleCampings();},
   toggleCampspace:function(){toggleCampspace();},
   toggleWater:function(){toggleWater();},

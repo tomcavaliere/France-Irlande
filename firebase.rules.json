@@ -51,7 +51,7 @@
             ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 500"
           },
           "name": {
-            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 30"
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 30 && newData.val().matches(/^([A-Za-zÀ-ÖØ-öø-ÿ]+(?:['-][A-Za-zÀ-ÖØ-öø-ÿ]+)*)(?: ([A-Za-zÀ-ÖØ-öø-ÿ]+(?:['-][A-Za-zÀ-ÖØ-öø-ÿ]+)*))?$/)"
           },
           "ts": {
             ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= (now + 60000)"

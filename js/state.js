@@ -62,6 +62,10 @@ var tracksLayer = null;      // L.layerGroup des polylines oranges (réelles)
 
 // ==== COMMENTAIRES ====
 var comments = {};  // { [date]: { [id]: {name, text, ts} } }
+var isVisitorAuthenticated = false;
+var visitorUsername = '';
+var VISITOR_SESSION_KEY = 'ev1-visitor-auth-v1';
+var VISITOR_SHARED_PASSWORD = 'eurovelo1';
 
 // ==== DÉPENSES ====
 var expenses = {};

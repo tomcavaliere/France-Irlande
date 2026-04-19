@@ -7,6 +7,114 @@ function flushState(){
   if(isAdmin)flushJournals();
 }
 
+var _appBooted=false;
+
+function _bootApp(){
+  if(_appBooted)return;
+  _appBooted=true;
+  _subscribeEvents();
+  loadLocalCache();
+  loadExpensesCache();
+  loadAllCommentsCache();
+  initMap();
+  Events.emit('state:stages-changed');
+  setSyncDot(isOnline?'online':'offline');
+  setTimeout(function(){
+    initAuth();initFirebase();fetchWeather();
+    if(isOnline)flushQueue();
+  },800);
+}
+
+function _setVisitorAuthError(msg){
+  var errEl=document.getElementById('visitorAuthErr');
+  if(!errEl)return;
+  if(msg){
+    errEl.textContent=msg;
+    errEl.style.display='block';
+  }else{
+    errEl.style.display='none';
+  }
+}
+
+function _applyVisitorAuth(username){
+  isVisitorAuthenticated=true;
+  visitorUsername=username;
+  localStorage.setItem(VISITOR_SESSION_KEY,JSON.stringify({
+    username:username,
+    ts:Date.now()
+  }));
+  var modal=document.getElementById('visitorAuthModal');
+  if(modal)modal.classList.remove('vis');
+  var passEl=document.getElementById('visitorPassword');
+  if(passEl)passEl.value='';
+}
+
+function submitVisitorAuth(){
+  var nameEl=document.getElementById('visitorUsername');
+  var passEl=document.getElementById('visitorPassword');
+  var rawName=nameEl?nameEl.value:'';
+  var password=passEl?passEl.value:'';
+  _setVisitorAuthError('');
+  var vr=Utils.validateVisitorUsername(rawName);
+  if(!vr.ok){
+    _setVisitorAuthError(vr.error);
+    if(nameEl)nameEl.focus();
+    return;
+  }
+  if(password!==VISITOR_SHARED_PASSWORD){
+    _setVisitorAuthError('Nom utilisateur ou mot de passe invalide.');
+    if(passEl){
+      passEl.value='';
+      passEl.focus();
+    }
+    return;
+  }
+  if(nameEl)nameEl.value=vr.value;
+  _applyVisitorAuth(vr.value);
+  _bootApp();
+  showToast('Bienvenue '+vr.value+' !','success',2200);
+}
+
+function initVisitorAuth(){
+  var modal=document.getElementById('visitorAuthModal');
+  if(!modal){_bootApp();return;}
+  _setVisitorAuthError('');
+  try{
+    var raw=localStorage.getItem(VISITOR_SESSION_KEY);
+    if(raw){
+      var parsed=JSON.parse(raw);
+      var username=parsed&&typeof parsed.username==='string'?parsed.username:'';
+      var vr=Utils.validateVisitorUsername(username);
+      if(vr.ok){
+        _applyVisitorAuth(vr.value);
+        _bootApp();
+        return;
+      }
+    }
+  }catch(err){
+    console.error('[visitorAuth/init]',err);
+  }
+  isVisitorAuthenticated=false;
+  visitorUsername='';
+  localStorage.removeItem(VISITOR_SESSION_KEY);
+  modal.classList.add('vis');
+  var nameEl=document.getElementById('visitorUsername');
+  if(nameEl)setTimeout(function(){nameEl.focus();},50);
+  var passEl=document.getElementById('visitorPassword');
+  if(passEl&&passEl._authBound!==true){
+    passEl._authBound=true;
+    passEl.addEventListener('keydown',function(e){
+      if(e.key==='Enter')submitVisitorAuth();
+    });
+  }
+  if(nameEl&&nameEl._authBound!==true){
+    nameEl._authBound=true;
+    nameEl.addEventListener('keydown',function(e){
+      if(e.key==='Enter'&&passEl)passEl.focus();
+    });
+  }
+}
+
 // Subscribe UI renderers to state events. Mutation sites emit named
 // events — this is the ONLY place that decides which render runs when.
 // Any new render call belongs here, not at the mutation site.
@@ -59,15 +167,5 @@ document.addEventListener('DOMContentLoaded',function(){
     navigator.serviceWorker.register('./sw.js').catch(function(){});
   }
   initEventDelegation();
-  _subscribeEvents();
-  loadLocalCache();
-  loadExpensesCache();
-  loadAllCommentsCache();
-  initMap();
-  Events.emit('state:stages-changed');
-  setSyncDot(isOnline?'online':'offline');
-  setTimeout(function(){
-    initAuth();initFirebase();fetchWeather();
-    if(isOnline)flushQueue();
-  },800);
+  initVisitorAuth();
 });

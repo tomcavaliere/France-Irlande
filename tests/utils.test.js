@@ -4,7 +4,7 @@ import utils from '../js/utils.js';
 
 const {
   escAttr, escHtml, formatTime, summarizeExpenses,
-  validateComment, validateExpense, validateJournal,
+  validateComment, validateVisitorUsername, validateExpense, validateJournal,
   EXPENSE_CATEGORIES, LIMITS,
   computeQuotaBytes, formatBytes, quotaLevel, RTDB_QUOTA_BYTES,
   safeFetch, computeKmDay, isOfflineable, actionLabel, filterVisibleJournalDates,
@@ -163,6 +163,43 @@ describe('validateComment', () => {
     const r = validateComment({ name: 123, text: 'ok' });
     expect(r.ok).toBe(false);
     expect(r.error).toContain('nom');
+  });
+});
+
+describe('validateVisitorUsername', () => {
+  it('accepte un prénom', () => {
+    expect(validateVisitorUsername('Tom')).toEqual({ ok: true, value: 'Tom' });
+  });
+
+  it('accepte prénom + nom', () => {
+    expect(validateVisitorUsername('Tom Cavaliere').ok).toBe(true);
+  });
+
+  it('normalise les espaces', () => {
+    expect(validateVisitorUsername('  Tom    Cavaliere  '))
+      .toEqual({ ok: true, value: 'Tom Cavaliere' });
+  });
+
+  it('accepte apostrophe et tiret', () => {
+    expect(validateVisitorUsername("Jean-Pierre d'Arcy").ok).toBe(true);
+  });
+
+  it('rejette plus de deux mots', () => {
+    expect(validateVisitorUsername('Tom de Paris').ok).toBe(false);
+  });
+
+  it('rejette les caractères invalides', () => {
+    expect(validateVisitorUsername('Tom123').ok).toBe(false);
+    expect(validateVisitorUsername('Tom_Cavaliere').ok).toBe(false);
+  });
+
+  it('rejette vide ou non-string', () => {
+    expect(validateVisitorUsername('   ').ok).toBe(false);
+    expect(validateVisitorUsername(null).ok).toBe(false);
+  });
+
+  it('rejette > 30 caractères', () => {
+    expect(validateVisitorUsername('a'.repeat(31)).ok).toBe(false);
   });
 });
 
