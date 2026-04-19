@@ -4,6 +4,8 @@
 // et require() dans les tests Vitest (module.exports).
 
 (function(){
+  // Coordonnées d'arrivée à Sligo (dernier point du tracé Irlande),
+  // utilisées pour estimer les km restants à vol d'oiseau.
   var SLIGO_COORDS = { lat: 54.2775, lon: -8.4714 };
 
   // Snap un point lat/lon au point le plus proche du tracé.
