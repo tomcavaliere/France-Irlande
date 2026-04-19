@@ -49,7 +49,19 @@ function _applyVisitorAuth(username){
   if(passEl)passEl.value='';
 }
 
-function submitVisitorAuth(){
+function _sha256Hex(text){
+  if(!window.crypto||!window.crypto.subtle||typeof TextEncoder==='undefined'){
+    return Promise.resolve(String(text||''));
+  }
+  var data=new TextEncoder().encode(String(text||''));
+  return window.crypto.subtle.digest('SHA-256',data).then(function(buf){
+    return Array.from(new Uint8Array(buf))
+      .map(function(b){return b.toString(16).padStart(2,'0');})
+      .join('');
+  });
+}
+
+async function submitVisitorAuth(){
   var nameEl=document.getElementById('visitorUsername');
   var passEl=document.getElementById('visitorPassword');
   var rawName=nameEl?nameEl.value:'';
@@ -57,16 +69,23 @@ function submitVisitorAuth(){
   _setVisitorAuthError('');
   var vr=Utils.validateVisitorUsername(rawName);
   if(!vr.ok){
-    _setVisitorAuthError(vr.error);
+    _setVisitorAuthError('Nom utilisateur ou mot de passe invalide.');
     if(nameEl)nameEl.focus();
     return;
   }
-  if(password!==VISITOR_SHARED_PASSWORD){
-    _setVisitorAuthError('Nom utilisateur ou mot de passe invalide.');
-    if(passEl){
-      passEl.value='';
-      passEl.focus();
+  try{
+    var passHash=await _sha256Hex(password);
+    if(passHash!==VISITOR_SHARED_PASSWORD_SHA256){
+      _setVisitorAuthError('Nom utilisateur ou mot de passe invalide.');
+      if(passEl){
+        passEl.value='';
+        passEl.focus();
+      }
+      return;
     }
+  }catch(err){
+    console.error('[visitorAuth/check]',err);
+    _setVisitorAuthError('Validation impossible. Réessaie.');
     return;
   }
   if(nameEl)nameEl.value=vr.value;
@@ -101,14 +120,12 @@ function initVisitorAuth(){
   var nameEl=document.getElementById('visitorUsername');
   if(nameEl)setTimeout(function(){nameEl.focus();},50);
   var passEl=document.getElementById('visitorPassword');
-  if(passEl&&passEl._authBound!==true){
-    passEl._authBound=true;
+  if(passEl){
     passEl.addEventListener('keydown',function(e){
       if(e.key==='Enter')submitVisitorAuth();
     });
   }
-  if(nameEl&&nameEl._authBound!==true){
-    nameEl._authBound=true;
+  if(nameEl){
     nameEl.addEventListener('keydown',function(e){
       if(e.key==='Enter'&&passEl)passEl.focus();
     });

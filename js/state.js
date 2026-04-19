@@ -65,7 +65,7 @@ var comments = {};  // { [date]: { [id]: {name, text, ts} } }
 var isVisitorAuthenticated = false;
 var visitorUsername = '';
 var VISITOR_SESSION_KEY = 'ev1-visitor-auth-v1';
-var VISITOR_SHARED_PASSWORD = 'eurovelo1';
+var VISITOR_SHARED_PASSWORD_SHA256 = '58e91fb9723f61f82e1de97cf0f6e459d00240a3f07f826e69efc4b7e8a07f8a';
 
 // ==== DÉPENSES ====
 var expenses = {};

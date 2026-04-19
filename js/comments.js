@@ -38,12 +38,11 @@ function _setLastCommentTs(date){localStorage.setItem(_commentCooldownKey(date),
 function postComment(i){
   var txtEl=document.getElementById('ctxt-'+i);
   var sendBtn=document.querySelector('#scmts-'+i+' .comment-send');
-  var uv=Utils.validateVisitorUsername(visitorUsername);
-  if(!isVisitorAuthenticated||!uv.ok){
+  if(!isVisitorAuthenticated||!visitorUsername){
     showToast('Connecte-toi avec ton nom utilisateur pour commenter.','warn');
     return;
   }
-  var name=uv.value;
+  var name=visitorUsername;
   var text=txtEl?txtEl.value.trim():'';
   var v=Utils.validateComment({name:name,text:text});
   if(!v.ok){
