@@ -51,7 +51,7 @@ function _applyVisitorAuth(username){
 
 function _sha256Hex(text){
   if(!window.crypto||!window.crypto.subtle||typeof TextEncoder==='undefined'){
-    return Promise.resolve(String(text||''));
+    return Promise.reject(new Error('WebCrypto indisponible'));
   }
   var data=new TextEncoder().encode(String(text||''));
   return window.crypto.subtle.digest('SHA-256',data).then(function(buf){
