@@ -49,7 +49,10 @@ var ACTIONS={
   openJournalEntry:function(a){openJournalEntry(a);},
   cancelAllUploads:function(){cancelAllUploads();},
   uploadGPX:function(a){uploadGPX(a);},
-  deleteGPX:function(a){deleteGPX(a);}
+  deleteGPX:function(a){deleteGPX(a);},
+  checkVisitorPw:function(){checkVisitorPw();},
+  showVisitorGate:function(){showVisitorGate();},
+  closeVisitorGate:function(){closeVisitorGate();}
 };
 
 function invokeAction(name, args){

@@ -267,6 +267,27 @@
     return 'élément';
   }
 
+  // Valide un nom de visiteur (prénom ou prénom + nom).
+  // Format accepté : lettre(s)/tiret/apostrophe, une seule espace entre prénom et nom.
+  // Longueur : 2 à LIMITS.COMMENT_NAME caractères.
+  function validateVisitorName(name){
+    if(!name||typeof name!=='string'){
+      return{ok:false,error:'Le prénom est requis.'};
+    }
+    var n=name.trim();
+    if(!n)return{ok:false,error:'Le prénom est requis.'};
+    if(n.length<2)return{ok:false,error:'Le prénom est trop court (2 caractères minimum).'};
+    if(n.length>LIMITS.COMMENT_NAME){
+      return{ok:false,error:'Le nom ne doit pas dépasser '+LIMITS.COMMENT_NAME+' caractères.'};
+    }
+    // Prénom ou Prénom Nom (lettres, tirets, apostrophes, une seule espace entre les deux mots)
+    var re=/^[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ'-]*( [A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ'-]*)?$/;
+    if(!re.test(n)){
+      return{ok:false,error:'Format invalide. Utilise ton prénom ou prénom + nom (lettres uniquement).'};
+    }
+    return{ok:true};
+  }
+
   // Durée du cooldown entre deux commentaires consécutifs sur la même étape (ms).
   var COMMENT_COOLDOWN_MS = 30 * 1000;
 
@@ -325,7 +346,8 @@
     filterVisibleJournalDates: filterVisibleJournalDates,
     COMMENT_COOLDOWN_MS: COMMENT_COOLDOWN_MS,
     isCommentOnCooldown: isCommentOnCooldown,
-    commentCooldownRemaining: commentCooldownRemaining
+    commentCooldownRemaining: commentCooldownRemaining,
+    validateVisitorName: validateVisitorName
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

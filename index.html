@@ -25,6 +25,7 @@
 <script defer src="js/ui.js"></script>
 <script defer src="js/offline.js"></script>
 <script defer src="js/admin.js"></script>
+<script defer src="js/visitor-auth.js"></script>
 <script defer src="js/map-core.js"></script>
 <script defer src="js/campings.js"></script>
 <script defer src="js/stages.js"></script>
@@ -454,6 +455,39 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .weather-temps span{color:var(--text-light);font-weight:400}
 .weather-rain{font-size:10px;color:#3498db;margin-top:3px}
 .weather-wind{font-size:10px;color:var(--text-light);margin-top:1px}
+
+/* ============================================================
+   VISITOR AUTHENTICATION GATE
+   Plein écran, z-index 3500 (au-dessus de tout).
+   .can-close : ajoute un bouton de fermeture (changement de profil).
+   ============================================================ */
+#visitorGate{position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,0,.65);z-index:3500;display:none;
+  align-items:center;justify-content:center;padding:16px}
+#visitorGate.vis{display:flex}
+.visitor-box{background:#fff;border-radius:16px;width:100%;max-width:360px;
+  padding:28px 20px 24px;position:relative}
+.visitor-box h2{font-size:20px;font-weight:700;color:var(--green);margin:0 0 4px;text-align:center}
+.visitor-box .visitor-subtitle{font-size:13px;color:var(--text-light);text-align:center;margin-bottom:20px}
+.visitor-close-btn{display:none;position:absolute;top:12px;right:14px;
+  background:none;border:none;font-size:20px;cursor:pointer;color:#888;line-height:1}
+#visitorGate.can-close .visitor-close-btn{display:block}
+.visitor-field{margin-bottom:12px}
+.visitor-field label{display:block;font-size:12px;font-weight:600;
+  color:var(--text-light);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+.visitor-input{width:100%;padding:11px 14px;border:1.5px solid #e0e0e0;border-radius:10px;
+  font-size:15px;font-family:inherit;color:var(--text);background:#fafafa;outline:none;
+  transition:border-color .15s}
+.visitor-input:focus{border-color:var(--green);background:#fff}
+.visitor-err{font-size:13px;color:#e74c3c;margin-bottom:10px;display:none}
+.visitor-hint{font-size:11px;color:var(--text-light);margin-top:-8px;margin-bottom:12px}
+
+/* Formulaire de commentaire : "En tant que" + bouton changer */
+.comment-as{font-size:13px;color:var(--text-light);margin-bottom:8px;
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.comment-as strong{color:var(--text)}
+.comment-change-name{background:none;border:none;font-size:12px;color:var(--green);
+  cursor:pointer;padding:0;text-decoration:underline;font-weight:600}
 </style>
 </head>
 <body>
@@ -532,6 +566,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
     <input type="password" class="pw-input" id="pwInput" placeholder="••••••">
     <div class="pw-err" id="pwErr">Email ou mot de passe incorrect</div>
     <button class="btn btn-p" style="width:100%" data-action="checkPw">Se connecter</button>
+  </div>
+</div>
+
+<div id="visitorGate" role="dialog" aria-modal="true" aria-labelledby="visitorGateTitle">
+  <div class="visitor-box">
+    <button class="visitor-close-btn" data-action="closeVisitorGate" aria-label="Fermer">✕</button>
+    <h2 id="visitorGateTitle">🚴 EuroVelo 1</h2>
+    <p class="visitor-subtitle">Identifie-toi pour suivre le voyage de Tom</p>
+    <div class="visitor-field">
+      <label for="visitorNameInput">Ton prénom (ou prénom + nom)</label>
+      <input type="text" class="visitor-input" id="visitorNameInput"
+        placeholder="ex. Marie ou Jean Dupont" maxlength="30" autocomplete="name">
+    </div>
+    <div class="visitor-field">
+      <label for="visitorPwInput">Mot de passe</label>
+      <input type="password" class="visitor-input" id="visitorPwInput"
+        placeholder="••••••" autocomplete="current-password">
+    </div>
+    <div class="visitor-err" id="visitorGateErr"></div>
+    <button class="btn btn-p" style="width:100%" data-action="checkVisitorPw">Accéder au carnet 🗺️</button>
   </div>
 </div>
 

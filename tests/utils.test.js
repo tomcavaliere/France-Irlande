@@ -731,3 +731,57 @@ describe('commentCooldownRemaining', () => {
     expect(commentCooldownRemaining(sent, now, CD)).toBe(0);
   });
 });
+
+describe('validateVisitorName', () => {
+  const { validateVisitorName } = utils;
+
+  it('accepte un prénom simple', () => {
+    expect(validateVisitorName('Marie')).toEqual({ ok: true });
+    expect(validateVisitorName('Jean')).toEqual({ ok: true });
+  });
+
+  it('accepte un prénom + nom', () => {
+    expect(validateVisitorName('Jean Dupont')).toEqual({ ok: true });
+    expect(validateVisitorName('Marie-Claire Martin')).toEqual({ ok: true });
+  });
+
+  it('accepte les caractères accentués', () => {
+    expect(validateVisitorName('Éléonore')).toEqual({ ok: true });
+    expect(validateVisitorName('Zoé Müller')).toEqual({ ok: true });
+  });
+
+  it('accepte les noms avec tiret et apostrophe', () => {
+    expect(validateVisitorName("Jean-Pierre")).toEqual({ ok: true });
+    expect(validateVisitorName("O'Brien")).toEqual({ ok: true });
+  });
+
+  it('rejette une valeur nulle ou vide', () => {
+    expect(validateVisitorName(null).ok).toBe(false);
+    expect(validateVisitorName('').ok).toBe(false);
+    expect(validateVisitorName('  ').ok).toBe(false);
+    expect(validateVisitorName(undefined).ok).toBe(false);
+  });
+
+  it('rejette un prénom trop court', () => {
+    expect(validateVisitorName('A').ok).toBe(false);
+  });
+
+  it('rejette un nom dépassant la limite', () => {
+    expect(validateVisitorName('A'.repeat(31)).ok).toBe(false);
+  });
+
+  it('rejette des chiffres ou caractères spéciaux', () => {
+    expect(validateVisitorName('Tom1').ok).toBe(false);
+    expect(validateVisitorName('Tom!').ok).toBe(false);
+    expect(validateVisitorName('Tom@Dupont').ok).toBe(false);
+  });
+
+  it('rejette plus de deux mots', () => {
+    expect(validateVisitorName('Jean Pierre Dupont').ok).toBe(false);
+  });
+
+  it('rejette les espaces en début/fin après trim', () => {
+    // Après trim, "  Jean  " → "Jean", valide
+    expect(validateVisitorName('  Jean  ')).toEqual({ ok: true });
+  });
+});
