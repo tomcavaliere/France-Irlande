@@ -116,6 +116,11 @@ function patchBravos(date, bravosData){
   if(btn)btn.disabled=voted;
 }
 
+function _removeSkeleton(date){
+  var sk=document.querySelector('.j-skeleton[data-skeleton-for="'+date+'"]');
+  if(sk&&sk.parentNode)sk.parentNode.removeChild(sk);
+}
+
 function loadStageContent(date){
   if(journalsUnsub[date])return;
   if(!window._fbDb)return;
@@ -124,26 +129,31 @@ function loadStageContent(date){
     journals[date]=snap.val()||'';
     saveLocalCache();
     patchJournalText(date);
+    _removeSkeleton(date);
   });
 
   photosUnsub[date]=window._fbOnValue(window._fbRef(window._fbDb,'photos/'+date),function(snap){
     photos[date]=snap.val()||{};
     patchMedia(date);
+    _removeSkeleton(date);
   });
 
   videosUnsub[date]=window._fbOnValue(window._fbRef(window._fbDb,'videos/'+date),function(snap){
     videos[date]=snap.val()||{};
     patchMedia(date);
+    _removeSkeleton(date);
   });
 
   commentsUnsub[date]=window._fbOnValue(window._fbRef(window._fbDb,'comments/'+date),function(snap){
     comments[date]=snap.val()||{};
     saveCommentsCache(date,comments[date]);
     patchStageComments(date);
+    _removeSkeleton(date);
   });
 
   bravosUnsub[date]=window._fbOnValue(window._fbRef(window._fbDb,'bravos/'+date),function(snap){
     patchBravos(date,snap.val()||{});
+    _removeSkeleton(date);
   });
 }
 
@@ -217,10 +227,16 @@ function renderJournal(){
     var bravosHtml=isAdmin
       ?'<div class="j-bravos"><span class="j-bravo-count"></span></div>'
       :'<div class="j-bravos"><button class="j-bravo-btn" data-action="addBravo" data-arg="'+edate+'">Maith sibh! \uD83D\uDC4F</button><span class="j-bravo-count"></span></div>';
+    var skeletonHtml='<div class="j-skeleton" data-skeleton-for="'+edate+'">'+
+      '<div class="j-skeleton-row"></div>'+
+      '<div class="j-skeleton-row"></div>'+
+      '<div class="j-skeleton-media"></div>'+
+    '</div>';
     entry.innerHTML=
       '<div class="j-date">'+dateLabel+'</div>'+
       (kmInfo?'<div class="j-stage">'+kmInfo+'</div>':'')+
       taHtml+
+      skeletonHtml+
       renderMediaHtml(date)+
       bravosHtml+
       adminActionsHtml+
