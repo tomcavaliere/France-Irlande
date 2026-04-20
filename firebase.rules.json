@@ -80,6 +80,21 @@
         }
       }
     },
+    "visitorAuth": {
+      ".read": true,
+      ".write": "auth != null",
+      ".validate": "newData.hasChildren(['passwordHash','updatedAt'])",
+      "passwordHash": {
+        ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{64}$/)"
+      },
+      "updatedAt": {
+        ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= (now + 60000)"
+      },
+      "updatedBy": {
+        ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 120)"
+      },
+      "$other": { ".validate": false }
+    },
     "expenses": {
       ".read": "auth != null",
       ".write": "auth != null",

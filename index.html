@@ -481,6 +481,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .visitor-input:focus{border-color:var(--green);background:#fff}
 .visitor-err{font-size:13px;color:#e74c3c;margin-bottom:10px;display:none}
 .visitor-hint{font-size:11px;color:var(--text-light);margin-top:-8px;margin-bottom:12px}
+body.visitor-lock .header,
+body.visitor-lock .content,
+body.visitor-lock .tab-bar,
+body.visitor-lock .admin-btn,
+body.visitor-lock #adminDropdown,
+body.visitor-lock #pwModal,
+body.visitor-lock #profileModal,
+body.visitor-lock #syncPopover,
+body.visitor-lock #uploadBanner,
+body.visitor-lock #toastContainer{visibility:hidden}
+body.visitor-lock #visitorGate{background:var(--bg)}
 
 /* Formulaire de commentaire : "En tant que" + bouton changer */
 .comment-as{font-size:13px;color:var(--text-light);margin-bottom:8px;
@@ -543,6 +554,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
         <button class="btn btn-p" data-action="exportJournal" data-arg="md">⬇ .md</button>
         <button class="btn" data-action="exportJournal" data-arg="json">⬇ .json</button>
       </div>
+    </div>
+
+    <div class="profile-section">
+      <h3>Authentification visiteur</h3>
+      <input type="password" class="pw-input" id="profileVisitorPwNew" placeholder="Nouveau mot de passe (min. 6)" autocomplete="new-password" style="margin-bottom:8px">
+      <input type="password" class="pw-input" id="profileVisitorPwConfirm" placeholder="Confirmer le mot de passe" autocomplete="new-password">
+      <div class="pw-err" id="profileVisitorPwErr" style="margin-top:8px">Erreur</div>
+      <button class="btn btn-p" id="profileVisitorPwSave" style="width:100%;margin-top:8px" data-action="updateVisitorPassword">Mettre à jour</button>
     </div>
   </div>
 </div>

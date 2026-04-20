@@ -1,17 +1,15 @@
 // visitor-auth.js
 // Visitor authentication gate: shared password + username.
-// The shared password is stored as a SHA-256 hash (never in plain text).
-//
-// To change the visitor password, run this snippet in a browser console:
-//   crypto.subtle.digest('SHA-256', new TextEncoder().encode('votre-mot-de-passe'))
-//     .then(b => console.log(Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('')))
-// Then replace VISITOR_PASSWORD_HASH below with the resulting hex string.
-//
-// Default password: "eurovelo1"
-var VISITOR_PASSWORD_HASH = '58e91fb9723f61f82e1de97cf0f6e459d00240a3f07f826e69efc4b7e8a07f8a';
+// Password hash is resolved from Firebase (/visitorAuth/passwordHash).
+// Fallback hash keeps backward compatibility if Firebase value is absent.
+var VISITOR_DEFAULT_PASSWORD_HASH = '58e91fb9723f61f82e1de97cf0f6e459d00240a3f07f826e69efc4b7e8a07f8a';
+var VISITOR_AUTH_CONFIG_PATH = 'visitorAuth';
 
 var VISITOR_AUTH_KEY  = 'ev1-visitor-auth';
 var VISITOR_NAME_KEY  = 'ev1-visitor-name';
+var _visitorPasswordHashCache = VISITOR_DEFAULT_PASSWORD_HASH;
+var _visitorPasswordHashPromise = null;
+var _visitorGateHardLock = false;
 
 function isVisitorAuthenticated(){
   return localStorage.getItem(VISITOR_AUTH_KEY)==='1';
@@ -31,6 +29,40 @@ function clearVisitorSession(){
   localStorage.removeItem(VISITOR_NAME_KEY);
 }
 
+function _normalizeHash(v){
+  var s=(typeof v==='string')?v.trim().toLowerCase():'';
+  return /^[a-f0-9]{64}$/.test(s)?s:'';
+}
+
+function _extractVisitorPasswordHash(cfg){
+  if(!cfg)return '';
+  if(typeof cfg==='string')return _normalizeHash(cfg);
+  if(typeof cfg==='object')return _normalizeHash(cfg.passwordHash);
+  return '';
+}
+
+function _loadVisitorPasswordHash(force){
+  if(!force&&_visitorPasswordHashCache)return Promise.resolve(_visitorPasswordHashCache);
+  if(_visitorPasswordHashPromise)return _visitorPasswordHashPromise;
+  if(!window._fbDb||!window._fbGet||!window._fbRef){
+    return Promise.resolve(_visitorPasswordHashCache||VISITOR_DEFAULT_PASSWORD_HASH);
+  }
+  _visitorPasswordHashPromise=window._fbGet(window._fbRef(window._fbDb,VISITOR_AUTH_CONFIG_PATH))
+    .then(function(snap){
+      var hash=_extractVisitorPasswordHash(snap&&snap.exists()?snap.val():null);
+      if(hash)_visitorPasswordHashCache=hash;
+      return _visitorPasswordHashCache||VISITOR_DEFAULT_PASSWORD_HASH;
+    })
+    .catch(function(err){
+      console.error('[visitor-auth/load-hash]',err);
+      return _visitorPasswordHashCache||VISITOR_DEFAULT_PASSWORD_HASH;
+    })
+    .finally(function(){
+      _visitorPasswordHashPromise=null;
+    });
+  return _visitorPasswordHashPromise;
+}
+
 // Calcule le hash SHA-256 d'un mot de passe (retourne une Promise<string>).
 function _hashPassword(password){
   var encoder=new TextEncoder();
@@ -42,7 +74,10 @@ function _hashPassword(password){
   });
 }
 
-function showVisitorGate(){
+function showVisitorGate(opts){
+  opts=opts||{};
+  _visitorGateHardLock=!!opts.hardLock;
+  document.body.classList.toggle('visitor-lock',_visitorGateHardLock);
   var gate=document.getElementById('visitorGate');
   if(!gate)return;
   // Afficher le bouton de fermeture uniquement si déjà authentifié (changement de profil)
@@ -56,6 +91,7 @@ function showVisitorGate(){
   var errEl=document.getElementById('visitorGateErr');
   if(errEl)errEl.style.display='none';
   gate.classList.add('vis');
+  _loadVisitorPasswordHash(false);
   setTimeout(function(){
     if(nameEl&&!nameEl.value)nameEl.focus();
     else if(pwEl)pwEl.focus();
@@ -63,9 +99,11 @@ function showVisitorGate(){
 }
 
 function closeVisitorGate(){
-  if(!isVisitorAuthenticated()&&!isAdmin)return;
+  if(_visitorGateHardLock&&!isVisitorAuthenticated()&&!isAdmin)return;
   var gate=document.getElementById('visitorGate');
   if(gate)gate.classList.remove('vis');
+  _visitorGateHardLock=false;
+  document.body.classList.remove('visitor-lock');
 }
 
 function checkVisitorPw(){
@@ -90,11 +128,15 @@ function checkVisitorPw(){
     return;
   }
 
-  _hashPassword(password).then(function(hash){
-    if(hash===VISITOR_PASSWORD_HASH){
+  Promise.all([_loadVisitorPasswordHash(true),_hashPassword(password)]).then(function(r){
+    var expectedHash=r[0];
+    var actualHash=r[1];
+    if(actualHash===expectedHash){
       _setVisitorSession(name);
       var gate=document.getElementById('visitorGate');
       if(gate)gate.classList.remove('vis');
+      _visitorGateHardLock=false;
+      document.body.classList.remove('visitor-lock');
       showToast('Bienvenue, '+escHtml(name)+' \uD83D\uDEB4','success');
       // Rafraîchir les formulaires de commentaire ouverts
       if(typeof patchStageComments==='function'){
@@ -110,6 +152,58 @@ function checkVisitorPw(){
   }).catch(function(err){
     console.error('[visitor-auth]',err);
     if(errEl){errEl.textContent='Erreur de vérification.';errEl.style.display='block';}
+  });
+}
+
+function updateVisitorPassword(){
+  if(!isAdmin)return;
+  var pwEl=document.getElementById('profileVisitorPwNew');
+  var confirmEl=document.getElementById('profileVisitorPwConfirm');
+  var errEl=document.getElementById('profileVisitorPwErr');
+  var saveBtn=document.getElementById('profileVisitorPwSave');
+  var password=pwEl?pwEl.value:'';
+  var passwordConfirm=confirmEl?confirmEl.value:'';
+  if(errEl)errEl.style.display='none';
+
+  if(!password||password.length<6){
+    if(errEl){errEl.textContent='Mot de passe trop court (min. 6 caractères).';errEl.style.display='block';}
+    if(pwEl)pwEl.focus();
+    return;
+  }
+  if(password.length>128){
+    if(errEl){errEl.textContent='Mot de passe trop long (max. 128 caractères).';errEl.style.display='block';}
+    if(pwEl)pwEl.focus();
+    return;
+  }
+  if(password!==passwordConfirm){
+    if(errEl){errEl.textContent='Les deux mots de passe ne correspondent pas.';errEl.style.display='block';}
+    if(confirmEl)confirmEl.focus();
+    return;
+  }
+  if(!window._fbDb||!window._fbSet||!window._fbRef){
+    if(errEl){errEl.textContent='Firebase non disponible.';errEl.style.display='block';}
+    return;
+  }
+
+  if(saveBtn)saveBtn.disabled=true;
+  _hashPassword(password).then(function(hash){
+    var user=window._fbAuth&&window._fbAuth.currentUser;
+    var payload={
+      passwordHash:hash,
+      updatedAt:Date.now(),
+      updatedBy:user&&user.email?user.email:'admin'
+    };
+    return window._fbSet(window._fbRef(window._fbDb,VISITOR_AUTH_CONFIG_PATH),payload).then(function(){
+      _visitorPasswordHashCache=hash;
+      if(pwEl)pwEl.value='';
+      if(confirmEl)confirmEl.value='';
+      showToast('Mot de passe visiteur mis à jour.','success');
+    });
+  }).catch(function(err){
+    console.error('[visitor-auth/update]',err);
+    if(errEl){errEl.textContent='Impossible de mettre à jour le mot de passe.';errEl.style.display='block';}
+  }).finally(function(){
+    if(saveBtn)saveBtn.disabled=false;
   });
 }
 

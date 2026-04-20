@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded',function(){
   setSyncDot(isOnline?'online':'offline');
   // Afficher le gate visiteur si non authentifié (l'admin lève le gate via admin:toggled)
   if(!isVisitorAuthenticated()){
-    showVisitorGate();
+    showVisitorGate({hardLock:true});
   }
   setTimeout(function(){
     initAuth();initFirebase();fetchWeather();
