@@ -28,6 +28,9 @@ js/
   init.js                   — amorçage DOM, délégation events, listeners globaux
   state.js                  — vars globales partagées (current, stages, journals…)
   events-core.js            — mini event-bus pur (emit / on / off)
+  journal-core.js           — comptage bravos, labels km/date purs (testé)
+  stages-core.js            — flag pays, labels date étape, totaux recap purs (testé)
+  visitor-auth-core.js      — normalisation hash, extraction config, validation mot de passe purs (testé)
   # UI
   ui.js                     — toast, confirm dialog, lightbox, sync dot, délégation
   admin.js                  — login, profil, inactivité, quota photos
@@ -59,6 +62,9 @@ tests/
   events-core.test.js       — 10 tests Vitest
   offline-core.test.js      — 11 tests Vitest
   weather-core.test.js      — 6 tests Vitest
+  journal-core.test.js      — 12 tests Vitest
+  stages-core.test.js       — 10 tests Vitest
+  visitor-auth-core.test.js — 14 tests Vitest
   fixtures/route-sample.js  — 50 pts GPS réels sous-échantillonnés (25 FR + 25 IE)
   README.md                 — doc tests, couverture, comment ajouter un test
 docs/superpowers/
@@ -141,6 +147,31 @@ Logique de file offline : `shouldQueue(path)`, `mergeQueue(existing, newItem)`, 
 ### `js/events-core.js` → `window.Events`
 
 Mini event-bus : `Events.on(name, fn)`, `Events.off(name, fn)`, `Events.emit(name, payload)`. Utilisé pour propager `state:stages-changed`, `state:journal-changed`, etc.
+
+### `js/journal-core.js` → `window.JournalCore`
+
+| Fonction | Rôle |
+|---|---|
+| `countBravos(bravosData)` | Nombre de bravos pour une date (`Object.keys(data\|\|{}).length`) |
+| `hasVoted(bravosData, visitorId)` | `true` si l'identifiant visiteur figure dans les bravos |
+| `buildKmInfoLabel(stage)` | `"🚴 42 km · ⛰️ D+ 300 m"` ou `""` si `kmDay` falsy ; `elevGain` clampé à 0 |
+| `formatJournalDateLabel(dateISO, locale?)` | `"2026-04-20"` → `"lundi 20 avril"` (fr-FR par défaut, convention `T12:00:00`) |
+
+### `js/stages-core.js` → `window.StagesCore`
+
+| Fonction | Rôle |
+|---|---|
+| `countryFlag(idx, franceEndIdx)` | `idx <= franceEndIdx` → 🇫🇷 ; sinon 🇮🇪 ; idx non-fini ou négatif → `''` |
+| `formatStageDateLabel(dateISO)` | `"2026-04-20"` → `"lun. 20 avr."` (fr-FR, convention `T12:00:00`) |
+| `computeRecapTotals(kmDone, kmLeft, nbDays, totalKm)` | `{pct, avgKmPerDay}` — pct clampé 0–100, division par zéro protégée |
+
+### `js/visitor-auth-core.js` → `window.VisitorAuthCore`
+
+| Fonction | Rôle |
+|---|---|
+| `normalizeHash(v)` | `trim().toLowerCase()` + regex `/^[a-f0-9]{64}$/` ; sinon `''` |
+| `extractPasswordHash(cfg)` | string → `normalizeHash(cfg)` ; objet → `normalizeHash(cfg.passwordHash)` ; autre → `''` |
+| `validatePasswordChange(password, confirm, opts)` | `{ok:true}` ou `{ok:false, error}` — vérifie min/max/match dans cet ordre |
 
 ## Points non-évidents — ne jamais casser
 
