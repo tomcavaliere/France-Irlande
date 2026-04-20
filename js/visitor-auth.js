@@ -4,11 +4,14 @@
 // Fallback hash keeps backward compatibility if Firebase value is absent.
 var VISITOR_DEFAULT_PASSWORD_HASH = '58e91fb9723f61f82e1de97cf0f6e459d00240a3f07f826e69efc4b7e8a07f8a';
 var VISITOR_AUTH_CONFIG_PATH = 'visitorAuth';
+var MIN_VISITOR_PASSWORD_LENGTH = 6;
 
 var VISITOR_AUTH_KEY  = 'ev1-visitor-auth';
 var VISITOR_NAME_KEY  = 'ev1-visitor-name';
 var _visitorPasswordHashCache = VISITOR_DEFAULT_PASSWORD_HASH;
+var _visitorPasswordHashLoaded = false;
 var _visitorPasswordHashPromise = null;
+var _visitorPasswordHashRevision = 0;
 var _visitorGateHardLock = false;
 
 function isVisitorAuthenticated(){
@@ -42,15 +45,20 @@ function _extractVisitorPasswordHash(cfg){
 }
 
 function _loadVisitorPasswordHash(force){
-  if(!force&&_visitorPasswordHashCache)return Promise.resolve(_visitorPasswordHashCache);
+  if(!force&&_visitorPasswordHashLoaded)return Promise.resolve(_visitorPasswordHashCache);
   if(_visitorPasswordHashPromise)return _visitorPasswordHashPromise;
   if(!window._fbDb||!window._fbGet||!window._fbRef){
     return Promise.resolve(_visitorPasswordHashCache||VISITOR_DEFAULT_PASSWORD_HASH);
   }
+  var revision=++_visitorPasswordHashRevision;
   _visitorPasswordHashPromise=window._fbGet(window._fbRef(window._fbDb,VISITOR_AUTH_CONFIG_PATH))
     .then(function(snap){
+      if(revision!==_visitorPasswordHashRevision){
+        return _visitorPasswordHashCache||VISITOR_DEFAULT_PASSWORD_HASH;
+      }
       var hash=_extractVisitorPasswordHash(snap&&snap.exists()?snap.val():null);
       if(hash)_visitorPasswordHashCache=hash;
+      _visitorPasswordHashLoaded=true;
       return _visitorPasswordHashCache||VISITOR_DEFAULT_PASSWORD_HASH;
     })
     .catch(function(err){
@@ -165,8 +173,8 @@ function updateVisitorPassword(){
   var passwordConfirm=confirmEl?confirmEl.value:'';
   if(errEl)errEl.style.display='none';
 
-  if(!password||password.length<6){
-    if(errEl){errEl.textContent='Mot de passe trop court (min. 6 caractères).';errEl.style.display='block';}
+  if(!password||password.length<MIN_VISITOR_PASSWORD_LENGTH){
+    if(errEl){errEl.textContent='Mot de passe trop court (min. '+MIN_VISITOR_PASSWORD_LENGTH+' caractères).';errEl.style.display='block';}
     if(pwEl)pwEl.focus();
     return;
   }
@@ -194,7 +202,10 @@ function updateVisitorPassword(){
       updatedBy:user&&user.email?user.email:'admin'
     };
     return window._fbSet(window._fbRef(window._fbDb,VISITOR_AUTH_CONFIG_PATH),payload).then(function(){
+      _visitorPasswordHashRevision++;
+      _visitorPasswordHashPromise=null;
       _visitorPasswordHashCache=hash;
+      _visitorPasswordHashLoaded=true;
       if(pwEl)pwEl.value='';
       if(confirmEl)confirmEl.value='';
       showToast('Mot de passe visiteur mis à jour.','success');
