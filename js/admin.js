@@ -149,6 +149,12 @@ function openProfileModal(){
       .catch(function(err){console.error('[profile] comments count failed',err);});
   }
   refreshProfileQuota();
+  var authErrEl=document.getElementById('profileVisitorPwErr');
+  if(authErrEl)authErrEl.style.display='none';
+  var authPw=document.getElementById('profileVisitorPwNew');
+  var authPw2=document.getElementById('profileVisitorPwConfirm');
+  if(authPw)authPw.value='';
+  if(authPw2)authPw2.value='';
   _sessionCountdown=setInterval(function(){
     var el=document.getElementById('profileSession');
     if(!el){clearInterval(_sessionCountdown);return;}

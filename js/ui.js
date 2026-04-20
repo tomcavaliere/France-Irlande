@@ -21,6 +21,7 @@ var ACTIONS={
   logoutAdmin:function(){logoutAdmin();},
   refreshProfileQuota:function(){refreshProfileQuota();},
   exportJournal:function(a){exportJournal(a);},
+  updateVisitorPassword:function(){updateVisitorPassword();},
   confirmAccept:function(){confirmAccept();},
   confirmCancel:function(){confirmCancel();},
   checkPw:function(){checkPw();},
