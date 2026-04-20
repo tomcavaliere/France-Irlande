@@ -32,10 +32,6 @@ function clearVisitorSession(){
   localStorage.removeItem(VISITOR_NAME_KEY);
 }
 
-function _normalizeHash(v){
-  return VisitorAuthCore.normalizeHash(v);
-}
-
 function _extractVisitorPasswordHash(cfg){
   return VisitorAuthCore.extractPasswordHash(cfg);
 }
