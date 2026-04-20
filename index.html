@@ -308,6 +308,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
   padding:4px 10px;font-size:13px;font-weight:600;cursor:pointer;margin-left:6px;white-space:nowrap}
 #uploadBanner .ub-cancel:hover{background:rgba(0,0,0,.4)}
 
+/* Bannière offline persistante (driven by setSyncDot('offline')) */
+#offlineBanner{position:sticky;top:0;z-index:1000;background:#c62828;color:#fff;
+  padding:8px 12px;text-align:center;font-size:13px;font-weight:500;
+  padding-top:calc(8px + env(safe-area-inset-top))}
+#offlineBanner[hidden]{display:none}
+
 /* Toast notifications */
 #toastContainer{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
   z-index:10000;display:flex;flex-direction:column;align-items:center;gap:8px;
@@ -490,6 +496,7 @@ body.visitor-lock #pwModal,
 body.visitor-lock #profileModal,
 body.visitor-lock #syncPopover,
 body.visitor-lock #uploadBanner,
+body.visitor-lock #offlineBanner,
 body.visitor-lock #toastContainer{visibility:hidden}
 body.visitor-lock #visitorGate{background:var(--bg)}
 
@@ -503,6 +510,7 @@ body.visitor-lock #visitorGate{background:var(--bg)}
 </head>
 <body>
 
+<div id="offlineBanner" role="alert" aria-live="polite" hidden>🔴 Hors-ligne — tes modifications seront synchronisées au retour du réseau.</div>
 <div class="header">
   <div class="header-c">
     <h1 id="headerTitle">Annecy → Sligo<span class="sync-dot" id="syncDot" style="display:none" data-action="toggleSyncPopover" title="État de synchronisation" role="button" tabindex="0" aria-label="État de synchronisation — cliquer pour les détails"></span></h1>

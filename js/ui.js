@@ -161,6 +161,8 @@ function setSyncDot(mode){
   dot.classList.toggle('offline', mode==='offline');
   dot.classList.toggle('syncing', mode==='syncing');
   dot.classList.toggle('queued', mode==='queued');
+  var banner=document.getElementById('offlineBanner');
+  if(banner)banner.hidden=(mode!=='offline');
 }
 
 // Affiche une notification temporaire non-bloquante.

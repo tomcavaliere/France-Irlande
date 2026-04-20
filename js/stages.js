@@ -180,7 +180,8 @@ function deleteStage(date){
 function openJournalEntry(date){
   if(!isAdmin)return;
   if(stages[date]&&stages[date].journalDeleted){
-    window._fbRemove(window._fbRef(window._fbDb,'stages/'+date+'/journalDeleted'));
+    window._fbRemove(window._fbRef(window._fbDb,'stages/'+date+'/journalDeleted'))
+      .catch(function(err){ console.error('[openJournalEntry]',err); });
   }
   switchTab('journal');
   Events.emit('state:journal-changed');

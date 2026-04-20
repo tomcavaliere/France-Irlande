@@ -12,7 +12,12 @@ function onJournalInput(date, _arg2, el){
   clearTimeout(_journalSaveTimers[date]);
   _journalSaveTimers[date]=setTimeout(function(){
     if(isOnline&&window._fbDb){
-      window._fbSet(window._fbRef(window._fbDb,'journals/'+date),text);
+      window._fbSet(window._fbRef(window._fbDb,'journals/'+date),text)
+        .catch(function(err){
+          console.error('[onJournalInput]',err);
+          showToast('Journal non sauvé — nouvelle tentative au prochain retour réseau','error',6000);
+          queueWrite('journals/'+date,text);
+        });
     } else {
       queueWrite('journals/'+date,text);
     }
@@ -23,7 +28,11 @@ function flushJournals(){
   Object.keys(_journalSaveTimers).forEach(function(date){
     clearTimeout(_journalSaveTimers[date]);
     if(isOnline&&window._fbDb){
-      window._fbSet(window._fbRef(window._fbDb,'journals/'+date),journals[date]||'');
+      window._fbSet(window._fbRef(window._fbDb,'journals/'+date),journals[date]||'')
+        .catch(function(err){
+          console.error('[flushJournals]',err);
+          queueWrite('journals/'+date,journals[date]||'');
+        });
     } else {
       queueWrite('journals/'+date,journals[date]||'');
     }
