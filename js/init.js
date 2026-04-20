@@ -42,6 +42,7 @@ function _subscribeEvents(){
     if(activeTab()==='depenses')renderExpenses();
   });
   Events.on('admin:toggled',function(){
+    if(isAdmin)closeVisitorGate();
     renderStages();
     renderJournal();
     updateMap();
@@ -66,6 +67,10 @@ document.addEventListener('DOMContentLoaded',function(){
   initMap();
   Events.emit('state:stages-changed');
   setSyncDot(isOnline?'online':'offline');
+  // Afficher le gate visiteur si non authentifié (l'admin lève le gate via admin:toggled)
+  if(!isVisitorAuthenticated()){
+    showVisitorGate();
+  }
   setTimeout(function(){
     initAuth();initFirebase();fetchWeather();
     if(isOnline)flushQueue();
