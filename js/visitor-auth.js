@@ -175,7 +175,7 @@ function updateVisitorPassword(){
   var passwordConfirm=confirmEl?confirmEl.value:'';
   if(errEl)errEl.style.display='none';
 
-  if(!password||password.length<MIN_VISITOR_PASSWORD_LENGTH){
+  if(password.length<MIN_VISITOR_PASSWORD_LENGTH){
     if(errEl){
       errEl.textContent='Mot de passe trop court (min. '+MIN_VISITOR_PASSWORD_LENGTH+' caractères).';
       errEl.style.display='block';
@@ -213,7 +213,7 @@ function updateVisitorPassword(){
     var payload={
       passwordHash:hash,
       updatedAt:Date.now(),
-      updatedBy:user&&user.email?user.email:'admin'
+      updatedBy:user&&user.email?user.email:'unknown'
     };
     return window._fbSet(window._fbRef(window._fbDb,VISITOR_AUTH_CONFIG_PATH),payload).then(function(){
       _visitorPasswordHashRevision++;
