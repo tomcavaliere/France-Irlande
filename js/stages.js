@@ -19,8 +19,8 @@ function renderStages(){
     var kmDay=d.kmDay||0;
     var kmTotal=d.kmTotal||0;
     var elevGain=Math.max(0,Math.round(Number(d.elevGain)||0));
-    var seg=d.lat&&d.lon?(snapToRoute(d.lat,d.lon).idx<=FRANCE_END_IDX?'🇫🇷':'🇮🇪'):'';
-    var dateLabel=new Date(date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'});
+    var seg=d.lat&&d.lon?StagesCore.countryFlag(snapToRoute(d.lat,d.lon).idx,FRANCE_END_IDX):'';
+    var dateLabel=StagesCore.formatStageDateLabel(date);
     var edate=escAttr(date);
     var hasTrack=!!(tracks&&tracks[date]);
     var gpxHtml='';
@@ -143,14 +143,13 @@ function updateRecap(){
   var dates=Object.keys(stages).sort();
   var kmD=GPSCore.sumTrackKm(tracks);
   var kmL=current?GPSCore.haversineKm(current.lat,current.lon,GPSCore.SLIGO_COORDS.lat,GPSCore.SLIGO_COORDS.lon):TOTAL_KM;
-  var pct=Math.round((kmD/TOTAL_KM)*100);
   var nbDays=dates.length;
-  var avg=nbDays>0?Math.round(kmD/nbDays):0;
+  var totals=StagesCore.computeRecapTotals(kmD,kmL,nbDays,TOTAL_KM);
   document.getElementById('rKmD').textContent=Math.round(kmD);
   document.getElementById('rKmL').textContent=Math.round(kmL);
   document.getElementById('rDays').textContent=nbDays;
-  document.getElementById('rAvg').textContent=avg||'—';
-  document.getElementById('rBar').style.width=Math.max(0,Math.min(100,pct))+'%';
+  document.getElementById('rAvg').textContent=totals.avgKmPerDay||'—';
+  document.getElementById('rBar').style.width=totals.pct+'%';
   document.getElementById('mapDays').textContent='J'+nbDays;
 }
 
