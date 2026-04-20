@@ -5,26 +5,60 @@ Tracé complet : France (Chamonix → Roscoff) + Irlande (Cork → Sligo).
 
 ## Stack
 
-- **Frontend** : HTML/CSS/JS vanilla — tout dans `index.html` (~1700 lignes). Zéro build, zéro framework.
+- **Frontend** : HTML/CSS/JS vanilla — `index.html` (~720 lignes, shell + styles) + 23 modules JS dans `js/`. Zéro build, zéro framework, chargés via `<script>` dans l'ordre.
 - **Carte** : Leaflet 1.9.4 (CDN unpkg, mis en cache par le SW).
 - **Backend** : Firebase RTDB `france-irlande-bike`, région `europe-west1`. Lecture publique sauf `expenses` (auth uniquement).
 - **Deploy** : GitHub Pages → `https://tomcavaliere.github.io/France-Irlande/`
-- **PWA** : service worker `sw.js` (cache `ev1-v13`), `manifest.json`.
+- **PWA** : service worker `sw.js` (cache `ev1-v25`), `manifest.json`.
 - **Tests** : Vitest (`npm test` / `npm run test:watch`). Aucun bundler, aucun jsdom — Node pur.
+- **Lint/CI** : ESLint 9 flat config + GitHub Actions (`.github/workflows/ci.yml`) lance `npm run lint` puis `npm test` sur chaque push/PR.
 
 ## Structure du repo
 
 ```
-index.html                  — application complète (~1700 lignes)
+index.html                  — shell HTML + CSS + bootstrap (~720 lignes)
 sw.js                       — service worker (network-first app shell, cache-first libs)
 manifest.json               — PWA manifest
 campspace-data.js           — dump Campspace (520 KB, 1 liner) — mis en cache SW
+eslint.config.js            — ESLint 9 flat config
+.github/workflows/ci.yml    — CI : lint + tests sur push/PR main
 js/
-  gps-core.js               — calculs GPS purs (snap tracé, progression, POI)
-  utils.js                  — helpers purs (escaping, formatage, validation, quota)
+  # Cœur / bootstrap
+  firebase-init.js          — init Firebase app, auth, db, storage (ESM import)
+  init.js                   — amorçage DOM, délégation events, listeners globaux
+  state.js                  — vars globales partagées (current, stages, journals…)
+  events-core.js            — mini event-bus pur (emit / on / off)
+  # UI
+  ui.js                     — toast, confirm dialog, lightbox, sync dot, délégation
+  admin.js                  — login, profil, inactivité, quota photos
+  visitor-auth.js           — hash pwd visiteur, gate d'entrée
+  # Carte
+  map-core.js               — init Leaflet, couches, marqueurs, tracés GPX
+  route-data.js             — tracé GPS complet (~50 k points, 255 KB)
+  # Contenu
+  journal.js                — rendu + save debounce, subscriptions, lazy load, bravos
+  stages.js                 — cartes étapes, upload/delete GPX, recap
+  photos.js                 — upload base64, lightbox, suppression
+  videos.js                 — upload Firebase Storage, progress, cancel
+  comments.js               — post, suppression, cache local
+  expenses.js               — CRUD dépenses + synthèse
+  # Données annexes
+  campings.js               — requêtes Overpass campings/eau
+  campings-core.js          — filtres POI purs (testé)
+  weather.js                — fetch open-meteo + rendu widget
+  weather-core.js           — parsing réponse open-meteo (testé)
+  # Hors-ligne / utilitaires
+  offline.js                — queue writes, flush au retour réseau
+  offline-core.js           — logique pure queue/retry (testé)
+  gps-core.js               — calculs GPS purs : snap tracé, progression, POI (testé)
+  utils.js                  — helpers purs : escaping, formatage, validation, quota (testé)
 tests/
-  gps-core.test.js          — 19 tests Vitest pour gps-core.js
-  utils.test.js             — 15 tests Vitest pour utils.js
+  gps-core.test.js          — 46 tests Vitest
+  utils.test.js             — 124 tests Vitest
+  campings-core.test.js     — 8 tests Vitest
+  events-core.test.js       — 10 tests Vitest
+  offline-core.test.js      — 11 tests Vitest
+  weather-core.test.js      — 6 tests Vitest
   fixtures/route-sample.js  — 50 pts GPS réels sous-échantillonnés (25 FR + 25 IE)
   README.md                 — doc tests, couverture, comment ajouter un test
 docs/superpowers/
@@ -33,7 +67,7 @@ docs/superpowers/
 FRANCE-TRACK.gpx            — trace France
 IRELANDE-TRACK.gpx          — trace Irlande
 firebase.rules.json         — règles RTDB versionnées (source de vérité)
-package.json                — scripts test uniquement (vitest ^2.1.0)
+package.json                — scripts test + lint (vitest ^2.1.0, eslint ^9.15.0)
 ```
 
 ## Architecture JS — séparation stricte des responsabilités
@@ -53,6 +87,8 @@ function escAttr(s){ return Utils.escAttr(s); }
 La prod exécute donc exactement le code couvert par les tests.
 
 ## Modules purs (testés)
+
+Tous les modules `*-core.js` sont purs : pas de DOM, pas d'I/O. Ils exposent une API globale via `window.XxxCore` et, côté tests Node, via `module.exports` (double export).
 
 ### `js/gps-core.js` → `window.GPSCore`
 
@@ -89,6 +125,22 @@ La prod exécute donc exactement le code couvert par les tests.
 | `LIMITS` | Constantes de taille partagées client/Firebase |
 
 **`safeFetch` est le seul wrapper fetch autorisé** — toujours l'utiliser pour les appels réseau dans `index.html`. Ne jamais appeler `fetch()` directement.
+
+### `js/campings-core.js` → `window.CampingsCore`
+
+Filtres POI Overpass : tri par distance, dedup par coord, bornage à une fenêtre km. Aucun fetch.
+
+### `js/weather-core.js` → `window.WeatherCore`
+
+Parse la réponse open-meteo en `{tempMax, tempMin, precip, wind, iconKey}`. Tolérant aux champs manquants.
+
+### `js/offline-core.js` → `window.OfflineCore`
+
+Logique de file offline : `shouldQueue(path)`, `mergeQueue(existing, newItem)`, filtrage par type. Pas d'accès `localStorage` (celui-ci vit dans `offline.js`).
+
+### `js/events-core.js` → `window.Events`
+
+Mini event-bus : `Events.on(name, fn)`, `Events.off(name, fn)`, `Events.emit(name, payload)`. Utilisé pour propager `state:stages-changed`, `state:journal-changed`, etc.
 
 ## Points non-évidents — ne jamais casser
 
@@ -186,4 +238,3 @@ Avant d'implémenter une feature documentée ici : **lire le spec en entier** av
 ## Faiblesses connues (backlog)
 
 - Photos/commentaires/dépenses indisponibles hors-ligne
-- `.github/copilot-instructions.md` obsolète (référence l'ancienne architecture monofichier)
