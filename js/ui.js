@@ -31,6 +31,8 @@ var ACTIONS={
   onCampRangeChange:function(a,b,el,e){onCampRangeChange(a,b,el,e);},
   updatePosition:function(){updatePosition();},
   addExpense:function(){addExpense();},
+  addTrainingEntry:function(){addTrainingEntry();},
+  addHealthEntry:function(){addHealthEntry();},
   switchTab:function(a){switchTab(a);},
   closeLightbox:function(){closeLightbox();},
   closeModal:function(){closeModal();},
@@ -93,12 +95,18 @@ function activeTab(){
 }
 
 function switchTab(t){
+  if((t==='training'||t==='health')&&!isAdmin){
+    showToast('Accès admin requis.','warn');
+    t='map';
+  }
   document.querySelectorAll('.tab').forEach(function(e){e.classList.toggle('active',e.dataset.page===t)});
   document.querySelectorAll('.page').forEach(function(e){e.classList.toggle('active',e.id==='page-'+t)});
   if(t==='journal'||t==='stages')openCarnetTab();
   if(t==='map'&&map)setTimeout(function(){map.invalidateSize()},100);
   if(t==='journal'&&journalDirty){renderJournal();journalDirty=false;}
   if(t==='depenses')renderExpenses();
+  if(t==='training')renderTraining();
+  if(t==='health')renderHealth();
   if(t==='stages')fetchWeather();
 }
 
