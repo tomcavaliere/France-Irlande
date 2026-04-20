@@ -117,6 +117,29 @@
         },
         "$other": { ".validate": false }
       }
+    },
+    "training": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$date": {
+        ".validate": "!newData.exists() || newData.hasChildren(['squats','pushups','absMin','runKm','ts'])",
+        "squats": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+        "pushups": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+        "absMin": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+        "runKm": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+        "ts": {
+          ".validate": "newData.isNumber() && newData.val() > 0"
+        },
+        "$other": { ".validate": false }
+      }
     }
   }
 }

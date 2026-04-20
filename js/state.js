@@ -34,7 +34,7 @@ var _journalSaveTimers = {}; // { [date]: timeoutId }
 var fbInitialized = false;
 var lastCompletedCount = 0;
 var journalDirty = false;
-var _unsubCurrent = null, _unsubStages = null, _unsubExpenses = null;
+var _unsubCurrent = null, _unsubStages = null, _unsubExpenses = null, _unsubTraining = null;
 
 // ==== MAP ====
 var map, completedLayer, posMarker, campingLayer = null, campspaceLayer = null, waterLayer = null;
@@ -65,6 +65,9 @@ var comments = {};  // { [date]: { [id]: {name, text, ts} } }
 
 // ==== DÉPENSES ====
 var expenses = {};
+
+// ==== TRAINING ====
+var training = {};
 
 // ==== JOURNAL LAZY LISTENERS ====
 var journalsUnsub = {};      // { [date]: fn }
