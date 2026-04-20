@@ -88,7 +88,7 @@
         ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{64}$/)"
       },
       "updatedAt": {
-        ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= (now + 60000)"
+        ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= (now + 5000)"
       },
       "updatedBy": {
         ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 120)"
