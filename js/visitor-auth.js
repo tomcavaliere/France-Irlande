@@ -33,15 +33,11 @@ function clearVisitorSession(){
 }
 
 function _normalizeHash(v){
-  var s=(typeof v==='string')?v.trim().toLowerCase():'';
-  return /^[a-f0-9]{64}$/.test(s)?s:'';
+  return VisitorAuthCore.normalizeHash(v);
 }
 
 function _extractVisitorPasswordHash(cfg){
-  if(!cfg)return '';
-  if(typeof cfg==='string')return _normalizeHash(cfg);
-  if(typeof cfg==='object')return _normalizeHash(cfg.passwordHash);
-  return '';
+  return VisitorAuthCore.extractPasswordHash(cfg);
 }
 
 function _loadVisitorPasswordHash(force){
@@ -170,28 +166,11 @@ function updateVisitorPassword(){
   var passwordConfirm=confirmEl?confirmEl.value:'';
   if(errEl)errEl.style.display='none';
 
-  if(password.length<MIN_VISITOR_PASSWORD_LENGTH){
-    if(errEl){
-      errEl.textContent='Mot de passe trop court (min. '+MIN_VISITOR_PASSWORD_LENGTH+' caractères).';
-      errEl.style.display='block';
-    }
-    if(pwEl)pwEl.focus();
-    return;
-  }
-  if(password.length>MAX_VISITOR_PASSWORD_LENGTH){
-    if(errEl){
-      errEl.textContent='Mot de passe trop long (max. '+MAX_VISITOR_PASSWORD_LENGTH+' caractères).';
-      errEl.style.display='block';
-    }
-    if(pwEl)pwEl.focus();
-    return;
-  }
-  if(password!==passwordConfirm){
-    if(errEl){
-      errEl.textContent='Les deux mots de passe ne correspondent pas.';
-      errEl.style.display='block';
-    }
-    if(confirmEl)confirmEl.focus();
+  var validation=VisitorAuthCore.validatePasswordChange(password,passwordConfirm,{min:MIN_VISITOR_PASSWORD_LENGTH,max:MAX_VISITOR_PASSWORD_LENGTH});
+  if(!validation.ok){
+    if(errEl){errEl.textContent=validation.error;errEl.style.display='block';}
+    if(validation.error.indexOf('correspondent pas')!==-1){if(confirmEl)confirmEl.focus();}
+    else{if(pwEl)pwEl.focus();}
     return;
   }
   if(!window._fbDb||!window._fbSet||!window._fbRef){
