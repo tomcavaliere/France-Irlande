@@ -108,8 +108,8 @@ function patchJournalText(date){
 function patchBravos(date, bravosData){
   var entry=document.querySelector('#journalList .journal-entry[data-date="'+date+'"]');
   if(!entry)return;
-  var count=Object.keys(bravosData).length;
-  var voted=!!bravosData[getVisitorId()];
+  var count=JournalCore.countBravos(bravosData);
+  var voted=JournalCore.hasVoted(bravosData,getVisitorId());
   var countEl=entry.querySelector('.j-bravo-count');
   var btn=entry.querySelector('.j-bravo-btn');
   if(countEl)countEl.textContent=isAdmin?'\uD83D\uDC4F '+count:count;
@@ -199,11 +199,8 @@ function renderJournal(){
     entry.className='journal-entry';
     entry.dataset.date=date;
     var txt=journals[date]||'';
-    var dateLabel=new Date(date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
-    var elevGain=Math.max(0,Math.round(Number(d.elevGain)||0));
-    var kmInfo=d.kmDay
-      ?'\uD83D\uDEB4 '+Math.round(d.kmDay)+' km'+(elevGain?' \u00b7 \u26f0\ufe0f D+ '+elevGain+' m':'')
-      :'';
+    var dateLabel=JournalCore.formatJournalDateLabel(date);
+    var kmInfo=JournalCore.buildKmInfoLabel(d);
     var edate=escAttr(date);
     var pub=!!(stages[date]&&stages[date].published);
     var adminActionsHtml='';
