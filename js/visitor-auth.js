@@ -51,7 +51,9 @@ function _loadVisitorPasswordHash(force){
     return Promise.resolve(_visitorPasswordHashCache||VISITOR_DEFAULT_PASSWORD_HASH);
   }
   var revision=++_visitorPasswordHashRevision;
-  _visitorPasswordHashPromise=window._fbGet(window._fbRef(window._fbDb,VISITOR_AUTH_CONFIG_PATH))
+  _visitorPasswordHashPromise=window._fbGet(
+    window._fbRef(window._fbDb,VISITOR_AUTH_CONFIG_PATH)
+  )
     .then(function(snap){
       if(revision!==_visitorPasswordHashRevision){
         return _visitorPasswordHashCache||VISITOR_DEFAULT_PASSWORD_HASH;
@@ -174,22 +176,34 @@ function updateVisitorPassword(){
   if(errEl)errEl.style.display='none';
 
   if(!password||password.length<MIN_VISITOR_PASSWORD_LENGTH){
-    if(errEl){errEl.textContent='Mot de passe trop court (min. '+MIN_VISITOR_PASSWORD_LENGTH+' caractères).';errEl.style.display='block';}
+    if(errEl){
+      errEl.textContent='Mot de passe trop court (min. '+MIN_VISITOR_PASSWORD_LENGTH+' caractères).';
+      errEl.style.display='block';
+    }
     if(pwEl)pwEl.focus();
     return;
   }
   if(password.length>128){
-    if(errEl){errEl.textContent='Mot de passe trop long (max. 128 caractères).';errEl.style.display='block';}
+    if(errEl){
+      errEl.textContent='Mot de passe trop long (max. 128 caractères).';
+      errEl.style.display='block';
+    }
     if(pwEl)pwEl.focus();
     return;
   }
   if(password!==passwordConfirm){
-    if(errEl){errEl.textContent='Les deux mots de passe ne correspondent pas.';errEl.style.display='block';}
+    if(errEl){
+      errEl.textContent='Les deux mots de passe ne correspondent pas.';
+      errEl.style.display='block';
+    }
     if(confirmEl)confirmEl.focus();
     return;
   }
   if(!window._fbDb||!window._fbSet||!window._fbRef){
-    if(errEl){errEl.textContent='Firebase non disponible.';errEl.style.display='block';}
+    if(errEl){
+      errEl.textContent='Firebase non disponible.';
+      errEl.style.display='block';
+    }
     return;
   }
 
@@ -212,7 +226,10 @@ function updateVisitorPassword(){
     });
   }).catch(function(err){
     console.error('[visitor-auth/update]',err);
-    if(errEl){errEl.textContent='Impossible de mettre à jour le mot de passe.';errEl.style.display='block';}
+    if(errEl){
+      errEl.textContent='Impossible de mettre à jour le mot de passe.';
+      errEl.style.display='block';
+    }
   }).finally(function(){
     if(saveBtn)saveBtn.disabled=false;
   });
