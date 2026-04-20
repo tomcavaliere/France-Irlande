@@ -14,8 +14,10 @@ var HEALTH_METRICS=[
 ];
 
 function _roundByStep(v,step){
-  if(step===1)return Math.round(v);
-  return Math.round(v*10)/10;
+  if(!Number.isFinite(step)||step<=0)return Number(v)||0;
+  var rounded=Math.round(v/step)*step;
+  var decimals=(String(step).split('.')[1]||'').length;
+  return Number(rounded.toFixed(Math.min(6,decimals)));
 }
 
 function _clampMetric(def,v){
@@ -28,7 +30,8 @@ function _clampMetric(def,v){
 
 function _normalizeHealthEntry(raw){
   raw=raw&&typeof raw==='object'?raw:{};
-  var out={ts:Math.max(0,Number(raw.ts)||Date.now())};
+  var tsNum=Number(raw.ts);
+  var out={ts:(Number.isFinite(tsNum)&&tsNum>0)?tsNum:Date.now()};
   HEALTH_METRICS.forEach(function(def){
     out[def.key]=_clampMetric(def,raw[def.key]);
   });
@@ -42,8 +45,12 @@ function _fmtHealthValue(def,val){
 
 function _linePathHealth(values,minY,maxY){
   if(!values.length)return '';
-  if(values.length===1)return 'M 4 34 L 96 34';
-  var range=maxY-minY||1;
+  var rawRange=maxY-minY;
+  var range=Math.abs(rawRange)<0.01?1:rawRange;
+  if(values.length===1){
+    var ySolo=Math.round(62-((values[0]-minY)/range)*54);
+    return 'M 4 '+ySolo+' L 96 '+ySolo;
+  }
   var path='';
   values.forEach(function(v,idx){
     var x=Math.round((idx/(values.length-1))*92)+4;
@@ -58,6 +65,10 @@ function _healthDailySeries(def){
     var entry=_normalizeHealthEntry(health[date]);
     return {date:date,val:entry[def.key]};
   });
+}
+
+function _healthInputId(key){
+  return 'health'+key.charAt(0).toUpperCase()+key.slice(1);
 }
 
 function _renderHealthSummary(){
@@ -121,17 +132,22 @@ function addHealthEntry(){
     return;
   }
   var entry={ts:Date.now()};
+  var existing=_normalizeHealthEntry(health[date]||{});
   var hasValue=false;
   for(var i=0;i<HEALTH_METRICS.length;i++){
     var def=HEALTH_METRICS[i];
-    var input=document.getElementById('health'+def.key.charAt(0).toUpperCase()+def.key.slice(1));
+    var input=document.getElementById(_healthInputId(def.key));
     if(!input){
       showToast('Formulaire santé indisponible.','error');
       return;
     }
-    var raw=input.value;
-    if(raw!=='')hasValue=true;
-    entry[def.key]=_clampMetric(def,raw);
+    var raw=(input.value||'').trim();
+    if(raw!==''&&Number.isFinite(Number(raw))){
+      hasValue=true;
+      entry[def.key]=_clampMetric(def,raw);
+    }else{
+      entry[def.key]=existing[def.key];
+    }
   }
   if(!hasValue){
     showToast('Ajoute au moins une valeur santé.','warn');
@@ -140,7 +156,7 @@ function addHealthEntry(){
   health[date]=_normalizeHealthEntry(entry);
   renderHealth();
   HEALTH_METRICS.forEach(function(def){
-    var input=document.getElementById('health'+def.key.charAt(0).toUpperCase()+def.key.slice(1));
+    var input=document.getElementById(_healthInputId(def.key));
     if(input)input.value='';
   });
   tryWrite('set','health/'+date,health[date]);
@@ -162,4 +178,3 @@ function initHealth(){
     }
   );
 }
-

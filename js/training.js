@@ -15,12 +15,13 @@ function _toNumber(v){
 
 function _normalizeTrainingEntry(raw){
   raw=raw&&typeof raw==='object'?raw:{};
+  var tsNum=Number(raw.ts);
   return {
     squats:Math.round(Math.max(0,_toNumber(raw.squats))),
     pushups:Math.round(Math.max(0,_toNumber(raw.pushups))),
     absMin:Math.max(0,_toNumber(raw.absMin)),
     runKm:Math.max(0,_toNumber(raw.runKm)),
-    ts:Math.max(0,Number(raw.ts)||Date.now())
+    ts:(Number.isFinite(tsNum)&&tsNum>0)?tsNum:Date.now()
   };
 }
 
