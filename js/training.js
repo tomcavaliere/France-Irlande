@@ -40,7 +40,10 @@ function _weekStartISO(iso){
 
 function _fmtTrainingValue(ex,val){
   if(ex.key==='runKm')return val.toFixed(1);
-  if(ex.key==='absMin')return val.toFixed(val%1===0?0:1);
+  if(ex.key==='absMin'){
+    var decimals=(val%1===0)?0:1;
+    return val.toFixed(decimals);
+  }
   return String(Math.round(val));
 }
 
@@ -138,11 +141,19 @@ function addTrainingEntry(){
     showToast('Date invalide.','warn');
     return;
   }
+  var squatsEl=document.getElementById('trainingSquats');
+  var pushupsEl=document.getElementById('trainingPushups');
+  var absMinEl=document.getElementById('trainingAbsMin');
+  var runKmEl=document.getElementById('trainingRunKm');
+  if(!squatsEl||!pushupsEl||!absMinEl||!runKmEl){
+    showToast('Formulaire training indisponible.','error');
+    return;
+  }
   var add={
-    squats:_toNumber(document.getElementById('trainingSquats').value),
-    pushups:_toNumber(document.getElementById('trainingPushups').value),
-    absMin:_toNumber(document.getElementById('trainingAbsMin').value),
-    runKm:_toNumber(document.getElementById('trainingRunKm').value)
+    squats:_toNumber(squatsEl.value),
+    pushups:_toNumber(pushupsEl.value),
+    absMin:_toNumber(absMinEl.value),
+    runKm:_toNumber(runKmEl.value)
   };
   if(add.squats===0&&add.pushups===0&&add.absMin===0&&add.runKm===0){
     showToast('Ajoute au moins une valeur.','warn');
@@ -169,8 +180,15 @@ function initTraining(){
   var dateEl=document.getElementById('trainingDate');
   if(dateEl&&!dateEl.value)dateEl.value=new Date().toISOString().slice(0,10);
   if(_unsubTraining)_unsubTraining();
-  _unsubTraining=window._fbOnValue(window._fbRef(window._fbDb,'training'),function(snap){
-    training=snap.val()||{};
-    renderTraining();
-  });
+  _unsubTraining=window._fbOnValue(
+    window._fbRef(window._fbDb,'training'),
+    function(snap){
+      training=snap.val()||{};
+      renderTraining();
+    },
+    function(err){
+      console.error('[training] listen failed',err);
+      showToast('Impossible de charger le training.','error');
+    }
+  );
 }

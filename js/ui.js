@@ -94,7 +94,10 @@ function activeTab(){
 }
 
 function switchTab(t){
-  if(t==='training'&&!isAdmin)t='map';
+  if(t==='training'&&!isAdmin){
+    showToast('Accès admin requis.','warn');
+    t='map';
+  }
   document.querySelectorAll('.tab').forEach(function(e){e.classList.toggle('active',e.dataset.page===t)});
   document.querySelectorAll('.page').forEach(function(e){e.classList.toggle('active',e.id==='page-'+t)});
   if(t==='journal'||t==='stages')openCarnetTab();
