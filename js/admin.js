@@ -29,6 +29,8 @@ function setAdminUI(on){
   if(tabInfo)tabInfo.style.display=on?'':'none';
   var tabTraining=document.getElementById('tabTraining');
   if(tabTraining)tabTraining.style.display=on?'':'none';
+  var tabHealth=document.getElementById('tabHealth');
+  if(tabHealth)tabHealth.style.display=on?'':'none';
   var adminBar=document.getElementById('mapAdminBar');
   if(adminBar)adminBar.style.display=on?'flex':'none';
   var posBar=document.getElementById('posAdminBar');
@@ -48,7 +50,7 @@ function setAdminUI(on){
     if(campingsVisible)toggleCampings();
     if(campspaceVisible)toggleCampspace();
     if(waterVisible)toggleWater();
-    if(activeTab()==='depenses'||activeTab()==='stages'||activeTab()==='info'||activeTab()==='training')switchTab('map');
+    if(activeTab()==='depenses'||activeTab()==='stages'||activeTab()==='info'||activeTab()==='training'||activeTab()==='health')switchTab('map');
   }
 }
 function exportJournal(fmt){
@@ -91,8 +93,10 @@ function logoutAdmin(){
   saveExpensesCache();
   if(_unsubExpenses){_unsubExpenses();_unsubExpenses=null;}
   if(_unsubTraining){_unsubTraining();_unsubTraining=null;}
+  if(_unsubHealth){_unsubHealth();_unsubHealth=null;}
   expenses={};
   training={};
+  health={};
   if(window._fbAuth)window._fbSignOut(window._fbAuth);
 }
 function resetInactivity(){
@@ -240,7 +244,7 @@ function initAuth(){
   window._fbOnAuth(window._fbAuth,function(user){
     isAdmin=!!user;
     setAdminUI(isAdmin);
-    if(isAdmin){resetInactivity();initExpenses();initTraining();}
+    if(isAdmin){resetInactivity();initExpenses();initTraining();initHealth();}
     else{clearTimeout(inactivityTimer);}
     Events.emit('admin:toggled');
   });

@@ -34,7 +34,7 @@ var _journalSaveTimers = {}; // { [date]: timeoutId }
 var fbInitialized = false;
 var lastCompletedCount = 0;
 var journalDirty = false;
-var _unsubCurrent = null, _unsubStages = null, _unsubExpenses = null, _unsubTraining = null;
+var _unsubCurrent = null, _unsubStages = null, _unsubExpenses = null, _unsubTraining = null, _unsubHealth = null;
 
 // ==== MAP ====
 var map, completedLayer, posMarker, campingLayer = null, campspaceLayer = null, waterLayer = null;
@@ -68,6 +68,9 @@ var expenses = {};
 
 // ==== TRAINING ====
 var training = {};
+
+// ==== SANTÉ ====
+var health = {};
 
 // ==== JOURNAL LAZY LISTENERS ====
 var journalsUnsub = {};      // { [date]: fn }

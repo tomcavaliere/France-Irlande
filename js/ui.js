@@ -32,6 +32,7 @@ var ACTIONS={
   updatePosition:function(){updatePosition();},
   addExpense:function(){addExpense();},
   addTrainingEntry:function(){addTrainingEntry();},
+  addHealthEntry:function(){addHealthEntry();},
   switchTab:function(a){switchTab(a);},
   closeLightbox:function(){closeLightbox();},
   closeModal:function(){closeModal();},
@@ -94,7 +95,7 @@ function activeTab(){
 }
 
 function switchTab(t){
-  if(t==='training'&&!isAdmin){
+  if((t==='training'||t==='health')&&!isAdmin){
     showToast('Accès admin requis.','warn');
     t='map';
   }
@@ -105,6 +106,7 @@ function switchTab(t){
   if(t==='journal'&&journalDirty){renderJournal();journalDirty=false;}
   if(t==='depenses')renderExpenses();
   if(t==='training')renderTraining();
+  if(t==='health')renderHealth();
   if(t==='stages')fetchWeather();
 }
 
