@@ -9,6 +9,14 @@ var CAT_ICONS={
   'Hébergement':'🏕','Nourriture':'🍔','Transport':'🚢',
   'Équipement':'🔧','Loisirs':'🍺','Autre':'📦'
 };
+var DEP_DOT_CLASS={
+  'Hébergement':'dep-dot-hebergement',
+  'Nourriture':'dep-dot-nourriture',
+  'Transport':'dep-dot-transport',
+  'Équipement':'dep-dot-equipement',
+  'Loisirs':'dep-dot-loisirs',
+  'Autre':'dep-dot-autre'
+};
 
 function addExpense(){
   var date=document.getElementById('depDate').value;
@@ -57,7 +65,7 @@ function renderExpenses(){
   }).join('');
   document.getElementById('depSummary').innerHTML=
     '<div class="dep-summary">'+
-      '<div style="font-size:13px;font-weight:600;opacity:.85">Résumé</div>'+
+      '<div class="dep-summary-title">Résumé</div>'+
       '<div class="dep-summary-grid">'+
         '<div class="dep-sum-item"><div class="dep-sum-v">'+s.total.toFixed(0)+'€</div><div class="dep-sum-l">Total</div></div>'+
         '<div class="dep-sum-item"><div class="dep-sum-v">'+s.days+'</div><div class="dep-sum-l">Jours</div></div>'+
@@ -73,9 +81,9 @@ function renderExpenses(){
     var dayTotal=s.byDate[date].reduce(function(acc,x){return acc+x.expense.amount;},0);
     listHtml+='<div class="dep-day-header">'+label+' — '+dayTotal.toFixed(0)+'€</div>';
     s.byDate[date].forEach(function(item){
-      var color=DEP_COLORS[item.expense.cat]||'#999';
+      var dotClass=DEP_DOT_CLASS[item.expense.cat]||'dep-dot-default';
       listHtml+='<div class="dep-card">'+
-        '<div class="dep-cat-dot" style="background:'+color+'"></div>'+
+        '<div class="dep-cat-dot '+dotClass+'"></div>'+
         '<div class="dep-info">'+
           '<div class="dep-info-top">'+
             '<div class="dep-desc">'+escHtml(item.expense.desc)+(item.expense._pending?' ⏳':'')+'</div>'+
@@ -88,7 +96,7 @@ function renderExpenses(){
     });
   });
   document.getElementById('depList').innerHTML=listHtml||
-    '<div style="text-align:center;color:var(--text-light);font-size:13px;padding:24px 0">Aucune dépense enregistrée.</div>';
+    '<div class="empty-state">Aucune dépense enregistrée.</div>';
 }
 
 function initExpenses(){

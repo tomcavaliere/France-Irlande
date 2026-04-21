@@ -345,6 +345,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .comment-form textarea{width:100%;border:1px solid #e0e0e0;border-radius:10px;padding:10px;
   font-family:inherit;font-size:14px;resize:none;height:80px;outline:none;line-height:1.5}
 .comment-form textarea:focus{border-color:var(--green)}
+.comments-title{margin:10px 0 6px}
+.comment-form-spaced{margin-top:10px}
 .comment-send{width:100%;margin-top:8px}
 .comment-card{background:var(--card);border-radius:var(--radius);padding:12px 14px;
   margin-bottom:8px;box-shadow:var(--shadow);position:relative}
@@ -359,6 +361,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 /* Dépenses */
 .dep-summary{background:linear-gradient(135deg,var(--green),var(--green-light));border-radius:var(--radius);
   padding:16px;color:#fff;margin-bottom:14px;box-shadow:var(--shadow)}
+.dep-summary-title{font-size:13px;font-weight:600;opacity:.85}
 .dep-summary-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}
 .dep-sum-item{text-align:center}
 .dep-sum-v{font-size:20px;font-weight:700}
@@ -372,6 +375,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .dep-card{background:var(--card);border-radius:12px;padding:12px 14px;margin-bottom:8px;
   box-shadow:var(--shadow);display:flex;align-items:center;gap:12px}
 .dep-cat-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.dep-dot-hebergement{background:#1a5e1f}
+.dep-dot-nourriture{background:#e8772e}
+.dep-dot-transport{background:#3498db}
+.dep-dot-equipement{background:#8e44ad}
+.dep-dot-loisirs{background:#e67e22}
+.dep-dot-autre{background:#7f8c8d}
+.dep-dot-default{background:#999}
 .dep-info{flex:1;min-width:0}
 .dep-info-top{display:flex;justify-content:space-between;align-items:baseline}
 .dep-desc{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -437,8 +447,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .camp-toggle.on-water{border-color:#1565c0;color:#1565c0;background:#e3f2fd}
 .camp-popup{font-size:12px;line-height:1.5;max-width:200px}
 .camp-popup b{font-size:13px;color:var(--green);display:block;margin-bottom:3px}
+.camp-popup-muted{color:#666;font-size:11px}
 .camp-popup .camp-tags{margin-top:4px;display:flex;flex-wrap:wrap;gap:3px}
 .camp-popup .camp-tag{font-size:10px;padding:1px 5px;border-radius:6px;background:#e8f5e9;color:#2e7d32}
+.camp-popup .camp-tag-blue{background:#e3f2fd;color:#1565c0}
+.camp-popup-title-orange{color:#e65100!important}
+.camp-popup-title-blue{color:#1565c0!important}
+.camp-link{font-size:11px}
+.camp-link-green{color:var(--green)}
+.camp-link-orange{color:#e65100}
+.camp-dist{margin-top:4px;padding:3px 6px;background:#f5f5f5;border-radius:4px;font-size:11px;color:#333}
+.poi-icon{color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.3)}
+.poi-icon-camp{background:#2e7d32;width:20px;height:20px;font-size:11px}
+.poi-icon-cs{background:#e65100;width:20px;height:20px;font-size:11px}
+.poi-icon-water{background:#1565c0;width:18px;height:18px;font-size:10px}
 
 /* Barre admin GPS — bouton "Ma position" + statut.
    Placée juste au-dessus du .pos-badge (bottom:16px + ~74px de hauteur).
@@ -479,8 +501,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .weather-icon{font-size:26px;line-height:1;margin:4px 0}
 .weather-temps{font-size:12px;font-weight:600}
 .weather-temps span{color:var(--text-light);font-weight:400}
+.weather-loading{font-size:12px;color:var(--text-light)}
 .weather-rain{font-size:10px;color:#3498db;margin-top:3px}
+.weather-rain-none{color:#ccc}
 .weather-wind{font-size:10px;color:var(--text-light);margin-top:1px}
+.weather-card-offline{text-align:center;color:var(--text-light);font-size:12px}
 
 /* ============================================================
    VISITOR AUTHENTICATION GATE
@@ -533,3 +558,4 @@ body.visitor-lock #visitorGate{background:var(--bg)}
 .mt-8{margin-top:8px}
 .mb-8{margin-bottom:8px}
 .empty-state{text-align:center;color:var(--text-light);font-size:13px;padding:24px 0}
+.empty-state-lg{padding:32px 0}

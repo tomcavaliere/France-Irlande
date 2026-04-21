@@ -84,7 +84,7 @@ function renderCampings(geojson,aheadPts){
   var ptSet=aheadPts;
 
   var campIcon=L.divIcon({className:'',iconSize:[20,20],iconAnchor:[10,10],
-    html:'<div style="background:#2e7d32;color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.3)">&#x1f3d5;</div>'});
+    html:'<div class="poi-icon poi-icon-camp">&#x1f3d5;</div>'});
 
   var markers=[];
   geojson.features.forEach(function(f){
@@ -100,10 +100,10 @@ function renderCampings(geojson,aheadPts){
     if(!nearTrace(mapped.lat,mapped.lon,ptSet,5))return;
     var tags = mapped.tags || [];
     var popup='<div class="camp-popup"><b>'+escHtml(mapped.name)+'</b>'+
-      (mapped.operator?'<span style="color:#666;font-size:11px">'+escHtml(mapped.operator)+'</span><br>':'')+
+      (mapped.operator?'<span class="camp-popup-muted">'+escHtml(mapped.operator)+'</span><br>':'')+
       (tags.length?'<div class="camp-tags">'+tags.map(function(t){return'<span class="camp-tag">'+t+'</span>';}).join('')+'</div>':'')+
       campingDistHtml(mapped.lat,mapped.lon)+
-      (mapped.website?'<a href="'+escAttr(mapped.website)+'" target="_blank" style="color:var(--green);font-size:11px">Site web</a>':'')+
+      (mapped.website?'<a href="'+escAttr(mapped.website)+'" target="_blank" class="camp-link camp-link-green">Site web</a>':'')+
       '</div>';
     var m=L.marker([mapped.lat,mapped.lon],{icon:campIcon}).bindPopup(popup);
     markers.push(m);
@@ -140,7 +140,7 @@ function loadCampspace(){
   var bbox=ptsBbox(aheadPts,0.1);
 
   var csIcon=L.divIcon({className:'',iconSize:[20,20],iconAnchor:[10,10],
-    html:'<div style="background:#e65100;color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.3)">&#x1f3e1;</div>'});
+    html:'<div class="poi-icon poi-icon-cs">&#x1f3e1;</div>'});
 
   var markers=[];
   // CAMPSPACE_DATA: [lat, lng, title, price, href_suffix]
@@ -154,10 +154,10 @@ function loadCampspace(){
     var title=d[2]||'Campspace';
     var price=d[3]||'';
     var href=d[4]?'https://campspace.com/fr/s/'+d[4]:'';
-    var popup='<div class="camp-popup"><b style="color:#e65100">'+title+'</b>'+
-      (price?'<span style="color:#666;font-size:11px">'+price+'</span><br>':'')+
+    var popup='<div class="camp-popup"><b class="camp-popup-title-orange">'+escHtml(title)+'</b>'+
+      (price?'<span class="camp-popup-muted">'+price+'</span><br>':'')+
       campingDistHtml(lat,lng)+
-      (href?'<a href="'+escAttr(href)+'" target="_blank" style="color:#e65100;font-size:11px">Voir sur Campspace</a>':'')+
+      (href?'<a href="'+escAttr(href)+'" target="_blank" class="camp-link camp-link-orange">Voir sur Campspace</a>':'')+
       '</div>';
     markers.push(L.marker([lat,lng],{icon:csIcon}).bindPopup(popup));
   }
@@ -235,7 +235,7 @@ function renderWater(elements,aheadPts){
   if(!elements.length)return;
 
   var waterIcon=L.divIcon({className:'',iconSize:[18,18],iconAnchor:[9,9],
-    html:'<div style="background:#1565c0;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.3)">&#x1f4a7;</div>'});
+    html:'<div class="poi-icon poi-icon-water">&#x1f4a7;</div>'});
 
   var markers=[];
   elements.forEach(function(el){
@@ -250,9 +250,9 @@ function renderWater(elements,aheadPts){
     if(t.seasonal==='yes')tags.push('Saisonnier');
     if(t.access==='private')tags.push('Privé');
     var dist=campingDistHtml(el.lat,el.lon);
-    var popup='<div class="camp-popup"><b style="color:#1565c0">'+escHtml(name||type)+'</b>'+
-      (name?'<span style="color:#666;font-size:11px">'+escHtml(type)+'</span><br>':'')+
-      (tags.length?'<div class="camp-tags">'+tags.map(function(t){return'<span class="camp-tag" style="background:#e3f2fd;color:#1565c0">'+t+'</span>';}).join('')+'</div>':'')+
+    var popup='<div class="camp-popup"><b class="camp-popup-title-blue">'+escHtml(name||type)+'</b>'+
+      (name?'<span class="camp-popup-muted">'+escHtml(type)+'</span><br>':'')+
+      (tags.length?'<div class="camp-tags">'+tags.map(function(t){return'<span class="camp-tag camp-tag-blue">'+t+'</span>';}).join('')+'</div>':'')+
       dist+'</div>';
     markers.push(L.marker([el.lat,el.lon],{icon:waterIcon}).bindPopup(popup));
   });

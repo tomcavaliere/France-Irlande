@@ -7,7 +7,7 @@ function renderStageCommentsHtml(i){
   var ei=escAttr(i);
   var html='<div class="stage-comments" id="scmts-'+ei+'">';
   if(ids.length){
-    html+='<div class="m-sec-t" style="margin:10px 0 6px">&#x1f4ac; Commentaires</div>';
+    html+='<div class="m-sec-t comments-title">&#x1f4ac; Commentaires</div>';
     ids.forEach(function(id){
       var c=stageCmts[id];
       var eid=escAttr(id);
@@ -21,7 +21,7 @@ function renderStageCommentsHtml(i){
   }
   if(!isAdmin){
     var visitorName=getVisitorName();
-    html+='<div class="comment-form comment-form-visitor" data-stage-date="'+ei+'" style="margin-top:10px">';
+    html+='<div class="comment-form comment-form-visitor comment-form-spaced" data-stage-date="'+ei+'">';
     if(visitorName){
       html+='<div class="comment-as">En tant que <strong>'+escHtml(visitorName)+'</strong>'+
         ' <button class="comment-change-name" data-action="showVisitorGate">Changer</button></div>';
