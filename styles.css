@@ -486,6 +486,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .map-admin-controls{display:flex;align-items:center;gap:6px}
 .camp-toggle-cs{background:#fff3e0;color:#e65100;border-color:#ffcc80}
 .camp-toggle-water{background:#e3f2fd;color:#1565c0;border-color:#90caf9}
+.camp-toggle-ws{background:#fdf2f0;color:#c0392b;border-color:#e8a89c}
+.camp-toggle.on-ws{border-color:#c0392b;color:#c0392b;background:#fdf2f0}
+.poi-icon-ws{background:#c0392b;width:20px;height:20px;font-size:11px}
+.camp-popup-title-ws{color:#c0392b!important}
+.camp-tag-ws-ok{background:#e8f5e9;color:#2e7d32}
+.camp-tag-ws-off{background:#f5f5f5;color:#757575}
+.camp-link-ws{color:#c0392b}
 .camp-range-select{padding:6px 8px;border-radius:10px;border:1.5px solid #e0e0e0;font-size:13px;font-weight:600;background:#fff;color:var(--text-light)}
 .map-admin-bar > div{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px;flex-wrap:nowrap;justify-content:flex-start}
 .map-admin-bar > div::-webkit-scrollbar{display:none}
