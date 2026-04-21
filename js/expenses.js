@@ -60,7 +60,7 @@ function renderExpenses(){
     var pct=Math.round((s.byCat[cat]/s.total)*100);
     return '<div class="dep-cat-row">'+
       '<div class="dep-cat-label">'+cat+'</div>'+
-      '<div class="dep-cat-track"><div class="dep-cat-fill" style="width:'+pct+'%"></div></div>'+
+      '<progress class="dep-cat-track" max="100" value="'+pct+'"></progress>'+
       '<div class="dep-cat-val">'+s.byCat[cat].toFixed(0)+'€</div></div>';
   }).join('');
   document.getElementById('depSummary').innerHTML=
