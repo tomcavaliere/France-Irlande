@@ -19,7 +19,8 @@ export default [
     },
     rules: {
       'no-console': ['warn', { allow: ['warn', 'error'] }],
-      'semi': ['warn', 'always'],
+      'semi': ['error', 'always'],
+      'no-unused-vars': ['error', { vars: 'local', argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
     },
   },
   {
@@ -32,10 +33,10 @@ export default [
     },
     rules: {
       'no-console': ['warn', { allow: ['warn', 'error'] }],
-      'no-unused-vars': ['warn', { vars: 'local', argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
+      'no-unused-vars': ['error', { vars: 'local', argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
       'no-undef': 'off',
-      'eqeqeq': 'warn',
-      'semi': ['warn', 'always'],
+      'eqeqeq': 'error',
+      'semi': ['error', 'always'],
     },
   },
   {
@@ -59,7 +60,7 @@ export default [
       },
     },
     rules: {
-      'no-undef': 'warn',
+      'no-undef': 'error',
     },
   },
   {
@@ -81,10 +82,10 @@ export default [
     },
     rules: {
       'no-console': 'off',
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
       'no-undef': 'error',
-      'eqeqeq': 'warn',
-      'semi': ['warn', 'always'],
+      'eqeqeq': 'error',
+      'semi': ['error', 'always'],
     },
   },
 ];
