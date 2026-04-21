@@ -42,14 +42,14 @@ function loadWarmshowers() {
 }
 
 function _renewWarmshowersToken() {
+  _wsLoading = true;
   var btn = document.getElementById('wsToggle');
   var username = window.prompt('WarmShowers \u2014 identifiant (email)\u00a0:');
-  if (!username) { warmshowersVisible = false; btn.classList.remove('on-ws'); btn.textContent = '\u{1F3E0} WarmShowers'; return; }
+  if (!username) { _wsLoading = false; warmshowersVisible = false; btn.classList.remove('on-ws'); btn.textContent = '\u{1F3E0} WarmShowers'; return; }
   var password = window.prompt('WarmShowers \u2014 mot de passe\u00a0:');
-  if (!password) { warmshowersVisible = false; btn.classList.remove('on-ws'); btn.textContent = '\u{1F3E0} WarmShowers'; return; }
+  if (!password) { _wsLoading = false; warmshowersVisible = false; btn.classList.remove('on-ws'); btn.textContent = '\u{1F3E0} WarmShowers'; return; }
 
   btn.textContent = '\u{1F3E0} connexion\u2026';
-  _wsLoading = true;
 
   Utils.safeFetch('https://www.warmshowers.org/services/rest/user/login', {
     method: 'POST',
@@ -120,7 +120,8 @@ function _fetchWarmshowersHosts() {
       _wsLoading = false;
       console.error('[WarmShowers] Fetch h\u00f4tes:', e);
       if (e.status === 401) {
-        window._fbRemove(window._fbRef(window._fbDb, 'config/warmshowersToken'));
+        window._fbRemove(window._fbRef(window._fbDb, 'config/warmshowersToken'))
+          .catch(function(e) { console.error('[WarmShowers] Remove token:', e); });
         warmshowersVisible = false;
         btn.classList.remove('on-ws');
         btn.textContent = '\u{1F3E0} WarmShowers';
@@ -157,15 +158,18 @@ function renderWarmshowers(accounts, aheadPts) {
     var capacity = a.maxcyclists
       ? '<span class="camp-popup-muted">Max ' + escHtml(String(a.maxcyclists)) + ' cyclistes</span><br>'
       : '';
-    var profileUrl = 'https://www.warmshowers.org/users/' + encodeURIComponent(a.uid || a.name || '');
+    var profileUid = a.uid || '';
     var dist = campingDistHtml(lat, lon);
+    var profileLink = profileUid
+      ? '<a href="' + escAttr('https://www.warmshowers.org/users/' + encodeURIComponent(profileUid)) + '" target="_blank" class="camp-link camp-link-ws">Voir profil</a>'
+      : '';
 
     var popup = '<div class="camp-popup">' +
       '<b class="camp-popup-title-ws">' + name + '</b>' +
       '<div class="camp-tags">' + badge + '</div>' +
       capacity +
       dist +
-      '<a href="' + escAttr(profileUrl) + '" target="_blank" class="camp-link camp-link-ws">Voir profil</a>' +
+      profileLink +
       '</div>';
 
     markers.push(L.marker([lat, lon], { icon: wsIcon }).bindPopup(popup));
