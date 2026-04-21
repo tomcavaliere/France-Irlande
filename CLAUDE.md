@@ -78,7 +78,7 @@ FRANCE-TRACK.gpx            — trace France
 IRELANDE-TRACK.gpx          — trace Irlande
 firebase.rules.json         — règles RTDB versionnées (source de vérité)
 storage.rules               — règles Firebase Storage versionnées (vidéos < 200 MB)
-package.json                — scripts test + lint (vitest ^2.1.0, eslint ^9.15.0)
+package.json                — scripts test + lint (vitest ^4.1.4, eslint ^9.39.4)
 ```
 
 Total : 240 tests Vitest répartis sur 9 fichiers.
@@ -251,9 +251,6 @@ Avant d'implémenter une feature documentée ici : **lire le spec en entier** av
 
 **Catégories dépenses** (liste fermée — `EXPENSE_CATEGORIES` dans utils.js) :
 `Hébergement` · `Nourriture` · `Transport` · `Équipement` · `Loisirs` · `Autre`
-
-**Tags journal** :
-`Beau temps` · `Pluie` · `Vent` · `Dur` · `Génial` · `Pub` · `Camping` · `Bivouac` · `Photos`
 
 **Limites** (`LIMITS` dans utils.js) :
 
