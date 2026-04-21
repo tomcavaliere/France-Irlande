@@ -23,6 +23,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
   gap:3px;font-size:10px;color:var(--text-light);border:none;background:none;cursor:pointer}
 .tab.active{color:var(--green);font-weight:600}
 .tab-icon{font-size:24px;line-height:1}
+.tab-admin-only{display:none}
 .content{position:fixed;top:calc(var(--header-height) + env(safe-area-inset-top,0px));bottom:var(--tab-height);left:0;right:0;overflow:hidden}
 .page{position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;
   -webkit-overflow-scrolling:touch;display:none;padding:16px}
@@ -223,6 +224,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .profile-stat .stat-lbl{font-size:11px;color:#888;margin-top:2px}
 .profile-export{display:flex;gap:8px;margin-top:4px}
 .profile-export .btn{flex:1;font-size:13px;padding:10px 8px}
+.btn-quota-refresh{font-size:11px;padding:3px 8px}
+.pw-field-label{display:block;font-size:12px;color:#666;margin-bottom:6px}
 .pw-modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);
   z-index:3000;display:none;align-items:center;justify-content:center}
 .pw-modal.vis{display:flex}
@@ -234,6 +237,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
   font-size:16px;text-align:center;letter-spacing:3px;outline:none;margin-bottom:10px}
 .pw-input:focus{border-color:var(--green)}
 .pw-err{color:#e74c3c;font-size:12px;margin-bottom:8px;display:none}
+.pw-email{letter-spacing:normal}
+.sync-dot-hidden{display:none}
 .confirm-modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);
   z-index:3500;display:none;align-items:center;justify-content:center;padding:20px}
 .confirm-modal.vis{display:flex}
@@ -450,6 +455,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
    Le > div interne est scrollable horizontalement (overflow-x:auto)
    pour ne pas déborder sur mobile, scrollbar masquée. */
 .map-admin-bar{position:absolute;top:62px;left:10px;right:10px;z-index:800;display:flex;gap:6px;flex-direction:column;align-items:stretch}
+.map-admin-controls{display:flex;align-items:center;gap:6px}
+.camp-toggle-cs{background:#fff3e0;color:#e65100;border-color:#ffcc80}
+.camp-toggle-water{background:#e3f2fd;color:#1565c0;border-color:#90caf9}
+.camp-range-select{padding:6px 8px;border-radius:10px;border:1.5px solid #e0e0e0;font-size:13px;font-weight:600;background:#fff;color:var(--text-light)}
 .map-admin-bar > div{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px;flex-wrap:nowrap;justify-content:flex-start}
 .map-admin-bar > div::-webkit-scrollbar{display:none}
 .map-admin-bar > div > *{flex-shrink:0}
@@ -515,3 +524,8 @@ body.visitor-lock #visitorGate{background:var(--bg)}
 .comment-as strong{color:var(--text)}
 .comment-change-name{background:none;border:none;font-size:12px;color:var(--green);
   cursor:pointer;padding:0;text-decoration:underline;font-weight:600}
+.hidden{display:none!important}
+.w-full{width:100%}
+.w-0{width:0%}
+.mt-8{margin-top:8px}
+.mb-8{margin-bottom:8px}

@@ -49,7 +49,7 @@
 <div id="offlineBanner" role="alert" aria-live="polite" hidden>🔴 Hors-ligne — tes modifications seront synchronisées au retour du réseau.</div>
 <div class="header">
   <div class="header-c">
-    <h1 id="headerTitle">Annecy → Sligo<span class="sync-dot" id="syncDot" style="display:none" data-action="toggleSyncPopover" title="État de synchronisation" role="button" tabindex="0" aria-label="État de synchronisation — cliquer pour les détails"></span></h1>
+    <h1 id="headerTitle">Annecy → Sligo<span class="sync-dot sync-dot-hidden" id="syncDot" data-action="toggleSyncPopover" title="État de synchronisation" role="button" tabindex="0" aria-label="État de synchronisation — cliquer pour les détails"></span></h1>
     <div class="header-sub" id="headerSub">France → Irlande | 2978 km</div>
   </div>
 </div>
@@ -78,8 +78,8 @@
     </div>
 
     <div class="profile-section">
-      <h3>Stockage RTDB <button class="btn" style="font-size:11px;padding:3px 8px" data-action="refreshProfileQuota">🔄</button></h3>
-      <div class="quota-progress"><div class="quota-progress-fill" id="profileQuotaFill" style="width:0%"></div></div>
+      <h3>Stockage RTDB <button class="btn btn-quota-refresh" data-action="refreshProfileQuota">🔄</button></h3>
+      <div class="quota-progress"><div class="quota-progress-fill w-0" id="profileQuotaFill"></div></div>
       <div class="profile-row" id="profileQuotaText"><span>Chargement…</span></div>
     </div>
 
@@ -102,12 +102,12 @@
 
     <div class="profile-section">
       <h3>Authentification visiteur</h3>
-      <label for="profileVisitorPwNew" style="display:block;font-size:12px;color:#666;margin-bottom:6px">Nouveau mot de passe</label>
-      <input type="password" class="pw-input" id="profileVisitorPwNew" placeholder="Min. 6 caractères" autocomplete="new-password" style="margin-bottom:8px">
-      <label for="profileVisitorPwConfirm" style="display:block;font-size:12px;color:#666;margin-bottom:6px">Confirmer le mot de passe</label>
+      <label for="profileVisitorPwNew" class="pw-field-label">Nouveau mot de passe</label>
+      <input type="password" class="pw-input mb-8" id="profileVisitorPwNew" placeholder="Min. 6 caractères" autocomplete="new-password">
+      <label for="profileVisitorPwConfirm" class="pw-field-label">Confirmer le mot de passe</label>
       <input type="password" class="pw-input" id="profileVisitorPwConfirm" placeholder="Confirmer le mot de passe" autocomplete="new-password">
-      <div class="pw-err" id="profileVisitorPwErr" style="margin-top:8px">Erreur</div>
-      <button class="btn btn-p" id="profileVisitorPwSave" style="width:100%;margin-top:8px" data-action="updateVisitorPassword">Mettre à jour</button>
+      <div class="pw-err mt-8" id="profileVisitorPwErr">Erreur</div>
+      <button class="btn btn-p w-full mt-8" id="profileVisitorPwSave" data-action="updateVisitorPassword">Mettre à jour</button>
     </div>
   </div>
 </div>
@@ -127,10 +127,10 @@
   <div class="pw-box">
     <h3>Connexion admin <button data-action="closePwModal" aria-label="Fermer">✕</button></h3>
     <p>Connecte-toi avec ton compte Firebase</p>
-    <input type="email" class="pw-input" id="pwEmail" placeholder="Email" style="letter-spacing:normal;margin-bottom:8px">
+    <input type="email" class="pw-input pw-email mb-8" id="pwEmail" placeholder="Email">
     <input type="password" class="pw-input" id="pwInput" placeholder="••••••">
     <div class="pw-err" id="pwErr">Email ou mot de passe incorrect</div>
-    <button class="btn btn-p" style="width:100%" data-action="checkPw">Se connecter</button>
+    <button class="btn btn-p w-full" data-action="checkPw">Se connecter</button>
   </div>
 </div>
 
@@ -150,7 +150,7 @@
         placeholder="••••••" autocomplete="current-password">
     </div>
     <div class="visitor-err" id="visitorGateErr"></div>
-    <button class="btn btn-p" style="width:100%" data-action="checkVisitorPw">Accéder au carnet 🗺️</button>
+    <button class="btn btn-p w-full" data-action="checkVisitorPw">Accéder au carnet 🗺️</button>
   </div>
 </div>
 
@@ -162,12 +162,12 @@
       <div class="map-stat"><div class="map-stat-v o" id="mapKmL">2978</div><div class="map-stat-l">km restants (~)</div></div>
       <div class="map-stat"><div class="map-stat-v" id="mapDays">J0</div><div class="map-stat-l">jours</div></div>
     </div>
-    <div class="map-admin-bar" id="mapAdminBar" style="display:none">
-      <div style="display:flex;align-items:center;gap:6px">
+    <div class="map-admin-bar hidden" id="mapAdminBar">
+      <div class="map-admin-controls">
         <button class="camp-toggle" id="campToggle" data-action="toggleCampings">&#x1f3d5; Campings</button>
-        <button class="camp-toggle" id="campspaceToggle" data-action="toggleCampspace" style="background:#fff3e0;color:#e65100;border-color:#ffcc80">&#x1f3e1; Campspace</button>
-        <button class="camp-toggle" id="waterToggle" data-action="toggleWater" style="background:#e3f2fd;color:#1565c0;border-color:#90caf9">&#x1f4a7; Eau</button>
-        <select id="campRange" data-action="onCampRangeChange" data-event="change" style="padding:6px 8px;border-radius:10px;border:1.5px solid #e0e0e0;font-size:13px;font-weight:600;background:#fff;color:var(--text-light)">
+        <button class="camp-toggle camp-toggle-cs" id="campspaceToggle" data-action="toggleCampspace">&#x1f3e1; Campspace</button>
+        <button class="camp-toggle camp-toggle-water" id="waterToggle" data-action="toggleWater">&#x1f4a7; Eau</button>
+        <select id="campRange" class="camp-range-select" data-action="onCampRangeChange" data-event="change">
           <option value="50">50 km</option>
           <option value="100">100 km</option>
           <option value="150" selected>150 km</option>
@@ -185,7 +185,7 @@
       <div class="pos-badge-t" id="posT">Prochaine : Cork → Kinsale</div>
       <div class="pos-badge-s" id="posS">~2978 km restants (vol d'oiseau)</div>
       <div class="pos-bar">
-        <div class="pos-bar-f" id="posB" style="width:0%"></div>
+        <div class="pos-bar-f w-0" id="posB"></div>
         <div class="pos-bike" id="posBike" aria-hidden="true">🚴‍♂️</div>
       </div>
     </div>
@@ -201,7 +201,7 @@
         <div class="recap-item"><div class="recap-v" id="rDays">0</div><div class="recap-l">jours</div></div>
         <div class="recap-item"><div class="recap-v" id="rAvg">—</div><div class="recap-l">km/jour moy.</div></div>
       </div>
-      <div class="recap-bar"><div class="recap-bar-f" id="rBar" style="width:0%"></div></div>
+      <div class="recap-bar"><div class="recap-bar-f w-0" id="rBar"></div></div>
     </div>
     <div id="weatherBox"></div>
     <div id="stagesList"></div>
@@ -238,7 +238,7 @@
         <input type="number" id="depAmount" placeholder="Montant (€)" min="0" step="0.01">
         <input type="text" id="depDesc" placeholder="Description">
       </div>
-      <button class="btn btn-p" style="width:100%" data-action="addExpense">+ Ajouter</button>
+      <button class="btn btn-p w-full" data-action="addExpense">+ Ajouter</button>
     </div>
     <div id="depList"></div>
     <div class="spacer"></div>
@@ -302,12 +302,12 @@
 
 <div class="tab-bar">
   <button class="tab active" data-page="map" data-action="switchTab" data-arg="map"><span class="tab-icon">&#x1f5fa;&#xfe0f;</span><span>Carte</span></button>
-  <button class="tab" data-page="stages" id="tabStages" data-action="switchTab" data-arg="stages" style="display:none"><span class="tab-icon">&#x1f4cb;</span><span>Etapes</span></button>
+  <button class="tab tab-admin-only" data-page="stages" id="tabStages" data-action="switchTab" data-arg="stages"><span class="tab-icon">&#x1f4cb;</span><span>Etapes</span></button>
   <button class="tab" data-page="journal" data-action="switchTab" data-arg="journal"><span class="tab-icon">&#x1f4d3;</span><span>Journal</span></button>
-  <button class="tab" data-page="depenses" id="tabDepenses" data-action="switchTab" data-arg="depenses" style="display:none"><span class="tab-icon">&#x1f4b6;</span><span>Dépenses</span></button>
-  <button class="tab" data-page="info" id="tabInfo" data-action="switchTab" data-arg="info" style="display:none"><span class="tab-icon">&#x2139;&#xfe0f;</span><span>Infos</span></button>
-  <button class="tab" data-page="training" id="tabTraining" data-action="switchTab" data-arg="training" style="display:none"><span class="tab-icon">&#x1f3cb;&#xfe0f;</span><span>Training</span></button>
-  <button class="tab" data-page="health" id="tabHealth" data-action="switchTab" data-arg="health" style="display:none"><span class="tab-icon">&#x2764;&#xfe0f;</span><span>Santé</span></button>
+  <button class="tab tab-admin-only" data-page="depenses" id="tabDepenses" data-action="switchTab" data-arg="depenses"><span class="tab-icon">&#x1f4b6;</span><span>Dépenses</span></button>
+  <button class="tab tab-admin-only" data-page="info" id="tabInfo" data-action="switchTab" data-arg="info"><span class="tab-icon">&#x2139;&#xfe0f;</span><span>Infos</span></button>
+  <button class="tab tab-admin-only" data-page="training" id="tabTraining" data-action="switchTab" data-arg="training"><span class="tab-icon">&#x1f3cb;&#xfe0f;</span><span>Training</span></button>
+  <button class="tab tab-admin-only" data-page="health" id="tabHealth" data-action="switchTab" data-arg="health"><span class="tab-icon">&#x2764;&#xfe0f;</span><span>Santé</span></button>
 </div>
 
 <div class="lightbox" id="lightbox" data-action="closeLightbox">
