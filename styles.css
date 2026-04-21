@@ -24,6 +24,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .tab.active{color:var(--green);font-weight:600}
 .tab-icon{font-size:24px;line-height:1}
 .tab-admin-only{display:none}
+.tab-admin-only.vis{display:flex}
 .content{position:fixed;top:calc(var(--header-height) + env(safe-area-inset-top,0px));bottom:var(--tab-height);left:0;right:0;overflow:hidden}
 .page{position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;
   -webkit-overflow-scrolling:touch;display:none;padding:16px}
@@ -237,6 +238,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
   font-size:16px;text-align:center;letter-spacing:3px;outline:none;margin-bottom:10px}
 .pw-input:focus{border-color:var(--green)}
 .pw-err{color:#e74c3c;font-size:12px;margin-bottom:8px;display:none}
+.pw-err.vis{display:block}
 .pw-email{letter-spacing:normal}
 .sync-dot-hidden{display:none}
 .confirm-modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);
@@ -504,6 +506,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
   transition:border-color .15s}
 .visitor-input:focus{border-color:var(--green);background:#fff}
 .visitor-err{font-size:13px;color:#e74c3c;margin-bottom:10px;display:none}
+.visitor-err.vis{display:block}
 .visitor-hint{font-size:11px;color:var(--text-light);margin-top:-8px;margin-bottom:12px}
 body.visitor-lock .header,
 body.visitor-lock .content,
@@ -529,3 +532,4 @@ body.visitor-lock #visitorGate{background:var(--bg)}
 .w-0{width:0%}
 .mt-8{margin-top:8px}
 .mb-8{margin-bottom:8px}
+.empty-state{text-align:center;color:var(--text-light);font-size:13px;padding:24px 0}

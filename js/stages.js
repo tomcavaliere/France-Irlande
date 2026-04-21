@@ -7,7 +7,7 @@ function renderStages(){
   c.innerHTML='';
   var dates=Object.keys(stages).sort();
   if(!dates.length){
-    c.innerHTML='<div style="text-align:center;color:var(--text-light);font-size:13px;padding:24px 0">'+
+    c.innerHTML='<div class="empty-state">'+
       'Les étapes apparaîtront ici après la mise à jour de position chaque soir.</div>';
     updateRecap();return;
   }
@@ -15,7 +15,6 @@ function renderStages(){
     var d=stages[date];
     var card=document.createElement('div');
     card.className='stage-card';
-    card.style.position='relative';
     var kmDay=d.kmDay||0;
     var kmTotal=d.kmTotal||0;
     var elevGain=Math.max(0,Math.round(Number(d.elevGain)||0));

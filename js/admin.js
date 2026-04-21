@@ -22,17 +22,17 @@ function setAdminUI(on){
   document.getElementById('adminBtn').classList.toggle('on',on);
   document.getElementById('adminBtn').textContent=on?'🔓 Admin':'🔒 Admin';
   var tabDep=document.getElementById('tabDepenses');
-  if(tabDep)tabDep.style.display=on?'flex':'none';
+  if(tabDep)tabDep.classList.toggle('vis',on);
   var tabStages=document.getElementById('tabStages');
-  if(tabStages)tabStages.style.display=on?'flex':'none';
+  if(tabStages)tabStages.classList.toggle('vis',on);
   var tabInfo=document.getElementById('tabInfo');
-  if(tabInfo)tabInfo.style.display=on?'flex':'none';
+  if(tabInfo)tabInfo.classList.toggle('vis',on);
   var tabTraining=document.getElementById('tabTraining');
-  if(tabTraining)tabTraining.style.display=on?'flex':'none';
+  if(tabTraining)tabTraining.classList.toggle('vis',on);
   var tabHealth=document.getElementById('tabHealth');
-  if(tabHealth)tabHealth.style.display=on?'flex':'none';
+  if(tabHealth)tabHealth.classList.toggle('vis',on);
   var adminBar=document.getElementById('mapAdminBar');
-  if(adminBar)adminBar.style.display=on?'flex':'none';
+  if(adminBar)adminBar.classList.toggle('hidden',!on);
   var posBar=document.getElementById('posAdminBar');
   if(posBar)posBar.classList.toggle('vis',on);
   if(on){
@@ -123,7 +123,7 @@ function toggleAdmin(){
   }
   document.getElementById('pwEmail').value='';
   document.getElementById('pwInput').value='';
-  document.getElementById('pwErr').style.display='none';
+  document.getElementById('pwErr').classList.remove('vis');
   document.getElementById('pwModal').classList.add('vis');
   setTimeout(function(){document.getElementById('pwEmail').focus();},100);
 }
@@ -158,7 +158,7 @@ function openProfileModal(){
   }
   refreshProfileQuota();
   var authErrEl=document.getElementById('profileVisitorPwErr');
-  if(authErrEl)authErrEl.style.display='none';
+  if(authErrEl)authErrEl.classList.remove('vis');
   var authPw=document.getElementById('profileVisitorPwNew');
   var authPw2=document.getElementById('profileVisitorPwConfirm');
   if(authPw)authPw.value='';
@@ -203,9 +203,9 @@ function checkPw(){
   var email=document.getElementById('pwEmail').value.trim();
   var password=document.getElementById('pwInput').value;
   var errEl=document.getElementById('pwErr');
-  errEl.style.display='none';
+  errEl.classList.remove('vis');
   if(!email||!password)return;
-  if(!window._fbAuth){errEl.textContent='Firebase non disponible';errEl.style.display='block';return;}
+  if(!window._fbAuth){errEl.textContent='Firebase non disponible';errEl.classList.add('vis');return;}
   window._fbSignIn(window._fbAuth,email,password)
     .then(function(){
       document.getElementById('pwModal').classList.remove('vis');
@@ -213,7 +213,7 @@ function checkPw(){
     })
     .catch(function(){
       errEl.textContent='Email ou mot de passe incorrect';
-      errEl.style.display='block';
+      errEl.classList.add('vis');
       document.getElementById('pwInput').value='';
     });
 }

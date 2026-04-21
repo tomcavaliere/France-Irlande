@@ -143,13 +143,13 @@ function openLightbox(id,i){
   if(isVideo){
     src=(videos[i]&&videos[i][id])||'';
     vid.src=src;
-    img.style.display='none';
-    vid.style.display='block';
+    img.classList.add('hidden');
+    vid.classList.remove('hidden');
   }else{
     src=(photos[i]&&photos[i][id])||id;
     img.src=src;
-    img.style.display='';
-    vid.style.display='none';
+    img.classList.remove('hidden');
+    vid.classList.add('hidden');
     if(vid){vid.pause();vid.src='';}
   }
   lb.classList.add('vis');
@@ -165,7 +165,7 @@ function setSyncDot(mode){
   // mode: 'online' | 'offline' | 'syncing' | 'queued'
   var dot=document.getElementById('syncDot');
   if(!dot)return;
-  dot.style.display='inline-block';
+  dot.classList.remove('sync-dot-hidden');
   dot.classList.toggle('offline', mode==='offline');
   dot.classList.toggle('syncing', mode==='syncing');
   dot.classList.toggle('queued', mode==='queued');
