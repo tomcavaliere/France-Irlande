@@ -5,18 +5,19 @@ Tracé complet : France (Chamonix → Roscoff) + Irlande (Cork → Sligo).
 
 ## Stack
 
-- **Frontend** : HTML/CSS/JS vanilla — `index.html` (~720 lignes, shell + styles) + 23 modules JS dans `js/`. Zéro build, zéro framework, chargés via `<script>` dans l'ordre.
+- **Frontend** : HTML/CSS/JS vanilla — `index.html` (~325 lignes, shell + bootstrap) + `styles.css` (~565 lignes) + 28 modules JS dans `js/`. Zéro build, zéro framework, chargés via `<script>` dans l'ordre.
 - **Carte** : Leaflet 1.9.4 (CDN unpkg, mis en cache par le SW).
-- **Backend** : Firebase RTDB `france-irlande-bike`, région `europe-west1`. Lecture publique sauf `expenses` (auth uniquement).
+- **Backend** : Firebase RTDB `france-irlande-bike`, région `europe-west1`. Lecture publique sauf `expenses`, `training`, `health` (auth uniquement).
 - **Deploy** : GitHub Pages → `https://tomcavaliere.github.io/France-Irlande/`
-- **PWA** : service worker `sw.js` (cache `ev1-v25`), `manifest.json`.
+- **PWA** : service worker `sw.js` (cache `ev1-v28`), `manifest.json`.
 - **Tests** : Vitest (`npm test` / `npm run test:watch`). Aucun bundler, aucun jsdom — Node pur.
 - **Lint/CI** : ESLint 9 flat config + GitHub Actions (`.github/workflows/ci.yml`) lance `npm run lint` puis `npm test` sur chaque push/PR.
 
 ## Structure du repo
 
 ```
-index.html                  — shell HTML + CSS + bootstrap (~720 lignes)
+index.html                  — shell HTML + bootstrap (~325 lignes)
+styles.css                  — styles globaux (~565 lignes)
 sw.js                       — service worker (network-first app shell, cache-first libs)
 manifest.json               — PWA manifest
 campspace-data.js           — dump Campspace (520 KB, 1 liner) — mis en cache SW
@@ -45,6 +46,9 @@ js/
   videos.js                 — upload Firebase Storage, progress, cancel
   comments.js               — post, suppression, cache local
   expenses.js               — CRUD dépenses + synthèse
+  # Suivi admin (auth uniquement)
+  health.js                 — journal santé quotidien + graphes par métrique
+  training.js               — suivi entraînement hebdo + graphes cumulés
   # Données annexes
   campings.js               — requêtes Overpass campings/eau
   campings-core.js          — filtres POI purs (testé)
@@ -62,7 +66,7 @@ tests/
   events-core.test.js       — 10 tests Vitest
   offline-core.test.js      — 11 tests Vitest
   weather-core.test.js      — 6 tests Vitest
-  journal-core.test.js      — 12 tests Vitest
+  journal-core.test.js      — 11 tests Vitest
   stages-core.test.js       — 10 tests Vitest
   visitor-auth-core.test.js — 14 tests Vitest
   fixtures/route-sample.js  — 50 pts GPS réels sous-échantillonnés (25 FR + 25 IE)
@@ -73,12 +77,15 @@ docs/superpowers/
 FRANCE-TRACK.gpx            — trace France
 IRELANDE-TRACK.gpx          — trace Irlande
 firebase.rules.json         — règles RTDB versionnées (source de vérité)
+storage.rules               — règles Firebase Storage versionnées (vidéos < 200 MB)
 package.json                — scripts test + lint (vitest ^2.1.0, eslint ^9.15.0)
 ```
 
+Total : 240 tests Vitest répartis sur 9 fichiers.
+
 ## Architecture JS — séparation stricte des responsabilités
 
-Le code de `index.html` est organisé en trois couches. **Ne jamais les croiser.**
+Le code des modules `js/` est organisé en trois couches. **Ne jamais les croiser.**
 
 | Couche | Fonctions | Règle |
 |---|---|---|
@@ -86,7 +93,7 @@ Le code de `index.html` est organisé en trois couches. **Ne jamais les croiser.
 | **Métier / état** | mutations de `current`/`stages`/`journals`, calculs | Pas de DOM, pas d'I/O directe. |
 | **I/O** | `flushJournals()`, `flushState()`, listeners RTDB, `offlineQueue` | Ne manipule jamais le DOM directement. |
 
-`index.html` délègue via des wrappers d'une ligne aux modules purs :
+Les modules feature délèguent via des wrappers d'une ligne aux modules purs `*-core.js` :
 ```js
 function escAttr(s){ return Utils.escAttr(s); }
 ```
@@ -192,12 +199,17 @@ Mini event-bus : `Events.on(name, fn)`, `Events.off(name, fn)`, `Events.emit(nam
 | `stages/$date` | publique | auth + validate `lat/lon/kmTotal` |
 | `journals/$date` | publique | auth + validate string ≤ 5000 |
 | `photos/$date/$id` | publique | auth + validate < 500 000 chars base64 |
+| `videos/$date/$id` | publique | auth + validate URL Firebase Storage ≤ 500 chars |
+| `tracks/$date` | publique | auth + validate `coords/kmDay/ts` |
 | `comments/$date/$id` | publique | création sans auth, modif/suppr auth — validation name/text |
 | `bravos/$date/$visitorId` | publique | write-once, validate `true` |
+| `visitorAuth` | publique | auth + validate hash SHA-256 + `updatedAt` |
 | `expenses` | auth uniquement | auth uniquement |
+| `training/$date` | auth uniquement | auth + validate `squats/pushups/absMin/runKm/ts` |
+| `health/$date` | auth uniquement | auth + validate 9 métriques bornées + `ts` |
 
 Quota gratuit : **1 Go**. Surveillé via `computeQuotaBytes` + `quotaLevel` dans `utils.js`.
-`firebase.rules.json` est la **source de vérité** — toujours le mettre à jour avant de déployer de nouvelles règles sur la console Firebase.
+`firebase.rules.json` est la **source de vérité** — toujours le mettre à jour avant de déployer de nouvelles règles sur la console Firebase. Les vidéos sont hébergées sur Firebase Storage (règles dans `storage.rules`, taille max 200 MB).
 
 ## Tests
 
