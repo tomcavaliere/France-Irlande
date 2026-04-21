@@ -197,7 +197,7 @@
     for (var k = 1; k < elevations.length; k++){
       var prevEle = elevations[k-1];
       var curEle = elevations[k];
-      if (prevEle == null || curEle == null) continue;
+      if ((prevEle === null || prevEle === undefined) || (curEle === null || curEle === undefined)) continue;
       var delta = curEle - prevEle;
       if (delta > 0) elevGain += delta;
     }

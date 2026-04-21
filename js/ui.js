@@ -99,10 +99,10 @@ function switchTab(t){
     showToast('Accès admin requis.','warn');
     t='map';
   }
-  document.querySelectorAll('.tab').forEach(function(e){e.classList.toggle('active',e.dataset.page===t)});
-  document.querySelectorAll('.page').forEach(function(e){e.classList.toggle('active',e.id==='page-'+t)});
+  document.querySelectorAll('.tab').forEach(function(e){e.classList.toggle('active',e.dataset.page===t);});
+  document.querySelectorAll('.page').forEach(function(e){e.classList.toggle('active',e.id==='page-'+t);});
   if(t==='journal'||t==='stages')openCarnetTab();
-  if(t==='map'&&map)setTimeout(function(){map.invalidateSize()},100);
+  if(t==='map'&&map)setTimeout(function(){map.invalidateSize();},100);
   if(t==='journal'&&journalDirty){renderJournal();journalDirty=false;}
   if(t==='depenses')renderExpenses();
   if(t==='training')renderTraining();
@@ -186,7 +186,7 @@ function showToast(msg, type, durationMs){
   // Forcer un reflow avant d'ajouter .vis pour déclencher la transition CSS
   el.getBoundingClientRect();
   el.classList.add('vis');
-  var dur=(durationMs!=null)?durationMs:4000;
+  var dur=(durationMs!==null&&durationMs!==undefined)?durationMs:4000;
   setTimeout(function(){
     el.classList.remove('vis');
     setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},300);

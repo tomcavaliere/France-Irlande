@@ -84,7 +84,7 @@
     if (typeof e.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(e.date)) {
       return { ok: false, error: 'Date invalide (format YYYY-MM-DD attendu).' };
     }
-    if (e.desc != null) {
+    if (e.desc !== null && e.desc !== undefined) {
       if (typeof e.desc !== 'string') {
         return { ok: false, error: 'Description invalide.' };
       }
@@ -99,7 +99,7 @@
   // - Vide autorisé (permet l'effacement d'une entrée).
   // - Max 5000 caractères.
   function validateJournal(text){
-    if (text == null) return { ok: true };
+    if (text === null || text === undefined) return { ok: true };
     if (typeof text !== 'string') {
       return { ok: false, error: 'Entrée de journal invalide.' };
     }
@@ -166,9 +166,9 @@
   function safeFetch(url, opts, cfg){
     opts = opts || {};
     cfg = cfg || {};
-    var retries = (cfg.retries != null) ? cfg.retries : 2;
+    var retries = (cfg.retries !== null && cfg.retries !== undefined) ? cfg.retries : 2;
     var timeout = cfg.timeout || 15000;
-    var backoff = (cfg.backoff != null) ? cfg.backoff : 1000;
+    var backoff = (cfg.backoff !== null && cfg.backoff !== undefined) ? cfg.backoff : 1000;
     var onError = cfg.onError;
     var fetchImpl = ('fetch' in cfg) ? cfg.fetch : (typeof globalThis !== 'undefined' ? globalThis.fetch : null);
     if (typeof fetchImpl !== 'function') {
@@ -297,16 +297,16 @@
   // - cooldownMs : durée du cooldown (défaut COMMENT_COOLDOWN_MS).
   function isCommentOnCooldown(lastSentTs, nowTs, cooldownMs) {
     if (!lastSentTs || lastSentTs <= 0) return false;
-    var cd = (cooldownMs != null) ? cooldownMs : COMMENT_COOLDOWN_MS;
-    var now = (nowTs != null) ? nowTs : Date.now();
+    var cd = (cooldownMs !== null && cooldownMs !== undefined) ? cooldownMs : COMMENT_COOLDOWN_MS;
+    var now = (nowTs !== null && nowTs !== undefined) ? nowTs : Date.now();
     return (now - lastSentTs) < cd;
   }
 
   // Nombre de secondes restantes avant la fin du cooldown (0 si aucun cooldown actif).
   function commentCooldownRemaining(lastSentTs, nowTs, cooldownMs) {
     if (!lastSentTs || lastSentTs <= 0) return 0;
-    var cd = (cooldownMs != null) ? cooldownMs : COMMENT_COOLDOWN_MS;
-    var now = (nowTs != null) ? nowTs : Date.now();
+    var cd = (cooldownMs !== null && cooldownMs !== undefined) ? cooldownMs : COMMENT_COOLDOWN_MS;
+    var now = (nowTs !== null && nowTs !== undefined) ? nowTs : Date.now();
     var remaining = cd - (now - lastSentTs);
     return remaining > 0 ? Math.ceil(remaining / 1000) : 0;
   }

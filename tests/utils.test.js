@@ -7,7 +7,7 @@ const {
   validateComment, validateExpense, validateJournal,
   EXPENSE_CATEGORIES, LIMITS,
   computeQuotaBytes, formatBytes, quotaLevel, RTDB_QUOTA_BYTES,
-  safeFetch, computeKmDay, isOfflineable, actionLabel, filterVisibleJournalDates,
+  safeFetch, computeKmDay, isOfflineable: _isOfflineable, actionLabel: _actionLabel, filterVisibleJournalDates: _filterVisibleJournalDates,
   COMMENT_COOLDOWN_MS, isCommentOnCooldown, commentCooldownRemaining
 } = utils;
 
@@ -174,7 +174,7 @@ describe('validateExpense', () => {
   });
 
   it('accepte desc absent (optionnel)', () => {
-    const { desc, ...rest } = valid;
+    const { desc: _desc, ...rest } = valid;
     expect(validateExpense(rest).ok).toBe(true);
   });
 

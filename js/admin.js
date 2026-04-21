@@ -69,9 +69,9 @@ function exportJournal(fmt){
         var dd=stages[d];
         if(dd){
           var meta=[];
-          if(dd.kmDay!=null)meta.push(dd.kmDay+' km');
-          if(dd.kmTotal!=null)meta.push('total '+dd.kmTotal+' km');
-          if(dd.elevGain!=null&&Number(dd.elevGain)>0)meta.push('D+ '+Math.round(Number(dd.elevGain))+' m');
+          if(dd.kmDay!==null&&dd.kmDay!==undefined)meta.push(dd.kmDay+' km');
+          if(dd.kmTotal!==null&&dd.kmTotal!==undefined)meta.push('total '+dd.kmTotal+' km');
+          if(dd.elevGain!==null&&dd.elevGain!==undefined&&Number(dd.elevGain)>0)meta.push('D+ '+Math.round(Number(dd.elevGain))+' m');
           if(meta.length)lines.push('_'+meta.join(' · ')+'_');
         }
         if(journals[d])lines.push('',journals[d]);
@@ -125,7 +125,7 @@ function toggleAdmin(){
   document.getElementById('pwInput').value='';
   document.getElementById('pwErr').style.display='none';
   document.getElementById('pwModal').classList.add('vis');
-  setTimeout(function(){document.getElementById('pwEmail').focus()},100);
+  setTimeout(function(){document.getElementById('pwEmail').focus();},100);
 }
 function closeAdminDropdown(e){
   if(e&&document.getElementById('adminDropdown').contains(e.target))return;

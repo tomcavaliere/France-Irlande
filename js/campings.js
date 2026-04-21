@@ -101,7 +101,7 @@ function renderCampings(geojson,aheadPts){
     var tags = mapped.tags || [];
     var popup='<div class="camp-popup"><b>'+escHtml(mapped.name)+'</b>'+
       (mapped.operator?'<span style="color:#666;font-size:11px">'+escHtml(mapped.operator)+'</span><br>':'')+
-      (tags.length?'<div class="camp-tags">'+tags.map(function(t){return'<span class="camp-tag">'+t+'</span>'}).join('')+'</div>':'')+
+      (tags.length?'<div class="camp-tags">'+tags.map(function(t){return'<span class="camp-tag">'+t+'</span>';}).join('')+'</div>':'')+
       campingDistHtml(mapped.lat,mapped.lon)+
       (mapped.website?'<a href="'+escAttr(mapped.website)+'" target="_blank" style="color:var(--green);font-size:11px">Site web</a>':'')+
       '</div>';
@@ -252,7 +252,7 @@ function renderWater(elements,aheadPts){
     var dist=campingDistHtml(el.lat,el.lon);
     var popup='<div class="camp-popup"><b style="color:#1565c0">'+escHtml(name||type)+'</b>'+
       (name?'<span style="color:#666;font-size:11px">'+escHtml(type)+'</span><br>':'')+
-      (tags.length?'<div class="camp-tags">'+tags.map(function(t){return'<span class="camp-tag" style="background:#e3f2fd;color:#1565c0">'+t+'</span>'}).join('')+'</div>':'')+
+      (tags.length?'<div class="camp-tags">'+tags.map(function(t){return'<span class="camp-tag" style="background:#e3f2fd;color:#1565c0">'+t+'</span>';}).join('')+'</div>':'')+
       dist+'</div>';
     markers.push(L.marker([el.lat,el.lon],{icon:waterIcon}).bindPopup(popup));
   });
