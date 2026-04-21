@@ -86,7 +86,7 @@ function showVisitorGate(opts){
   var pwEl=document.getElementById('visitorPwInput');
   if(pwEl)pwEl.value='';
   var errEl=document.getElementById('visitorGateErr');
-  if(errEl)errEl.style.display='none';
+  if(errEl)errEl.classList.remove('vis');
   gate.classList.add('vis');
   _loadVisitorPasswordHash(false);
   setTimeout(function(){
@@ -110,12 +110,12 @@ function checkVisitorPw(){
   var name=nameEl?nameEl.value.trim():'';
   var password=pwEl?pwEl.value:'';
 
-  if(errEl)errEl.style.display='none';
+  if(errEl)errEl.classList.remove('vis');
 
   // Valider le nom en premier
   var nameV=Utils.validateVisitorName(name);
   if(!nameV.ok){
-    if(errEl){errEl.textContent=nameV.error;errEl.style.display='block';}
+    if(errEl){errEl.textContent=nameV.error;errEl.classList.add('vis');}
     if(nameEl)nameEl.focus();
     return;
   }
@@ -143,12 +143,12 @@ function checkVisitorPw(){
         });
       }
     }else{
-      if(errEl){errEl.textContent='Mot de passe incorrect.';errEl.style.display='block';}
+      if(errEl){errEl.textContent='Mot de passe incorrect.';errEl.classList.add('vis');}
       if(pwEl){pwEl.value='';pwEl.focus();}
     }
   }).catch(function(err){
     console.error('[visitor-auth]',err);
-    if(errEl){errEl.textContent='Erreur de vérification.';errEl.style.display='block';}
+    if(errEl){errEl.textContent='Erreur de vérification.';errEl.classList.add('vis');}
   });
 }
 
@@ -160,11 +160,11 @@ function updateVisitorPassword(){
   var saveBtn=document.getElementById('profileVisitorPwSave');
   var password=pwEl?pwEl.value:'';
   var passwordConfirm=confirmEl?confirmEl.value:'';
-  if(errEl)errEl.style.display='none';
+  if(errEl)errEl.classList.remove('vis');
 
   var validation=VisitorAuthCore.validatePasswordChange(password,passwordConfirm,{min:MIN_VISITOR_PASSWORD_LENGTH,max:MAX_VISITOR_PASSWORD_LENGTH});
   if(!validation.ok){
-    if(errEl){errEl.textContent=validation.error;errEl.style.display='block';}
+    if(errEl){errEl.textContent=validation.error;errEl.classList.add('vis');}
     if(validation.error.indexOf('correspondent pas')!==-1){if(confirmEl)confirmEl.focus();}
     else{if(pwEl)pwEl.focus();}
     return;
@@ -172,7 +172,7 @@ function updateVisitorPassword(){
   if(!window._fbDb||!window._fbSet||!window._fbRef){
     if(errEl){
       errEl.textContent='Firebase non disponible.';
-      errEl.style.display='block';
+      errEl.classList.add('vis');
     }
     return;
   }
@@ -197,7 +197,7 @@ function updateVisitorPassword(){
     console.error('[visitor-auth/update]',err);
     if(errEl){
       errEl.textContent='Impossible de mettre à jour le mot de passe.';
-      errEl.style.display='block';
+      errEl.classList.add('vis');
     }
   }).finally(function(){
     if(saveBtn)saveBtn.disabled=false;

@@ -99,10 +99,10 @@ function switchTab(t){
     showToast('Accès admin requis.','warn');
     t='map';
   }
-  document.querySelectorAll('.tab').forEach(function(e){e.classList.toggle('active',e.dataset.page===t)});
-  document.querySelectorAll('.page').forEach(function(e){e.classList.toggle('active',e.id==='page-'+t)});
+  document.querySelectorAll('.tab').forEach(function(e){e.classList.toggle('active',e.dataset.page===t);});
+  document.querySelectorAll('.page').forEach(function(e){e.classList.toggle('active',e.id==='page-'+t);});
   if(t==='journal'||t==='stages')openCarnetTab();
-  if(t==='map'&&map)setTimeout(function(){map.invalidateSize()},100);
+  if(t==='map'&&map)setTimeout(function(){map.invalidateSize();},100);
   if(t==='journal'&&journalDirty){renderJournal();journalDirty=false;}
   if(t==='depenses')renderExpenses();
   if(t==='training')renderTraining();
@@ -143,13 +143,13 @@ function openLightbox(id,i){
   if(isVideo){
     src=(videos[i]&&videos[i][id])||'';
     vid.src=src;
-    img.style.display='none';
-    vid.style.display='block';
+    img.classList.add('hidden');
+    vid.classList.remove('hidden');
   }else{
     src=(photos[i]&&photos[i][id])||id;
     img.src=src;
-    img.style.display='';
-    vid.style.display='none';
+    img.classList.remove('hidden');
+    vid.classList.add('hidden');
     if(vid){vid.pause();vid.src='';}
   }
   lb.classList.add('vis');
@@ -165,7 +165,7 @@ function setSyncDot(mode){
   // mode: 'online' | 'offline' | 'syncing' | 'queued'
   var dot=document.getElementById('syncDot');
   if(!dot)return;
-  dot.style.display='inline-block';
+  dot.classList.remove('sync-dot-hidden');
   dot.classList.toggle('offline', mode==='offline');
   dot.classList.toggle('syncing', mode==='syncing');
   dot.classList.toggle('queued', mode==='queued');
@@ -186,7 +186,7 @@ function showToast(msg, type, durationMs){
   // Forcer un reflow avant d'ajouter .vis pour déclencher la transition CSS
   el.getBoundingClientRect();
   el.classList.add('vis');
-  var dur=(durationMs!=null)?durationMs:4000;
+  var dur=(durationMs!==null&&durationMs!==undefined)?durationMs:4000;
   setTimeout(function(){
     el.classList.remove('vis');
     setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},300);

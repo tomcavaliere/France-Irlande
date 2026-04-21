@@ -91,7 +91,7 @@ function _renderWeeklyCards(weekStart){
     html+='<div class="training-card">'+
       '<div class="training-title"><b>'+ex.label+'</b>'+
       '<span class="'+(reached?'ok':'')+'">'+_fmtTrainingValue(ex,done)+ex.unit+' / '+_fmtTrainingValue(ex,ex.goal)+ex.unit+(reached?' ✅':'')+'</span></div>'+
-      '<div class="training-progress"><div class="training-progress-fill" style="width:'+pct.toFixed(1)+'%"></div></div>'+
+      '<progress class="training-progress" max="100" value="'+pct.toFixed(1)+'"></progress>'+
     '</div>';
   });
   html+='</div>';

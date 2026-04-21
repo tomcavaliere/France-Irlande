@@ -18,7 +18,7 @@ function fetchWeather(){
     '&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum,windspeed_10m_max'+
     '&timezone=auto&forecast_days=3';
   box.innerHTML='<div class="weather-card"><div class="weather-title">☁️ Météo — '+label+'</div>'+
-    '<div style="font-size:12px;color:var(--text-light)">Chargement...</div></div>';
+    '<div class="weather-loading">Chargement...</div></div>';
   Utils.safeFetch(url,{},{retries:2,timeout:10000}).then(function(r){return r.json();}).then(function(d){
     if(!window.WeatherCore) throw new Error('WeatherCore module non chargé');
     var days=window.WeatherCore.buildWeatherDays(d.daily);
@@ -33,7 +33,7 @@ function fetchWeather(){
         '<div class="weather-day-label">'+day.label+'</div>'+
         '<div class="weather-icon" title="'+day.desc+'">'+day.icon+'</div>'+
         '<div class="weather-temps">'+day.tmax+'° <span>/ '+day.tmin+'°</span></div>'+
-        (day.hasRain?'<div class="weather-rain">💧 '+day.rain.toFixed(1)+' mm</div>':'<div class="weather-rain" style="color:#ccc">Pas de pluie</div>')+
+        (day.hasRain?'<div class="weather-rain">💧 '+day.rain.toFixed(1)+' mm</div>':'<div class="weather-rain weather-rain-none">Pas de pluie</div>')+
         '<div class="weather-wind">💨 '+day.wind+' km/h</div>'+
         '</div>';
     }
@@ -41,7 +41,7 @@ function fetchWeather(){
     box.innerHTML=html2;
   }).catch(function(e){
     console.warn('[Weather] fetch failed:',e);
-    box.innerHTML='<div class="weather-card" style="text-align:center;color:var(--text-light);font-size:12px">'+
+    box.innerHTML='<div class="weather-card weather-card-offline">'+
       'Météo indisponible hors-ligne</div>';
   });
 }

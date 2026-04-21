@@ -70,7 +70,7 @@ function loadAllCommentsCache(){
 }
 
 function persistQueue(){
-  try{localStorage.setItem('offlineQueue',JSON.stringify(offlineQueue));}catch(e){
+  try{localStorage.setItem('offlineQueue',JSON.stringify(offlineQueue));}catch(_e){
     console.warn('localStorage plein, queue offline non sauvegardée');
   }
 }

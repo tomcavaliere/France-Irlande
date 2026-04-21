@@ -1,7 +1,8 @@
-const CACHE = 'ev1-v27';
+const CACHE = 'ev1-v28';
 const PRECACHE = [
   '/',
   '/index.html',
+  '/styles.css',
   '/campspace-data.js',
   '/js/gps-core.js',
   '/js/utils.js',

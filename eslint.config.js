@@ -19,7 +19,8 @@ export default [
     },
     rules: {
       'no-console': ['warn', { allow: ['warn', 'error'] }],
-      'semi': ['warn', 'always'],
+      'semi': ['error', 'always'],
+      'no-unused-vars': ['error', { vars: 'local', argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
     },
   },
   {
@@ -32,10 +33,34 @@ export default [
     },
     rules: {
       'no-console': ['warn', { allow: ['warn', 'error'] }],
-      'no-unused-vars': 'off',
+      'no-unused-vars': ['error', { vars: 'local', argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
       'no-undef': 'off',
-      'eqeqeq': 'warn',
-      'semi': ['warn', 'always'],
+      'eqeqeq': 'error',
+      'semi': ['error', 'always'],
+    },
+  },
+  {
+    files: [
+      'js/gps-core.js',
+      'js/offline-core.js',
+      'js/weather-core.js',
+      'js/campings-core.js',
+      'js/events-core.js',
+      'js/journal-core.js',
+      'js/stages-core.js',
+      'js/visitor-auth-core.js',
+      'js/utils.js',
+    ],
+    languageOptions: {
+      ecmaVersion: 2020,
+      sourceType: 'script',
+      globals: {
+        ...globals.browser,
+        module: 'readonly',
+      },
+    },
+    rules: {
+      'no-undef': 'error',
     },
   },
   {
@@ -57,10 +82,10 @@ export default [
     },
     rules: {
       'no-console': 'off',
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
       'no-undef': 'error',
-      'eqeqeq': 'warn',
-      'semi': ['warn', 'always'],
+      'eqeqeq': 'error',
+      'semi': ['error', 'always'],
     },
   },
 ];

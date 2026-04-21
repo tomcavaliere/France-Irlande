@@ -16,7 +16,7 @@ function campingDist(campLat,campLon){
 
 function campingDistHtml(campLat,campLon){
   var d=campingDist(campLat,campLon);
-  return '<div style="margin-top:4px;padding:3px 6px;background:#f5f5f5;border-radius:4px;font-size:11px;color:#333">' +
+  return '<div class="camp-dist">' +
     '&#x1f6b4; <b>'+d.trace+' km</b> sur la trace' +
     (d.detour>0.2?' + <b>'+d.detour+' km</b> de détour':'') +
     '</div>';
