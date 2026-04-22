@@ -28,6 +28,7 @@ var ACTIONS={
   toggleCampings:function(){toggleCampings();},
   toggleCampspace:function(){toggleCampspace();},
   toggleWater:function(){toggleWater();},
+  toggleWarmshowers:function(){toggleWarmshowers();},
   onCampRangeChange:function(a,b,el,e){onCampRangeChange(a,b,el,e);},
   updatePosition:function(){updatePosition();},
   addExpense:function(){addExpense();},
