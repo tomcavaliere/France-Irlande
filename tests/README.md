@@ -1,6 +1,6 @@
 # Tests unitaires
 
-Suite de tests pour la logique pure de l'app EuroVelo 1.
+Suite de tests pour la logique pure de l'app biketrip.
 
 ## Lancer les tests
 
@@ -33,7 +33,7 @@ exactement le code couvert par les tests.
 ## Fixtures
 
 [fixtures/route-sample.js](fixtures/route-sample.js) — 50 points GPS réels
-sous-échantillonnés depuis le tracé EuroVelo 1 d'`index.html` (25 en France,
+sous-échantillonnés depuis le tracé biketrip d'`index.html` (25 en France,
 25 en Irlande), avec `CUM_KM` recalculé à la haversine. Cette fixture est
 **figée** : elle évite de charger les ~5000 points du tracé complet à chaque
 test et garantit des assertions déterministes.
