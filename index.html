@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.firebasedatabase.app https://*.europe-west1.firebasedatabase.app https://unpkg.com https://*.tile.openstreetmap.org https://api.open-meteo.com https://overpass-api.de https://opencampingmap.org https://www.warmshowers.org; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.firebasedatabase.app https://*.europe-west1.firebasedatabase.app wss://*.firebasedatabase.app wss://*.europe-west1.firebasedatabase.app https://www.gstatic.com https://unpkg.com https://*.tile.openstreetmap.org https://api.open-meteo.com https://overpass-api.de https://opencampingmap.org https://www.warmshowers.org; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://unpkg.com; script-src 'self' https://www.gstatic.com https://apis.google.com https://unpkg.com https://*.europe-west1.firebasedatabase.app; frame-src https://france-irlande-bike.firebaseapp.com;">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.firebasedatabase.app https://*.europe-west1.firebasedatabase.app https://unpkg.com https://*.tile.openstreetmap.org https://api.open-meteo.com https://overpass-api.de https://opencampingmap.org; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.firebasedatabase.app https://*.europe-west1.firebasedatabase.app wss://*.firebasedatabase.app wss://*.europe-west1.firebasedatabase.app https://www.gstatic.com https://unpkg.com https://*.tile.openstreetmap.org https://api.open-meteo.com https://overpass-api.de https://opencampingmap.org; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://unpkg.com; script-src 'self' https://www.gstatic.com https://apis.google.com https://unpkg.com https://*.europe-west1.firebasedatabase.app; frame-src https://france-irlande-bike.firebaseapp.com;">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -14,7 +14,6 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script defer src="campspace-data.js"></script>
-<script defer src="warmshowers-data.js"></script>
 <script defer src="js/gps-core.js"></script>
 <script defer src="js/utils.js"></script>
 <script defer src="js/offline-core.js"></script>
@@ -32,7 +31,6 @@
 <script defer src="js/visitor-auth.js"></script>
 <script defer src="js/map-core.js"></script>
 <script defer src="js/campings.js"></script>
-<script defer src="js/warmshowers.js"></script>
 <script defer src="js/stages.js"></script>
 <script defer src="js/photos.js"></script>
 <script defer src="js/videos.js"></script>
@@ -169,7 +167,6 @@
         <button class="camp-toggle" id="campToggle" data-action="toggleCampings">&#x1f3d5; Campings</button>
         <button class="camp-toggle camp-toggle-cs" id="campspaceToggle" data-action="toggleCampspace">&#x1f3e1; Campspace</button>
         <button class="camp-toggle camp-toggle-water" id="waterToggle" data-action="toggleWater">&#x1f4a7; Eau</button>
-        <button class="camp-toggle camp-toggle-ws" id="wsToggle" data-action="toggleWarmshowers">&#x1f3e0; WarmShowers</button>
         <select id="campRange" class="camp-range-select" data-action="onCampRangeChange" data-event="change">
           <option value="50">50 km</option>
           <option value="100">100 km</option>

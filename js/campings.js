@@ -33,7 +33,6 @@ function onCampRangeChange(){
   if(campingsVisible)loadCampings();
   if(campspaceVisible)loadCampspace();
   if(waterVisible)loadWater();
-  if(warmshowersVisible)loadWarmshowers();
 }
 
 function loadCampings(){

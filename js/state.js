@@ -37,8 +37,8 @@ var journalDirty = false;
 var _unsubCurrent = null, _unsubStages = null, _unsubExpenses = null, _unsubTraining = null, _unsubHealth = null;
 
 // ==== MAP ====
-var map, completedLayer, posMarker, campingLayer = null, campspaceLayer = null, waterLayer = null, warmshowersLayer = null;
-var campingsVisible = false, campspaceVisible = false, waterVisible = false, warmshowersVisible = false;
+var map, completedLayer, posMarker, campingLayer = null, campspaceLayer = null, waterLayer = null;
+var campingsVisible = false, campspaceVisible = false, waterVisible = false;
 var campingsCache = null; // cache {bbox_key: [features]}
 
 // ==== WATER ====
