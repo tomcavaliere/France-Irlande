@@ -93,3 +93,17 @@ function computeKmDay(kmTotal, stg, todayISO) { return Utils.computeKmDay(kmTota
 function isOfflineable(path) { return Utils.isOfflineable(path); }
 function actionLabel(path) { return Utils.actionLabel(path); }
 function filterVisibleJournalDates(stg, admin) { return Utils.filterVisibleJournalDates(stg, admin); }
+
+// Tracks effectivement liés à des étapes existantes.
+// Si les étapes ne sont pas encore chargées, conserve le comportement actuel.
+function getEffectiveTracks(){
+  if(!tracks || typeof tracks !== 'object') return {};
+  if(!stages || typeof stages !== 'object') return tracks;
+  var stageDates=Object.keys(stages);
+  if(!stageDates.length) return tracks;
+  var filtered={};
+  stageDates.forEach(function(date){
+    if(tracks[date]) filtered[date]=tracks[date];
+  });
+  return filtered;
+}

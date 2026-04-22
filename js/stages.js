@@ -140,7 +140,7 @@ function _applyKmRecompute(){
 
 function updateRecap(){
   var dates=Object.keys(stages).sort();
-  var kmD=GPSCore.sumTrackKm(tracks);
+  var kmD=GPSCore.sumTrackKm(getEffectiveTracks());
   var kmL=current?GPSCore.haversineKm(current.lat,current.lon,GPSCore.SLIGO_COORDS.lat,GPSCore.SLIGO_COORDS.lon):TOTAL_KM;
   var nbDays=dates.length;
   var totals=StagesCore.computeRecapTotals(kmD,kmL,nbDays,TOTAL_KM);
@@ -163,6 +163,7 @@ function deleteStage(date){
     Promise.all([
       window._fbRemove(window._fbRef(window._fbDb,'stages/'+date)),
       window._fbRemove(window._fbRef(window._fbDb,'journals/'+date)),
+      window._fbRemove(window._fbRef(window._fbDb,'tracks/'+date)),
       window._fbRemove(window._fbRef(window._fbDb,'photos/'+date)),
       window._fbRemove(window._fbRef(window._fbDb,'comments/'+date)),
       window._fbRemove(window._fbRef(window._fbDb,'bravos/'+date))
