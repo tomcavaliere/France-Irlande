@@ -116,7 +116,7 @@ Le "~" rappelle au lecteur que l'affichage est vol d'oiseau et non un kilométra
 
 ### `CLAUDE.md`
 
-Remplacer dans la section "EuroVelo 1 — Bikepacking France → Irlande" :
+Remplacer dans la section "biketrip — Bikepacking France → Irlande" :
 
 ```
 Tracé complet : France (Chamonix → Roscoff) + Irlande (Cork → Sligo).

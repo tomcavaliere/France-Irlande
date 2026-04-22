@@ -1,7 +1,7 @@
 // Tests unitaires pour js/gps-core.js
 // Lancer avec : npm test
 //
-// On utilise une fixture sous-échantillonnée du vrai tracé EuroVelo 1
+// On utilise une fixture sous-échantillonnée du vrai tracé biketrip
 // (25 points en France + 25 en Irlande) pour rester déterministe et rapide.
 
 import { describe, it, expect } from 'vitest';

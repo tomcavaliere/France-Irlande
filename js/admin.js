@@ -60,10 +60,10 @@ function exportJournal(fmt){
     if(fmt==='json'){
       var payload={exportedAt:new Date().toISOString(),stages:stages,journals:journals,comments:comments,expenses:expenses};
       blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
-      filename='carnet-eurovelo1-'+stamp+'.json';
+      filename='carnet-biketrip-'+stamp+'.json';
     }else{
       var dates=Object.keys(stages).sort();
-      var lines=['# Carnet de voyage — EuroVelo 1','','_Exporté le '+stamp+'_',''];
+      var lines=['# Carnet de voyage — biketrip','','_Exporté le '+stamp+'_',''];
       dates.forEach(function(d){
         lines.push('## '+d);
         var dd=stages[d];
@@ -78,7 +78,7 @@ function exportJournal(fmt){
         lines.push('');
       });
       blob=new Blob([lines.join('\n')],{type:'text/markdown'});
-      filename='carnet-eurovelo1-'+stamp+'.md';
+      filename='carnet-biketrip-'+stamp+'.md';
     }
     var url=URL.createObjectURL(blob);
     var a=document.createElement('a');a.href=url;a.download=filename;a.click();

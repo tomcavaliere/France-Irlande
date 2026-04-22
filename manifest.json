@@ -1,7 +1,7 @@
 {
-  "name": "EuroVelo 1 — Irlande",
-  "short_name": "EV1 Irlande",
-  "description": "Application de bikepacking pour EuroVelo 1 en Irlande, de Cork à Sligo",
+  "name": "biketrip — Irlande",
+  "short_name": "biketrip",
+  "description": "Application de bikepacking biketrip — de Cork à Sligo",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
