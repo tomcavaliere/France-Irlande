@@ -83,7 +83,8 @@ function _processGPXFile(date,file){
     var trackData={coords:gpxData.coords,kmDay:gpxData.kmDay,elevGain:gpxData.elevGain,ts:Date.now()};
     window._fbSet(window._fbRef(window._fbDb,'tracks/'+date),trackData)
       .then(function(){
-        return _applyKmRecompute();
+        tracks=_nextTracksSnapshot(date,trackData);
+        return _applyKmRecompute(tracks);
       })
       .then(function(){
         showToast('Tracé GPX ajouté — '+gpxData.kmDay+' km · D+ '+gpxData.elevGain+' m','ok');
@@ -106,7 +107,8 @@ function deleteGPX(date){
   if(!isAdmin)return;
   window._fbRemove(window._fbRef(window._fbDb,'tracks/'+date))
     .then(function(){
-      return _applyKmRecompute();
+      tracks=_nextTracksSnapshot(date,null);
+      return _applyKmRecompute(tracks);
     })
     .then(function(){
       showToast('Tracé GPX supprimé','ok');
@@ -119,8 +121,9 @@ function deleteGPX(date){
 
 // Recalcule kmDay/kmTotal de toutes les étapes et écrit les mises à jour
 // dans /stages/{date} et /current.
-function _applyKmRecompute(){
-  var result=GPSCore.recomputeAllKm(stages,tracks,ALL_ROUTE_PTS,CUM_KM);
+function _applyKmRecompute(tracksSnapshot){
+  var effectiveTracks=Utils.filterTracksByStages(tracksSnapshot||tracks,stages);
+  var result=GPSCore.recomputeAllKm(stages,effectiveTracks,ALL_ROUTE_PTS,CUM_KM);
   var writes=[];
   Object.keys(result.stageUpdates).forEach(function(d){
     var upd=result.stageUpdates[d];
@@ -136,6 +139,16 @@ function _applyKmRecompute(){
     );
   }
   return Promise.all(writes);
+}
+
+function _nextTracksSnapshot(date,trackData){
+  var next=Object.assign({},tracks||{});
+  if(trackData){
+    next[date]=trackData;
+  }else{
+    delete next[date];
+  }
+  return next;
 }
 
 function updateRecap(){
