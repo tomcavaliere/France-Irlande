@@ -93,3 +93,12 @@ function computeKmDay(kmTotal, stg, todayISO) { return Utils.computeKmDay(kmTota
 function isOfflineable(path) { return Utils.isOfflineable(path); }
 function actionLabel(path) { return Utils.actionLabel(path); }
 function filterVisibleJournalDates(stg, admin) { return Utils.filterVisibleJournalDates(stg, admin); }
+
+/**
+ * Returns the effective tracks map used for map/counter rendering.
+ * Filters out orphan tracks when stage dates are available.
+ * @returns {Object<string, {coords:Array,kmDay:number,elevGain?:number,ts:number}>}
+ */
+function getEffectiveTracks(){
+  return Utils.filterTracksByStages(tracks, stages);
+}

@@ -74,7 +74,7 @@
       ".read": true,
       "$date": {
         ".write": "auth != null",
-        ".validate": "newData.hasChildren(['coords','kmDay','ts'])",
+        ".validate": "!newData.exists() || newData.hasChildren(['coords','kmDay','ts'])",
         "elevGain": {
           ".validate": "!newData.exists() || (newData.isNumber() && newData.val() >= 0)"
         }

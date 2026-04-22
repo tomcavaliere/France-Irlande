@@ -7,7 +7,7 @@ const {
   validateComment, validateExpense, validateJournal,
   EXPENSE_CATEGORIES, LIMITS,
   computeQuotaBytes, formatBytes, quotaLevel, RTDB_QUOTA_BYTES,
-  safeFetch, computeKmDay, isOfflineable: _isOfflineable, actionLabel: _actionLabel, filterVisibleJournalDates: _filterVisibleJournalDates,
+  safeFetch, computeKmDay, filterTracksByStages, isOfflineable: _isOfflineable, actionLabel: _actionLabel, filterVisibleJournalDates: _filterVisibleJournalDates,
   COMMENT_COOLDOWN_MS, isCommentOnCooldown, commentCooldownRemaining
 } = utils;
 
@@ -497,6 +497,48 @@ describe('computeKmDay', () => {
       '2026-05-02': { kmTotal: 150 }
     };
     expect(computeKmDay(180, stages, '2026-05-02')).toBe(80);
+  });
+});
+
+describe('filterTracksByStages', () => {
+  it('returns empty object when tracks is invalid', () => {
+    expect(filterTracksByStages(null, {})).toEqual({});
+    expect(filterTracksByStages(undefined, {})).toEqual({});
+    expect(filterTracksByStages('nope', {})).toEqual({});
+  });
+
+  it('returns tracks unchanged when stages is invalid or missing', () => {
+    const t = { '2026-05-01': { kmDay: 10 } };
+    expect(filterTracksByStages(t, null)).toBe(t);
+    expect(filterTracksByStages(t, undefined)).toBe(t);
+    expect(filterTracksByStages(t, 'nope')).toBe(t);
+  });
+
+  it('returns tracks unchanged when stages is empty', () => {
+    const t = { '2026-05-01': { kmDay: 10 } };
+    expect(filterTracksByStages(t, {})).toBe(t);
+  });
+
+  it('filters out orphan tracks when stage dates exist', () => {
+    const tracks = {
+      '2026-05-01': { kmDay: 10 },
+      '2026-05-02': { kmDay: 20 }
+    };
+    const stages = {
+      '2026-05-02': { kmTotal: 20 },
+      '2026-05-03': { kmTotal: 30 }
+    };
+    expect(filterTracksByStages(tracks, stages)).toEqual({
+      '2026-05-02': { kmDay: 20 }
+    });
+  });
+
+  it('keeps matching track objects by reference', () => {
+    const t = { kmDay: 42 };
+    const tracks = { '2026-05-01': t };
+    const stages = { '2026-05-01': { kmTotal: 42 } };
+    const filtered = filterTracksByStages(tracks, stages);
+    expect(filtered['2026-05-01']).toBe(t);
   });
 });
 

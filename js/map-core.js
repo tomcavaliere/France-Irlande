@@ -108,7 +108,8 @@ function initMap(){
 
 function updateMap(){
   var pos=getCurrentPos();
-  var kmD=GPSCore.sumTrackKm(tracks);
+  var effectiveTracks=getEffectiveTracks();
+  var kmD=GPSCore.sumTrackKm(effectiveTracks);
   var kmL=pos?GPSCore.haversineKm(pos.lat,pos.lon,GPSCore.SLIGO_COORDS.lat,GPSCore.SLIGO_COORDS.lon):TOTAL_KM;
   var pct=Math.round((kmD/TOTAL_KM)*100);
   var progressPercentClamped=Math.max(0,Math.min(100,pct));
@@ -233,9 +234,10 @@ function renderTrackPolylines(){
   else{
     tracksLayer=L.layerGroup().addTo(map);
   }
-  if(!tracks)return;
-  Object.keys(tracks).forEach(function(date){
-    var t=tracks[date];
+  var effectiveTracks=getEffectiveTracks();
+  if(!effectiveTracks)return;
+  Object.keys(effectiveTracks).forEach(function(date){
+    var t=effectiveTracks[date];
     if(!t||!Array.isArray(t.coords)||!t.coords.length)return;
     L.polyline(t.coords,{color:'#e8772e',weight:3,opacity:1,pane:'tracksPane'}).addTo(tracksLayer);
   });

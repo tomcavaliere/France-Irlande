@@ -289,7 +289,7 @@ function updatePosition(){
     if(campingsVisible)loadCampings();
     if(campspaceVisible)loadCampspace();
     if(waterVisible)loadWater();
-    if(statusEl)statusEl.textContent='±'+accuracy+'m · '+Math.round(GPSCore.sumTrackKm(tracks))+' km GPX';
+    if(statusEl)statusEl.textContent='±'+accuracy+'m · '+Math.round(GPSCore.sumTrackKm(getEffectiveTracks()))+' km GPX';
     if(map)map.setView([lat,lon],12);
   },function(err){
     var msg=err.code===1?'Permission refusée':err.code===2?'Position indisponible':'Timeout';

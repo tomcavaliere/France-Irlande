@@ -239,6 +239,20 @@
     return Math.max(0, Math.round(kmTotal - prevKm));
   }
 
+  // Filter tracks to only include entries with dates matching existing stages.
+  // Orphan tracks (without a corresponding stage date) are excluded.
+  // If stages are not loaded yet, return tracks unchanged.
+  function filterTracksByStages(tracks, stages){
+    if(!tracks || typeof tracks !== 'object') return {};
+    if(!stages || typeof stages !== 'object') return tracks;
+    var stageDates = Object.keys(stages);
+    if(!stageDates.length) return tracks;
+    return stageDates.reduce(function(acc, date){
+      if(tracks[date]) acc[date] = tracks[date];
+      return acc;
+    }, {});
+  }
+
   // Indique si un write peut passer par la queue offline.
   function isOfflineable(path) {
     if (typeof path !== 'string') return false;
@@ -341,6 +355,7 @@
     RTDB_QUOTA_BYTES: RTDB_QUOTA_BYTES,
     safeFetch: safeFetch,
     computeKmDay: computeKmDay,
+    filterTracksByStages: filterTracksByStages,
     isOfflineable: isOfflineable,
     actionLabel: actionLabel,
     filterVisibleJournalDates: filterVisibleJournalDates,
