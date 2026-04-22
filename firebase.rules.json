@@ -95,13 +95,6 @@
       },
       "$other": { ".validate": false }
     },
-    "config": {
-      "warmshowersToken": {
-        ".read": "auth != null",
-        ".write": "auth != null",
-        ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 2000"
-      }
-    },
     "expenses": {
       ".read": "auth != null",
       ".write": "auth != null",
