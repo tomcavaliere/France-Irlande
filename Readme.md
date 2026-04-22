@@ -1,4 +1,4 @@
-# EuroVelo 1 — France → Irlande
+# biketrip — France → Irlande
 
 PWA de suivi de voyage bikepacking en temps réel (Tom + proches), déployée sur GitHub Pages.
 
