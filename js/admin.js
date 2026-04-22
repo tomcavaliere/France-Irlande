@@ -251,10 +251,37 @@ function initAuth(){
 }
 
 // ==== POSITION GPS ====
+/**
+ * Construit un message utilisateur à partir d'une erreur Geolocation API.
+ * @param {GeolocationPositionError|null|undefined} err
+ * @returns {string} "Permission refusée", "Permission refusée (Safari)...",
+ * "Position indisponible", "Timeout GPS" ou "Erreur GPS" selon le code.
+ * La branche Safari est appliquée uniquement sur un refus (code 1), car ce
+ * navigateur nécessite souvent une activation manuelle côté réglages du site.
+ */
+function geoErrorMessage(err){
+  var code=err&&typeof err.code==='number'?err.code:0;
+  if(code===1){
+    var ua=navigator.userAgent||'';
+    var isSafari=/Safari/i.test(ua)&&!/Chrome|CriOS|Edg|OPR|FxiOS/i.test(ua);
+    if(isSafari){
+      return 'Permission refusée (Safari) : autoriser la localisation pour ce site puis réessayer';
+    }
+    return 'Permission refusée';
+  }
+  if(code===2)return 'Position indisponible';
+  if(code===3)return 'Timeout GPS';
+  return 'Erreur GPS';
+}
+
 function updatePosition(){
   if(!isAdmin)return;
   var statusEl=document.getElementById('posGpsStatus');
   if(statusEl)statusEl.textContent='Localisation...';
+  if(!window.isSecureContext){
+    if(statusEl)statusEl.textContent='GPS bloqué : utiliser HTTPS';
+    return;
+  }
   if(!navigator.geolocation){
     if(statusEl)statusEl.textContent='GPS non disponible';
     return;
@@ -302,7 +329,8 @@ function updatePosition(){
     if(statusEl)statusEl.textContent='±'+accuracy+'m · '+Math.round(GPSCore.sumTrackKm(getEffectiveTracks()))+' km GPX';
     if(map)map.setView([lat,lon],12);
   },function(err){
-    var msg=err.code===1?'Permission refusée':err.code===2?'Position indisponible':'Timeout';
+    var msg=geoErrorMessage(err);
+    if(err&&err.message)console.error('[updatePosition/geolocation]',err.message);
     var statusEl=document.getElementById('posGpsStatus');
     if(statusEl)statusEl.textContent=msg;
   },{enableHighAccuracy:true,timeout:15000});
