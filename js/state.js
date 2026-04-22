@@ -94,8 +94,13 @@ function isOfflineable(path) { return Utils.isOfflineable(path); }
 function actionLabel(path) { return Utils.actionLabel(path); }
 function filterVisibleJournalDates(stg, admin) { return Utils.filterVisibleJournalDates(stg, admin); }
 
-// Tracks effectivement liés à des étapes existantes.
-// Si les étapes ne sont pas encore chargées, conserve le comportement actuel.
+// Tracks effectively linked to existing stage dates.
+// If stages are not loaded yet, keep current behavior unchanged.
+/**
+ * Returns the effective tracks map used for map/counter rendering.
+ * Filters out orphan tracks when stage dates are available.
+ * @returns {Object<string, {coords:Array,kmDay:number,elevGain?:number,ts:number}>}
+ */
 function getEffectiveTracks(){
   if(!tracks || typeof tracks !== 'object') return {};
   if(!stages || typeof stages !== 'object') return tracks;
