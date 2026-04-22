@@ -266,20 +266,30 @@ function updatePosition(){
     var snapped=snapToRoute(lat,lon);
     var kmTotal=Math.round(snapped.kmTotal);
     var kmDay=computeKmDay(kmTotal,stages,todayISO);
+    var nowTs=Date.now();
 
     // Écriture 1 : /current (pointeur live)
-    var currentData={lat:lat,lon:lon,kmTotal:kmTotal,kmDay:kmDay,date:todayISO,ts:Date.now()};
+    var currentData={lat:lat,lon:lon,kmTotal:kmTotal,kmDay:kmDay,date:todayISO,ts:nowTs};
+
+    // Écriture 2 : /stages/{today} — préserve les champs existants
+    // et recrée l'entrée du jour si elle n'existe plus (ex: suppression admin).
+    var existingStage=stages[todayISO]||{};
+    var stageData=Object.assign({},existingStage,{
+      lat:lat,lon:lon,kmTotal:kmTotal,kmDay:kmDay,
+      note:typeof existingStage.note==='string'?existingStage.note:'',
+      published:typeof existingStage.published==='boolean'?existingStage.published:false,
+      ts:nowTs
+    });
+    if(stageData.journalDeleted===true)delete stageData.journalDeleted;
+
+    // Optimistic local state to keep the GPS button flow responsive,
+    // even if /stages is lazy-loaded or has just been deleted/recreated.
+    current=currentData;
+    stages=Object.assign({},stages,{[todayISO]:Object.assign({},stageData)});
+
     window._fbSet(window._fbRef(window._fbDb,'current'),currentData)
       .catch(function(err){ console.error('[updatePosition/current]',err); });
 
-    // Écriture 2 : /stages/{today} — préserve les champs existants
-    var existingStage=stages[todayISO]||{};
-    var stageData={
-      lat:lat,lon:lon,kmTotal:kmTotal,kmDay:kmDay,
-      note:existingStage.note||'',
-      published:existingStage.published||false,
-      ts:Date.now()
-    };
     window._fbSet(window._fbRef(window._fbDb,'stages/'+todayISO),stageData)
       .catch(function(err){ console.error('[updatePosition/stage]',err); });
 
