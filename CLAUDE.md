@@ -1,7 +1,7 @@
 # EuroVelo 1 — Bikepacking France → Irlande
 
 PWA de suivi de voyage en temps réel. Tom journalise, ses proches suivent en live.
-Tracé complet : France (Chamonix → Roscoff) + Irlande (Cork → Sligo).
+Tracé complet : France (Annecy → Roscoff) + Irlande (Cork → Sligo).
 
 ## Stack
 

@@ -182,11 +182,10 @@
       <span class="pos-gps-status" id="posGpsStatus">Non localisé</span>
     </div>
     <div class="pos-badge" id="posBadge">
-      <div class="pos-badge-t" id="posT">Prochaine : Cork → Kinsale</div>
-      <div class="pos-badge-s" id="posS">~2978 km restants (vol d'oiseau)</div>
+      <div class="pos-badge-t" id="posT">0% — route France → Irlande</div>
+      <div class="pos-badge-s hidden" id="posS"></div>
       <div class="pos-bar">
         <div class="pos-bar-f w-0" id="posB"></div>
-        <div class="pos-bike" id="posBike" aria-hidden="true">🚴‍♂️</div>
       </div>
     </div>
   </div>
@@ -196,11 +195,12 @@
     <div class="recap" id="recapBox">
       <div class="recap-t">Progression globale</div>
       <div class="recap-grid">
-        <div class="recap-item"><div class="recap-v" id="rKmD">0</div><div class="recap-l">km parcourus</div></div>
-        <div class="recap-item"><div class="recap-v" id="rKmL">2978</div><div class="recap-l">km restants (~)</div></div>
+        <div class="recap-item"><div class="recap-v" id="rKmD">0</div><div class="recap-l">km parcourus (~)</div></div>
+        <div class="recap-item"><div class="recap-v" id="rKmL">0</div><div class="recap-l">km restants (~)</div></div>
         <div class="recap-item"><div class="recap-v" id="rDays">0</div><div class="recap-l">jours</div></div>
         <div class="recap-item"><div class="recap-v" id="rAvg">—</div><div class="recap-l">km/jour moy.</div></div>
       </div>
+      <div class="recap-real hidden" id="rKmReal"></div>
       <div class="recap-bar"><div class="recap-bar-f w-0" id="rBar"></div></div>
     </div>
     <div id="weatherBox"></div>

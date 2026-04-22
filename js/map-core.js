@@ -135,7 +135,8 @@ function updateMap(){
     document.getElementById('posT').textContent=seg+' — '+Math.round(kmD)+' km parcourus';
     document.getElementById('posS').textContent='~'+Math.round(kmL)+' km restants (vol d\'oiseau)';
     document.getElementById('posB').style.width=progressPercentClamped+'%';
-    document.getElementById('posBike').style.left=bikeIndicatorPercent+'%';
+    var posBike=document.getElementById('posBike');
+    if(posBike)posBike.style.left=bikeIndicatorPercent+'%';
   } else {
     badge.classList.remove('vis');
   }

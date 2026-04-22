@@ -66,7 +66,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .pos-badge-s{font-size:11px;color:var(--text-light);margin-top:2px}
 .pos-bar{position:relative;height:6px;background:#e0e0e0;border-radius:3px;margin-top:8px;overflow:hidden}
 .pos-bar-f{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--green),var(--orange));transition:width .5s}
-.pos-bike{position:absolute;left:0;top:50%;transform:translate(-50%,-50%);font-size:16px;line-height:1;transition:left .5s;filter:drop-shadow(0 1px 1px rgba(0,0,0,.2))}
 
 .recap{background:linear-gradient(135deg,var(--green),var(--green-light));border-radius:var(--radius);
   padding:16px;color:#fff;margin-bottom:16px;box-shadow:var(--shadow)}
@@ -77,6 +76,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .recap-l{font-size:10px;opacity:.8;text-transform:uppercase;letter-spacing:.3px}
 .recap-bar{height:8px;background:rgba(255,255,255,.2);border-radius:4px;margin-top:12px;overflow:hidden}
 .recap-bar-f{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--orange),var(--orange-light));transition:width .5s}
+.recap-real{font-size:12px;opacity:.85;margin-top:8px;text-align:center}
 
 .stage-card{background:var(--card);border-radius:var(--radius);padding:14px 14px 14px 18px;
   margin-bottom:10px;box-shadow:var(--shadow);cursor:pointer;transition:transform .15s;
