@@ -239,7 +239,8 @@
     return Math.max(0, Math.round(kmTotal - prevKm));
   }
 
-  // Filter tracks to stage dates to ignore orphan tracks.
+  // Filter tracks to only include entries with dates matching existing stages.
+  // Orphan tracks (without a corresponding stage date) are excluded.
   // If stages are not loaded yet, return tracks unchanged.
   function filterTracksByStages(tracks, stages){
     if(!tracks || typeof tracks !== 'object') return {};

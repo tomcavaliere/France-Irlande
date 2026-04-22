@@ -94,8 +94,6 @@ function isOfflineable(path) { return Utils.isOfflineable(path); }
 function actionLabel(path) { return Utils.actionLabel(path); }
 function filterVisibleJournalDates(stg, admin) { return Utils.filterVisibleJournalDates(stg, admin); }
 
-// Tracks effectively linked to existing stage dates.
-// If stages are not loaded yet, keep current behavior unchanged.
 /**
  * Returns the effective tracks map used for map/counter rendering.
  * Filters out orphan tracks when stage dates are available.
