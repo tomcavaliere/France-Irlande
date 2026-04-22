@@ -274,22 +274,19 @@ function updatePosition(){
     // Écriture 2 : /stages/{today} — préserve les champs existants
     // et recrée l'entrée du jour si elle n'existe plus (ex: suppression admin).
     var existingStage=stages[todayISO]||{};
-    var stageData={
+    var stageData=Object.assign({},existingStage,{
       lat:lat,lon:lon,kmTotal:kmTotal,kmDay:kmDay,
       note:typeof existingStage.note==='string'?existingStage.note:'',
       published:existingStage.published===true,
       ts:nowTs
-    };
-    if(existingStage.elevGain!==undefined)stageData.elevGain=existingStage.elevGain;
+    });
+    if(stageData.journalDeleted===true)delete stageData.journalDeleted;
 
     // Optimistic local state to keep the GPS button flow responsive,
     // even if /stages is lazy-loaded or has just been deleted/recreated.
     current=currentData;
     stages=Object.assign({},stages);
-    stages[todayISO]=Object.assign({},existingStage,stageData);
-    if(stages[todayISO].journalDeleted===true){
-      delete stages[todayISO].journalDeleted;
-    }
+    stages[todayISO]=Object.assign({},stageData);
 
     window._fbSet(window._fbRef(window._fbDb,'current'),currentData)
       .catch(function(err){ console.error('[updatePosition/current]',err); });
