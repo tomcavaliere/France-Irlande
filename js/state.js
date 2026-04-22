@@ -102,13 +102,5 @@ function filterVisibleJournalDates(stg, admin) { return Utils.filterVisibleJourn
  * @returns {Object<string, {coords:Array,kmDay:number,elevGain?:number,ts:number}>}
  */
 function getEffectiveTracks(){
-  if(!tracks || typeof tracks !== 'object') return {};
-  if(!stages || typeof stages !== 'object') return tracks;
-  var stageDates=Object.keys(stages);
-  if(!stageDates.length) return tracks;
-  var filtered={};
-  stageDates.forEach(function(date){
-    if(tracks[date]) filtered[date]=tracks[date];
-  });
-  return filtered;
+  return Utils.filterTracksByStages(tracks, stages);
 }
