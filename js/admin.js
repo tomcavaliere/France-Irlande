@@ -277,7 +277,7 @@ function updatePosition(){
     var stageData=Object.assign({},existingStage,{
       lat:lat,lon:lon,kmTotal:kmTotal,kmDay:kmDay,
       note:typeof existingStage.note==='string'?existingStage.note:'',
-      published:existingStage.published===true,
+      published:(existingStage.published===true)||false,
       ts:nowTs
     });
     if(stageData.journalDeleted===true)delete stageData.journalDeleted;
@@ -285,8 +285,9 @@ function updatePosition(){
     // Optimistic local state to keep the GPS button flow responsive,
     // even if /stages is lazy-loaded or has just been deleted/recreated.
     current=currentData;
-    stages=Object.assign({},stages);
-    stages[todayISO]=Object.assign({},stageData);
+    var nextStage={};
+    nextStage[todayISO]=Object.assign({},stageData);
+    stages=Object.assign({},stages,nextStage);
 
     window._fbSet(window._fbRef(window._fbDb,'current'),currentData)
       .catch(function(err){ console.error('[updatePosition/current]',err); });
