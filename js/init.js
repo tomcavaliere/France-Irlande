@@ -33,6 +33,7 @@ function _subscribeEvents(){
   Events.on('state:tracks-changed',function(){
     renderTrackPolylines();
     renderStages();
+    updateMap();
   });
   Events.on('state:journal-changed',function(){
     if(activeTab()==='journal'){renderJournal();journalDirty=false;}
