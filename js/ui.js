@@ -40,6 +40,7 @@ var ACTIONS={
   deleteJournalEntry:function(a){deleteJournalEntry(a);},
   onJournalInput:function(a,b,el,e){onJournalInput(a,b,el,e);},
   addBravo:function(a){addBravo(a);},
+  showBravosList:function(a){showBravosList(a);},
   deleteExpense:function(a){deleteExpense(a);},
   postComment:function(a){postComment(a);},
   deleteComment:function(a,b){deleteComment(a,b);},
