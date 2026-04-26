@@ -143,8 +143,12 @@ function closeModal(){document.getElementById('stageModal').classList.remove('vi
 var _lightboxDate='';
 var _lightboxItems=[];
 var _lightboxIndex=-1;
-var MIN_SWIPE_DISTANCE_PX=40;
-var _lightboxKeyHandler=null;
+var _minSwipeDistancePx=40;
+var _lightboxKeyHandler=function(e){
+  if(e.key==='ArrowLeft')_navigateLightbox(-1);
+  if(e.key==='ArrowRight')_navigateLightbox(1);
+  if(e.key==='Escape')closeLightbox();
+};
 var _lightboxKeyBound=false;
 
 function _buildLightboxItems(date){
@@ -228,7 +232,7 @@ function closeLightbox(){
 
 function initLightboxNavigation(){
   var lb=document.getElementById('lightbox');
-  if(!lb||lb.dataset.navBound==='1')return;
+  if(!lb||lb.dataset.navBound==='true')return;
   lb.dataset.navBound='true';
   var startX=0;
   var startY=0;
@@ -245,15 +249,11 @@ function initLightboxNavigation(){
     var endY=e.changedTouches[0].clientY;
     var dx=endX-startX;
     var dy=endY-startY;
-    if(Math.abs(dx)<MIN_SWIPE_DISTANCE_PX||Math.abs(dx)<=Math.abs(dy))return;
+    if(Math.abs(dx)<_minSwipeDistancePx)return;
+    if(Math.abs(dx)<=Math.abs(dy))return;
     if(dx<0)_navigateLightbox(1);
     else _navigateLightbox(-1);
   },{passive:true});
-  _lightboxKeyHandler=function(e){
-    if(e.key==='ArrowLeft')_navigateLightbox(-1);
-    if(e.key==='ArrowRight')_navigateLightbox(1);
-    if(e.key==='Escape')closeLightbox();
-  };
 }
 
 // ==== SYNC DOT ====
