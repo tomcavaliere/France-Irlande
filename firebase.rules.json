@@ -95,6 +95,24 @@
       },
       "$other": { ".validate": false }
     },
+    "commentLikes": {
+      ".read": "auth != null",
+      "$date": {
+        "$id": {
+          ".write": "auth != null",
+          ".validate": "!newData.exists() || newData.val() === true"
+        }
+      }
+    },
+    "commentReplies": {
+      ".read": true,
+      "$date": {
+        "$id": {
+          ".write": "auth != null",
+          ".validate": "!newData.exists() || (newData.hasChildren(['text','ts']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 500 && newData.child('ts').isNumber() && newData.child('ts').val() > 0)"
+        }
+      }
+    },
     "expenses": {
       ".read": "auth != null",
       ".write": "auth != null",
