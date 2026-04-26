@@ -5,7 +5,7 @@ import utils from '../js/utils.js';
 const {
   escAttr, escHtml, formatTime, summarizeExpenses,
   validateComment, validateExpense, validateJournal,
-  EXPENSE_CATEGORIES, LIMITS,
+  EXPENSE_CATEGORIES, EXPENSE_PERSONS, LIMITS,
   computeQuotaBytes, formatBytes, quotaLevel, RTDB_QUOTA_BYTES,
   safeFetch, computeKmDay, filterTracksByStages, isOfflineable: _isOfflineable, actionLabel: _actionLabel, filterVisibleJournalDates: _filterVisibleJournalDates,
   COMMENT_COOLDOWN_MS, isCommentOnCooldown, commentCooldownRemaining
@@ -63,10 +63,10 @@ describe('formatTime', () => {
 
 describe('summarizeExpenses', () => {
   const sample = {
-    e1: { amount: 12.5, cat: 'Nourriture',  date: '2026-04-01', desc: 'Pain' },
-    e2: { amount: 35,   cat: 'Hébergement', date: '2026-04-01', desc: 'Camping' },
-    e3: { amount: 8,    cat: 'Nourriture',  date: '2026-04-02', desc: 'Café' },
-    e4: { amount: 4.5,  cat: 'Transport',   date: '2026-04-02', desc: 'Bus' }
+    e1: { amount: 12.5, cat: 'Nourriture',  date: '2026-04-01', desc: 'Pain',    paidBy: 'Tom' },
+    e2: { amount: 35,   cat: 'Hébergement', date: '2026-04-01', desc: 'Camping', paidBy: 'Chloé' },
+    e3: { amount: 8,    cat: 'Nourriture',  date: '2026-04-02', desc: 'Café',    paidBy: 'Tom' },
+    e4: { amount: 4.5,  cat: 'Transport',   date: '2026-04-02', desc: 'Bus',     paidBy: 'Chloé' }
   };
 
   it('calcule le total exact', () => {
@@ -103,10 +103,50 @@ describe('summarizeExpenses', () => {
 
   it('valeurs amount non-numériques traitées comme 0', () => {
     const r = summarizeExpenses({
-      e1: { amount: 10, cat: 'Autre', date: '2026-04-01' },
-      e2: { amount: 'oops', cat: 'Autre', date: '2026-04-01' }
+      e1: { amount: 10, cat: 'Autre', date: '2026-04-01', paidBy: 'Tom' },
+      e2: { amount: 'oops', cat: 'Autre', date: '2026-04-01', paidBy: 'Tom' }
     });
     expect(r.total).toBe(10);
+  });
+
+  it('calcule byPerson pour chaque payeur', () => {
+    const r = summarizeExpenses(sample);
+    // Tom: 12.5 + 8 = 20.5 ; Chloé: 35 + 4.5 = 39.5
+    expect(r.byPerson['Tom']).toBeCloseTo(20.5, 5);
+    expect(r.byPerson['Chloé']).toBeCloseTo(39.5, 5);
+  });
+
+  it('calcule la balance correctement (Chloé a plus payé)', () => {
+    const r = summarizeExpenses(sample);
+    // balance = (Tom - Chloé) / 2 = (20.5 - 39.5) / 2 = -9.5 → Tom doit à Chloé
+    expect(r.balance).toBeCloseTo(-9.5, 5);
+  });
+
+  it('balance = 0 si les deux ont payé la même somme', () => {
+    const r = summarizeExpenses({
+      e1: { amount: 50, cat: 'Autre', date: '2026-04-01', paidBy: 'Tom' },
+      e2: { amount: 50, cat: 'Autre', date: '2026-04-01', paidBy: 'Chloé' }
+    });
+    expect(r.balance).toBe(0);
+  });
+
+  it('ignore les dépenses sans paidBy dans byPerson', () => {
+    const r = summarizeExpenses({
+      e1: { amount: 30, cat: 'Autre', date: '2026-04-01', paidBy: 'Tom' },
+      e2: { amount: 20, cat: 'Autre', date: '2026-04-01' }
+    });
+    expect(r.byPerson['Tom']).toBe(30);
+    expect(r.byPerson['Chloé']).toBeUndefined();
+    // balance uniquement sur les dépenses avec paidBy
+    expect(r.balance).toBeCloseTo(15, 5);
+  });
+
+  it('byPerson et balance vides si aucune dépense avec paidBy', () => {
+    const r = summarizeExpenses({
+      e1: { amount: 10, cat: 'Autre', date: '2026-04-01' }
+    });
+    expect(r.byPerson).toEqual({});
+    expect(r.balance).toBe(0);
   });
 });
 
@@ -167,7 +207,7 @@ describe('validateComment', () => {
 });
 
 describe('validateExpense', () => {
-  const valid = { amount: 12.5, cat: 'Nourriture', date: '2026-04-15', desc: 'Pain' };
+  const valid = { amount: 12.5, cat: 'Nourriture', date: '2026-04-15', desc: 'Pain', paidBy: 'Tom' };
 
   it('accepte une dépense standard', () => {
     expect(validateExpense(valid)).toEqual({ ok: true });
@@ -242,6 +282,20 @@ describe('validateExpense', () => {
 
   it('rejette date avec espaces même si visuellement ISO', () => {
     expect(validateExpense({ ...valid, date: ' 2026-05-01 ' }).ok).toBe(false);
+  });
+
+  it('rejette paidBy absent ou hors liste', () => {
+    const { paidBy: _pb, ...rest } = valid;
+    expect(validateExpense(rest).ok).toBe(false);
+    expect(validateExpense({ ...valid, paidBy: 'Jean' }).ok).toBe(false);
+    expect(validateExpense({ ...valid, paidBy: '' }).ok).toBe(false);
+    expect(validateExpense({ ...valid, paidBy: undefined }).ok).toBe(false);
+  });
+
+  it('accepte tous les payeurs valides (EXPENSE_PERSONS)', () => {
+    EXPENSE_PERSONS.forEach(paidBy => {
+      expect(validateExpense({ ...valid, paidBy }).ok).toBe(true);
+    });
   });
 });
 

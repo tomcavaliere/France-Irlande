@@ -395,7 +395,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .dep-form select,.dep-form input{border:1px solid #e0e0e0;border-radius:10px;padding:10px;
   font-family:inherit;font-size:14px;outline:none;background:#fff;width:100%}
 .dep-form select:focus,.dep-form input:focus{border-color:var(--green)}
-.dep-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dep-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px}
 .dep-card{background:var(--card);border-radius:12px;padding:12px 14px;margin-bottom:8px;
   box-shadow:var(--shadow);display:flex;align-items:center;gap:12px}
 .dep-cat-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
@@ -412,6 +412,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .dep-amount{font-size:15px;font-weight:700;color:var(--green);white-space:nowrap;margin-left:8px}
 .dep-meta{font-size:11px;color:var(--text-light);margin-top:2px}
 .dep-del{background:none;border:none;font-size:16px;color:#ccc;cursor:pointer;padding:4px;flex-shrink:0}
+.dep-person-tag{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:6px;vertical-align:middle;letter-spacing:.3px}
+.dep-person-tom{background:#dbeafe;color:#1d4ed8}
+.dep-person-chloe{background:#fce7f3;color:#9d174d}
+.dep-balance{margin-top:12px;border-top:1px solid rgba(255,255,255,.25);padding-top:10px}
+.dep-balance-row{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.dep-balance-val{margin-left:auto;font-size:14px;font-weight:700}
+.dep-balance-owe{font-size:12px;margin-top:6px;opacity:.95;text-align:center}
 .dep-day-header{font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;
   letter-spacing:.5px;margin:14px 0 6px;padding-left:2px}
 .dep-cat-bar{margin-top:12px}

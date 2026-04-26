@@ -147,6 +147,9 @@
         "desc": {
           ".validate": "newData.isString() && newData.val().length <= 100"
         },
+        "paidBy": {
+          ".validate": "newData.isString() && (newData.val() === 'Tom' || newData.val() === 'Chloé')"
+        },
         "$other": { ".validate": false }
       }
     },
