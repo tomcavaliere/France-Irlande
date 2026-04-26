@@ -146,8 +146,8 @@ var _lightboxIndex=-1;
 var _minSwipeDistancePx=40;
 var _lightboxKeyHandler=function(e){
   if(e.key==='ArrowLeft')_navigateLightbox(-1);
-  if(e.key==='ArrowRight')_navigateLightbox(1);
-  if(e.key==='Escape')closeLightbox();
+  else if(e.key==='ArrowRight')_navigateLightbox(1);
+  else if(e.key==='Escape')closeLightbox();
 };
 var _lightboxKeyBound=false;
 
@@ -166,10 +166,7 @@ function _buildLightboxItems(date){
 }
 
 function _findLightboxIndex(id){
-  for(var i=0;i<_lightboxItems.length;i++){
-    if(_lightboxItems[i].id===id)return i;
-  }
-  return -1;
+  return _lightboxItems.findIndex(function(item){return item.id===id;});
 }
 
 function _renderLightboxCurrent(){
@@ -212,7 +209,7 @@ function openLightbox(id,i){
     _lightboxIndex=0;
   }
   _renderLightboxCurrent();
-  if(_lightboxKeyHandler&&!_lightboxKeyBound){
+  if(!_lightboxKeyBound){
     document.addEventListener('keydown',_lightboxKeyHandler);
     _lightboxKeyBound=true;
   }
