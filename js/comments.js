@@ -21,7 +21,7 @@ function renderStageCommentsHtml(i){
       var liked=!!(stageLikes[id]);
       var reply=stageReplies[id]||null;
       var replyOpen=!!_replyOpen[i+'/'+id];
-      var likeBadgeHtml=liked?'<div class="comment-like-view">❤️ Aimé par Tom</div>':'';
+      var likeBadgeHtml=liked?'<div class="comment-like-view">❤️ Aimé</div>':'';
       var adminExtraHtml='';
       if(isAdmin){
         adminExtraHtml+=

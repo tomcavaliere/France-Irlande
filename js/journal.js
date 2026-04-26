@@ -222,7 +222,7 @@ function loadStageContent(date){
     _removeSkeleton(date);
   });
 
-  // Visitor-visible: display comments liked by Tom (likes are admin-written).
+  // Visitor-visible: display liked comments (likes are admin-written).
   commentLikesUnsub[date]=window._fbOnValue(window._fbRef(window._fbDb,'commentLikes/'+date),function(snap){
     commentLikes[date]=snap.val()||{};
     patchStageComments(date);
