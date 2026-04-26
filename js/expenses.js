@@ -23,10 +23,11 @@ function addExpense(){
   var cat=document.getElementById('depCat').value;
   var amount=parseFloat(document.getElementById('depAmount').value);
   var desc=document.getElementById('depDesc').value.trim();
-  var v=Utils.validateExpense({amount:amount,cat:cat,date:date,desc:desc||undefined});
+  var paidBy=document.getElementById('depPaidBy').value;
+  var v=Utils.validateExpense({amount:amount,cat:cat,date:date,desc:desc||undefined,paidBy:paidBy});
   if(!v.ok){showToast(v.error,'warn');return;}
   var id='d'+Date.now()+'_'+Math.random().toString(36).slice(2,5);
-  var exp={date:date,cat:cat,amount:amount,desc:desc||cat,ts:Date.now()};
+  var exp={date:date,cat:cat,amount:amount,desc:desc||cat,paidBy:paidBy,ts:Date.now()};
   // Optimistic UI
   expenses[id]=Object.assign({},exp,{_pending:true});
   saveExpensesCache();
@@ -54,6 +55,32 @@ function deleteExpense(id){
 
 function renderExpenses(){
   var s=Utils.summarizeExpenses(expenses);
+  var tomTotal=s.byPerson['Tom']||0;
+  var chloeTotal=s.byPerson['Chloé']||0;
+  // Balance message
+  var balanceHtml='';
+  if(tomTotal>0||chloeTotal>0){
+    var diff=Math.abs(s.balance).toFixed(2);
+    var balanceMsg='';
+    if(Math.abs(s.balance)<0.01){
+      balanceMsg='⚖️ À l\'équilibre !';
+    } else if(s.balance>0){
+      balanceMsg='👉 Chloé doit <strong>'+diff+'€</strong> à Tom';
+    } else {
+      balanceMsg='👉 Tom doit <strong>'+diff+'€</strong> à Chloé';
+    }
+    balanceHtml='<div class="dep-balance">'+
+      '<div class="dep-balance-row">'+
+        '<span class="dep-person-tag dep-person-tom">Tom</span>'+
+        '<span class="dep-balance-val">'+tomTotal.toFixed(0)+'€</span>'+
+      '</div>'+
+      '<div class="dep-balance-row">'+
+        '<span class="dep-person-tag dep-person-chloe">Chloé</span>'+
+        '<span class="dep-balance-val">'+chloeTotal.toFixed(0)+'€</span>'+
+      '</div>'+
+      '<div class="dep-balance-owe">'+balanceMsg+'</div>'+
+    '</div>';
+  }
   // Summary
   var catBarHtml=Object.keys(DEP_COLORS).map(function(cat){
     if(!s.byCat[cat])return '';
@@ -72,6 +99,7 @@ function renderExpenses(){
         '<div class="dep-sum-item"><div class="dep-sum-v">'+s.perDay.toFixed(0)+'€</div><div class="dep-sum-l">/ jour</div></div>'+
       '</div>'+
       (catBarHtml?'<div class="dep-cat-bar">'+catBarHtml+'</div>':'')+
+      balanceHtml+
     '</div>';
   // List by date
   var listHtml='';
@@ -82,6 +110,9 @@ function renderExpenses(){
     listHtml+='<div class="dep-day-header">'+label+' — '+dayTotal.toFixed(0)+'€</div>';
     s.byDate[date].forEach(function(item){
       var dotClass=DEP_DOT_CLASS[item.expense.cat]||'dep-dot-default';
+      var personTag=item.expense.paidBy?
+        '<span class="dep-person-tag dep-person-'+(item.expense.paidBy==='Tom'?'tom':'chloe')+'">'+escHtml(item.expense.paidBy)+'</span>':
+        '';
       listHtml+='<div class="dep-card">'+
         '<div class="dep-cat-dot '+dotClass+'"></div>'+
         '<div class="dep-info">'+
@@ -89,7 +120,7 @@ function renderExpenses(){
             '<div class="dep-desc">'+escHtml(item.expense.desc)+(item.expense._pending?' ⏳':'')+'</div>'+
             '<div class="dep-amount">'+item.expense.amount.toFixed(2)+'€</div>'+
           '</div>'+
-          '<div class="dep-meta">'+item.expense.cat+'</div>'+
+          '<div class="dep-meta">'+item.expense.cat+personTag+'</div>'+
         '</div>'+
         '<button class="dep-del" data-action="deleteExpense" data-arg="'+escAttr(item.id)+'">🗑</button>'+
         '</div>';
@@ -108,6 +139,12 @@ function initExpenses(){
     selectEl.innerHTML=Utils.EXPENSE_CATEGORIES.map(function(cat){
       var icon=CAT_ICONS[cat]||'';
       return '<option value="'+cat+'">'+(icon?icon+' ':'')+cat+'</option>';
+    }).join('');
+  }
+  var paidByEl=document.getElementById('depPaidBy');
+  if(paidByEl){
+    paidByEl.innerHTML=Utils.EXPENSE_PERSONS.map(function(p){
+      return '<option value="'+p+'">'+p+'</option>';
     }).join('');
   }
   // Appliquer la limite de taille depuis Utils.LIMITS

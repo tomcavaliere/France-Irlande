@@ -33,6 +33,9 @@
     'Hébergement', 'Nourriture', 'Transport', 'Équipement', 'Loisirs', 'Autre'
   ];
 
+  // Personnes pouvant effectuer une dépense (liste fermée).
+  var EXPENSE_PERSONS = ['Tom', 'Chloé'];
+
   // Limites de taille partagées entre validation client et règles Firebase.
   var LIMITS = {
     COMMENT_NAME: 30,
@@ -83,6 +86,9 @@
     }
     if (typeof e.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(e.date)) {
       return { ok: false, error: 'Date invalide (format YYYY-MM-DD attendu).' };
+    }
+    if (EXPENSE_PERSONS.indexOf(e.paidBy) === -1) {
+      return { ok: false, error: 'Le payeur doit être Tom ou Chloé.' };
     }
     if (e.desc !== null && e.desc !== undefined) {
       if (typeof e.desc !== 'string') {
@@ -204,14 +210,16 @@
     return attempt(0);
   }
 
-  // Agrège un objet de dépenses {id: {amount, cat, date, desc}} en un résumé.
-  // Retourne {total, days, perDay, byCat, byDate}.
+  // Agrège un objet de dépenses {id: {amount, cat, date, desc, paidBy}} en un résumé.
+  // Retourne {total, days, perDay, byCat, byDate, byPerson, balance}.
   // - byCat : { [cat]: total }
   // - byDate : { [yyyy-mm-dd]: [{id, expense}] } (ordre d'insertion)
+  // - byPerson : { [person]: total } — uniquement les dépenses avec paidBy renseigné
+  // - balance : (Tom - Chloé) / 2 → positif : Chloé doit à Tom ; négatif : Tom doit à Chloé
   // - days : nombre de jours distincts (>=1 pour éviter les divisions par zéro)
   function summarizeExpenses(expenses){
     var ids = Object.keys(expenses || {});
-    var total = 0, byCat = {}, byDate = {};
+    var total = 0, byCat = {}, byDate = {}, byPerson = {};
     ids.forEach(function(id){
       var e = expenses[id];
       var amt = Number(e.amount) || 0;
@@ -219,14 +227,22 @@
       byCat[e.cat] = (byCat[e.cat] || 0) + amt;
       if (!byDate[e.date]) byDate[e.date] = [];
       byDate[e.date].push({ id: id, expense: e });
+      if (e.paidBy && EXPENSE_PERSONS.indexOf(e.paidBy) !== -1) {
+        byPerson[e.paidBy] = (byPerson[e.paidBy] || 0) + amt;
+      }
     });
     var days = Object.keys(byDate).length || 1;
+    var tomTotal = byPerson['Tom'] || 0;
+    var chloeTotal = byPerson['Chloé'] || 0;
+    var balance = (tomTotal - chloeTotal) / 2;
     return {
       total: total,
       days: days,
       perDay: total / days,
       byCat: byCat,
-      byDate: byDate
+      byDate: byDate,
+      byPerson: byPerson,
+      balance: balance
     };
   }
 
@@ -348,6 +364,7 @@
     validateExpense: validateExpense,
     validateJournal: validateJournal,
     EXPENSE_CATEGORIES: EXPENSE_CATEGORIES,
+    EXPENSE_PERSONS: EXPENSE_PERSONS,
     LIMITS: LIMITS,
     computeQuotaBytes: computeQuotaBytes,
     formatBytes: formatBytes,
