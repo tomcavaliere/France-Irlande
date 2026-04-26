@@ -61,7 +61,11 @@ var _unsubTracks = null;     // unsub Firebase listener /tracks
 var tracksLayer = null;      // L.layerGroup des polylines oranges (réelles)
 
 // ==== COMMENTAIRES ====
-var comments = {};  // { [date]: { [id]: {name, text, ts} } }
+var comments = {};        // { [date]: { [id]: {name, text, ts} } }
+var commentLikes = {};    // { [date]: { [id]: true } }  — admin only
+var commentReplies = {};  // { [date]: { [id]: {text, ts} } }  — admin only
+var commentLikesUnsub = {};
+var commentRepliesUnsub = {};
 
 // ==== DÉPENSES ====
 var expenses = {};
@@ -78,6 +82,7 @@ var commentsUnsub = {};      // { [date]: fn }
 var bravosUnsub = {};        // { [date]: fn }
 var photosUnsub = {};        // { [date]: fn }
 var videosUnsub = {};        // { [date]: fn }
+// (commentLikesUnsub / commentRepliesUnsub declared above with commentLikes/commentReplies)
 var photoObserver = null;
 
 // ==== OFFLINE ====

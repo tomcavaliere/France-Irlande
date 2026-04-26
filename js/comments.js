@@ -1,8 +1,15 @@
 // comments.js
-// Stage comments: rendering, posting, deletion, cooldown.
+// Stage comments: rendering, posting, deletion, cooldown,
+// admin likes and admin replies.
+
+// Tracks which comment reply forms are currently open.
+// Key: "date/commentId", value: true
+var _replyOpen = {};
 
 function renderStageCommentsHtml(i){
   var stageCmts=comments[i]||{};
+  var stageLikes=commentLikes[i]||{};
+  var stageReplies=commentReplies[i]||{};
   var ids=Object.keys(stageCmts).sort(function(a,b){return (stageCmts[a].ts||0)-(stageCmts[b].ts||0);});
   var ei=escAttr(i);
   var html='<div class="stage-comments" id="scmts-'+ei+'">';
@@ -11,11 +18,43 @@ function renderStageCommentsHtml(i){
     ids.forEach(function(id){
       var c=stageCmts[id];
       var eid=escAttr(id);
+      var liked=!!(stageLikes[id]);
+      var reply=stageReplies[id]||null;
+      var replyOpen=!!_replyOpen[i+'/'+id];
+      var adminExtraHtml='';
+      if(isAdmin){
+        adminExtraHtml+=
+          '<div class="comment-admin-actions">'+
+            '<button class="comment-like-btn'+(liked?' comment-liked':'')+'" data-action="likeComment" data-arg="'+ei+'" data-arg2="'+eid+'" title="'+(liked?'Retirer le like':'Aimer ce commentaire')+'" aria-label="'+(liked?'Retirer le like':'Aimer ce commentaire')+'">'+
+              (liked?'&#x2764;&#xfe0f;':'&#x1f90d;')+
+            '</button>'+
+            '<button class="comment-reply-toggle" data-action="toggleReplyForm" data-arg="'+ei+'" data-arg2="'+eid+'" aria-label="'+(replyOpen?'Annuler la r\u00e9ponse':'R\u00e9pondre au commentaire')+'">'+
+              (replyOpen?'Annuler':'&#x1f4ac; R\u00e9pondre')+
+            '</button>'+
+          '</div>';
+        if(reply){
+          adminExtraHtml+=
+            '<div class="comment-reply">'+
+              '<span class="comment-reply-label">&#x21b3; Tom\u00a0:</span> '+
+              '<span class="comment-reply-text">'+escHtml(reply.text)+'</span>'+
+              '<button class="comment-reply-del" data-action="deleteReply" data-arg="'+ei+'" data-arg2="'+eid+'" title="Supprimer la r\u00e9ponse">&#x1f5d1;</button>'+
+            '</div>';
+        }
+        if(replyOpen){
+          var prefill=reply?escHtml(reply.text):'';
+          adminExtraHtml+=
+            '<div class="comment-reply-form" id="reply-form-'+ei+'-'+eid+'">'+
+              '<textarea id="reply-txt-'+ei+'-'+eid+'" class="comment-reply-ta" placeholder="Ta r\u00e9ponse..." maxlength="'+Utils.LIMITS.COMMENT_TEXT+'">'+prefill+'</textarea>'+
+              '<button class="btn btn-p comment-reply-send" data-action="postReply" data-arg="'+ei+'" data-arg2="'+eid+'">Envoyer &#x1f4e8;</button>'+
+            '</div>';
+        }
+      }
       html+='<div class="comment-card">'+
         '<span class="comment-name">'+escHtml(c.name)+'</span>'+
         '<span class="comment-time">'+formatTime(c.ts)+(c._pending?' ⏳':'')+'</span>'+
         (isAdmin?'<button class="comment-del" data-action="deleteComment" data-arg="'+ei+'" data-arg2="'+eid+'">&#x1f5d1;</button>':'')+
         '<div class="comment-text">'+escHtml(c.text)+'</div>'+
+        adminExtraHtml+
         '</div>';
     });
   }
@@ -86,6 +125,68 @@ function deleteComment(i,id){
     if(!ok)return;
     if(comments[i]){delete comments[i][id];patchStageComments(i);}
     tryWrite('remove','comments/'+i+'/'+id);
+    // Cleanup associated like and reply
+    if(commentLikes[i])delete commentLikes[i][id];
+    tryWrite('remove','commentLikes/'+i+'/'+id);
+    if(commentReplies[i])delete commentReplies[i][id];
+    tryWrite('remove','commentReplies/'+i+'/'+id);
+  });
+}
+
+function likeComment(date,id){
+  if(!isAdmin)return;
+  var liked=!!(commentLikes[date]&&commentLikes[date][id]);
+  if(liked){
+    if(commentLikes[date])delete commentLikes[date][id];
+    tryWrite('remove','commentLikes/'+date+'/'+id).catch(function(err){
+      console.error('[likeComment] remove failed',err);
+    });
+  }else{
+    if(!commentLikes[date])commentLikes[date]={};
+    commentLikes[date][id]=true;
+    tryWrite('set','commentLikes/'+date+'/'+id,true).catch(function(err){
+      console.error('[likeComment] set failed',err);
+    });
+  }
+  patchStageComments(date);
+}
+
+function toggleReplyForm(date,id){
+  if(!isAdmin)return;
+  var key=date+'/'+id;
+  _replyOpen[key]=!_replyOpen[key];
+  patchStageComments(date);
+  // Auto-focus textarea when opening
+  if(_replyOpen[key]){
+    setTimeout(function(){
+      var ta=document.getElementById('reply-txt-'+date+'-'+id);
+      if(ta)ta.focus();
+    },0);
+  }
+}
+
+function postReply(date,id){
+  if(!isAdmin)return;
+  var txtEl=document.getElementById('reply-txt-'+date+'-'+id);
+  var text=txtEl?txtEl.value.trim():'';
+  if(!text){if(txtEl)txtEl.focus();return;}
+  var data={text:text,ts:Date.now()};
+  if(!commentReplies[date])commentReplies[date]={};
+  commentReplies[date][id]=data;
+  delete _replyOpen[date+'/'+id];
+  patchStageComments(date);
+  tryWrite('set','commentReplies/'+date+'/'+id,data).catch(function(err){
+    console.error('[postReply]',err);
+  });
+}
+
+function deleteReply(date,id){
+  if(!isAdmin)return;
+  if(commentReplies[date])delete commentReplies[date][id];
+  delete _replyOpen[date+'/'+id];
+  patchStageComments(date);
+  tryWrite('remove','commentReplies/'+date+'/'+id).catch(function(err){
+    console.error('[deleteReply]',err);
   });
 }
 
