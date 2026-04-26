@@ -102,13 +102,17 @@ function _saveVisitorProfile(vid){
   });
 }
 
+function _visitorIdFallbackLabel(visitorId){
+  return 'ID '+String(visitorId||'').slice(0,8);
+}
+
 function _resolveVisitorNameById(visitorId){
   var known=visitorProfiles[visitorId];
   if(known&&typeof known.name==='string'&&known.name.trim()){
     return Promise.resolve(known.name.trim());
   }
   if(!window._fbDb||!window._fbGet||!window._fbRef){
-    return Promise.resolve('ID '+String(visitorId||'').slice(0,8));
+    return Promise.resolve(_visitorIdFallbackLabel(visitorId));
   }
   return window._fbGet(window._fbRef(window._fbDb,'visitorProfiles/'+visitorId))
     .then(function(snap){
@@ -118,11 +122,11 @@ function _resolveVisitorNameById(visitorId){
         visitorProfiles[visitorId]={name:name,ts:data&&data.ts?data.ts:0};
         return name;
       }
-      return 'ID '+String(visitorId||'').slice(0,8);
+      return _visitorIdFallbackLabel(visitorId);
     })
     .catch(function(err){
       console.error('[visitorProfiles/get]',err);
-      return 'ID '+String(visitorId||'').slice(0,8);
+      return _visitorIdFallbackLabel(visitorId);
     });
 }
 
