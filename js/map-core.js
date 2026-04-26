@@ -224,10 +224,55 @@ function updatePositionBadge(){
   if(el)el.textContent='J'+nbDays;
 }
 
+// Construit le HTML du popup affiché lors d'un clic sur un tracé GPX.
+// Affiche les métadonnées de l'étape + un extrait du journal si disponible,
+// ainsi qu'un bouton "Voir le journal" pour les visiteurs et l'admin.
+function _buildTrackPopupHtml(date){
+  var d=stages[date]||{};
+  var dateLabel=JournalCore.formatJournalDateLabel(date);
+  var note=d.note?escHtml(d.note):'Étape du jour';
+  var kmDay=d.kmDay?'🚴 '+Math.round(d.kmDay)+' km':'';
+  var elevGain=(typeof d.elevGain==='number'&&d.elevGain>0)?'⛰️ D+ '+Math.round(d.elevGain)+' m':'';
+  var stats=[kmDay,elevGain].filter(Boolean).join(' · ');
+  // Pour les visiteurs : n'affiche le bouton que si l'étape est publiée.
+  // Si stages n'est pas encore chargé (map tab, avant ouverture du carnet),
+  // on traite comme non publié pour respecter la politique d'accès visiteur.
+  var pub=stages[date]?!!(d.published):false;
+  var canViewJournal=isAdmin||pub;
+  var edate=escAttr(date);
+  var txt=journals[date]||'';
+  var excerpt=(txt&&canViewJournal)
+    ?'<div class="track-popup-excerpt">'+escHtml(txt.slice(0,120))+(txt.length>120?'…':'')+'</div>'
+    :'';
+  var btnHtml=canViewJournal
+    ?'<button class="track-popup-btn" data-action="navigateToJournalEntry" data-arg="'+edate+'">📖 Voir le journal</button>'
+    :'<div class="track-popup-nopub">Journal pas encore publié</div>';
+  return '<div class="track-popup">'+
+    '<div class="track-popup-date">'+dateLabel+'</div>'+
+    '<div class="track-popup-title">'+note+'</div>'+
+    (stats?'<div class="track-popup-stats">'+stats+'</div>':'')+
+    excerpt+
+    btnHtml+
+    '</div>';
+}
+
+// Navigue vers l'entrée de journal correspondant à une date.
+// Accessible depuis le popup de clic sur trace, pour visiteurs et admin.
+function navigateToJournalEntry(date){
+  if(map)map.closePopup();
+  switchTab('journal');
+  // Délai pour laisser le rendu du tab journal se terminer avant le scroll.
+  setTimeout(function(){
+    var entry=document.querySelector('#journalList .journal-entry[data-date="'+escAttr(date)+'"]');
+    if(entry)entry.scrollIntoView({behavior:'smooth',block:'start'});
+  },200);
+}
+
 // Affiche une L.polyline orange par étape ayant un tracé GPX réel dans /tracks.
 // Style : orange plein, épaisseur 3px. Z-order : au-dessus du tracé prévu via
 // le pane 'tracksPane' (z-index 450), en dessous du markerPane (z-index 600).
-// Visible par tous.
+// Visible par tous. Chaque tracé est cliquable et affiche une popup avec les
+// infos de l'étape. Le dernier point de chaque tracé reçoit un marqueur fin d'étape.
 function renderTrackPolylines(){
   if(!map)return;
   if(tracksLayer){tracksLayer.clearLayers();}
@@ -239,6 +284,18 @@ function renderTrackPolylines(){
   Object.keys(effectiveTracks).forEach(function(date){
     var t=effectiveTracks[date];
     if(!t||!Array.isArray(t.coords)||!t.coords.length)return;
-    L.polyline(t.coords,{color:'#e8772e',weight:3,opacity:1,pane:'tracksPane'}).addTo(tracksLayer);
+    var poly=L.polyline(t.coords,{color:'#e8772e',weight:3,opacity:1,pane:'tracksPane'});
+    poly.on('click',function(e){
+      L.popup({maxWidth:280}).setLatLng(e.latlng).setContent(_buildTrackPopupHtml(date)).openOn(map);
+    });
+    poly.addTo(tracksLayer);
+    // Marqueur fin d'étape au dernier point du tracé GPX
+    var lastPt=t.coords[t.coords.length-1];
+    var mkStageEnd=L.divIcon({className:'',iconSize:[20,20],iconAnchor:[10,10],
+      html:'<div class="marker-stage-end">⛺</div>'});
+    L.marker(lastPt,{icon:mkStageEnd,pane:'markerPane'}).addTo(tracksLayer)
+      .on('click',function(){
+        L.popup({maxWidth:280}).setLatLng(lastPt).setContent(_buildTrackPopupHtml(date)).openOn(map);
+      });
   });
 }

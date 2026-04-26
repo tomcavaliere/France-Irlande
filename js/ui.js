@@ -60,7 +60,8 @@ var ACTIONS={
   deleteGPX:function(a){deleteGPX(a);},
   checkVisitorPw:function(){checkVisitorPw();},
   showVisitorGate:function(){showVisitorGate();},
-  closeVisitorGate:function(){closeVisitorGate();}
+  closeVisitorGate:function(){closeVisitorGate();},
+  navigateToJournalEntry:function(a){navigateToJournalEntry(a);}
 };
 
 function invokeAction(name, args){
