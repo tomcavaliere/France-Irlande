@@ -143,7 +143,9 @@ function closeModal(){document.getElementById('stageModal').classList.remove('vi
 var _lightboxDate='';
 var _lightboxItems=[];
 var _lightboxIndex=-1;
-var SWIPE_THRESHOLD_PX=40;
+var MIN_SWIPE_DISTANCE_PX=40;
+var _lightboxKeyHandler=null;
+var _lightboxKeyBound=false;
 
 function _buildLightboxItems(date){
   var stagePhotos=photos[date]||{};
@@ -198,11 +200,18 @@ function openLightbox(id,i){
   _lightboxItems=_buildLightboxItems(_lightboxDate);
   _lightboxIndex=_findLightboxIndex(id);
   if(_lightboxIndex<0){
-    _lightboxItems=[{id:id,type:isVideo?'video':'photo',src:(photos[i]&&photos[i][id])||id}];
-    if(isVideo)_lightboxItems[0].src=(videos[i]&&videos[i][id])||'';
+    _lightboxItems=[{
+      id:id,
+      type:isVideo?'video':'photo',
+      src:isVideo?((videos[i]&&videos[i][id])||''):((photos[i]&&photos[i][id])||id)
+    }];
     _lightboxIndex=0;
   }
   _renderLightboxCurrent();
+  if(_lightboxKeyHandler&&!_lightboxKeyBound){
+    document.addEventListener('keydown',_lightboxKeyHandler);
+    _lightboxKeyBound=true;
+  }
 }
 function closeLightbox(){
   _lightboxDate='';
@@ -211,12 +220,16 @@ function closeLightbox(){
   var vid=document.getElementById('lightboxVideo');
   if(vid){vid.pause();vid.src='';}
   document.getElementById('lightbox').classList.remove('vis');
+  if(_lightboxKeyHandler&&_lightboxKeyBound){
+    document.removeEventListener('keydown',_lightboxKeyHandler);
+    _lightboxKeyBound=false;
+  }
 }
 
 function initLightboxNavigation(){
   var lb=document.getElementById('lightbox');
   if(!lb||lb.dataset.navBound==='1')return;
-  lb.dataset.navBound='1';
+  lb.dataset.navBound='true';
   var startX=0;
   var startY=0;
   lb.addEventListener('touchstart',function(e){
@@ -232,16 +245,15 @@ function initLightboxNavigation(){
     var endY=e.changedTouches[0].clientY;
     var dx=endX-startX;
     var dy=endY-startY;
-    if(Math.abs(dx)<SWIPE_THRESHOLD_PX||Math.abs(dx)<=Math.abs(dy))return;
+    if(Math.abs(dx)<MIN_SWIPE_DISTANCE_PX||Math.abs(dx)<=Math.abs(dy))return;
     if(dx<0)_navigateLightbox(1);
     else _navigateLightbox(-1);
   },{passive:true});
-  document.addEventListener('keydown',function(e){
-    if(!lb.classList.contains('vis'))return;
+  _lightboxKeyHandler=function(e){
     if(e.key==='ArrowLeft')_navigateLightbox(-1);
     if(e.key==='ArrowRight')_navigateLightbox(1);
     if(e.key==='Escape')closeLightbox();
-  });
+  };
 }
 
 // ==== SYNC DOT ====
