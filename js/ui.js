@@ -143,6 +143,7 @@ function closeModal(){document.getElementById('stageModal').classList.remove('vi
 var _lightboxDate='';
 var _lightboxItems=[];
 var _lightboxIndex=-1;
+var SWIPE_THRESHOLD_PX=40;
 
 function _buildLightboxItems(date){
   var stagePhotos=photos[date]||{};
@@ -154,7 +155,7 @@ function _buildLightboxItems(date){
   Object.keys(stageVideos).forEach(function(id){
     items.push({id:id,type:'video',src:stageVideos[id]});
   });
-  items.sort(function(a,b){return a.id<b.id?-1:a.id>b.id?1:0;});
+  items.sort(function(a,b){return a.id.localeCompare(b.id);});
   return items;
 }
 
@@ -192,12 +193,13 @@ function _navigateLightbox(delta){
 }
 
 function openLightbox(id,i){
+  var isVideo=id&&id.charAt(0)==='v';
   _lightboxDate=i||'';
   _lightboxItems=_buildLightboxItems(_lightboxDate);
   _lightboxIndex=_findLightboxIndex(id);
   if(_lightboxIndex<0){
-    _lightboxItems=[{id:id,type:(id&&id.charAt(0)==='v')?'video':'photo',src:(photos[i]&&photos[i][id])||id}];
-    if(id&&id.charAt(0)==='v')_lightboxItems[0].src=(videos[i]&&videos[i][id])||'';
+    _lightboxItems=[{id:id,type:isVideo?'video':'photo',src:(photos[i]&&photos[i][id])||id}];
+    if(isVideo)_lightboxItems[0].src=(videos[i]&&videos[i][id])||'';
     _lightboxIndex=0;
   }
   _renderLightboxCurrent();
@@ -230,7 +232,7 @@ function initLightboxNavigation(){
     var endY=e.changedTouches[0].clientY;
     var dx=endX-startX;
     var dy=endY-startY;
-    if(Math.abs(dx)<40||Math.abs(dx)<=Math.abs(dy))return;
+    if(Math.abs(dx)<SWIPE_THRESHOLD_PX||Math.abs(dx)<=Math.abs(dy))return;
     if(dx<0)_navigateLightbox(1);
     else _navigateLightbox(-1);
   },{passive:true});
