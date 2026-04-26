@@ -93,6 +93,7 @@ function getVisitorId(){
 
 function _saveVisitorProfile(vid){
   if(!window._fbDb||!window._fbSet||!window._fbRef)return;
+  if(!vid)return;
   var name=getVisitorName();
   if(!name){
     console.warn('[visitorProfiles/set] missing visitor name');
@@ -221,7 +222,7 @@ function loadStageContent(date){
     _removeSkeleton(date);
   });
 
-  // Visitor-visible: display comments liked by Tom after admin moderation.
+  // Visitor-visible: display comments liked by Tom (likes are admin-written).
   commentLikesUnsub[date]=window._fbOnValue(window._fbRef(window._fbDb,'commentLikes/'+date),function(snap){
     commentLikes[date]=snap.val()||{};
     patchStageComments(date);

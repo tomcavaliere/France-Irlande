@@ -107,7 +107,7 @@
     "visitorProfiles": {
       ".read": "auth != null",
       "$visitorId": {
-        ".write": true,
+        ".write": "!data.exists()",
         ".validate": "newData.hasChildren(['name','ts'])",
         "name": {
           ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 30"
