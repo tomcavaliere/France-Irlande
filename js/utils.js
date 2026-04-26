@@ -87,6 +87,9 @@
     if (typeof e.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(e.date)) {
       return { ok: false, error: 'Date invalide (format YYYY-MM-DD attendu).' };
     }
+    if (EXPENSE_PERSONS.indexOf(e.paidBy) === -1) {
+      return { ok: false, error: 'Le payeur doit être Tom ou Chloé.' };
+    }
     if (e.desc !== null && e.desc !== undefined) {
       if (typeof e.desc !== 'string') {
         return { ok: false, error: 'Description invalide.' };
@@ -94,9 +97,6 @@
       if (e.desc.length > LIMITS.EXPENSE_DESC) {
         return { ok: false, error: 'La description ne doit pas dépasser ' + LIMITS.EXPENSE_DESC + ' caractères.' };
       }
-    }
-    if (EXPENSE_PERSONS.indexOf(e.paidBy) === -1) {
-      return { ok: false, error: 'Le payeur doit être Tom ou Chloé.' };
     }
     return { ok: true };
   }

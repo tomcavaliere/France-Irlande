@@ -60,9 +60,9 @@ function renderExpenses(){
   // Balance message
   var balanceHtml='';
   if(tomTotal>0||chloeTotal>0){
-    var diff=Math.round(Math.abs(s.balance));
+    var diff=Math.abs(s.balance).toFixed(2);
     var balanceMsg='';
-    if(diff<1){
+    if(Math.abs(s.balance)<0.01){
       balanceMsg='⚖️ À l\'équilibre !';
     } else if(s.balance>0){
       balanceMsg='👉 Chloé doit <strong>'+diff+'€</strong> à Tom';
