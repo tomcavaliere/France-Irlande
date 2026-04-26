@@ -96,12 +96,26 @@
       "$other": { ".validate": false }
     },
     "commentLikes": {
-      ".read": "auth != null",
+      ".read": true,
       "$date": {
         "$id": {
           ".write": "auth != null",
           ".validate": "!newData.exists() || newData.val() === true"
         }
+      }
+    },
+    "visitorProfiles": {
+      ".read": "auth != null",
+      "$visitorId": {
+        ".write": true,
+        ".validate": "newData.hasChildren(['name','ts'])",
+        "name": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 30"
+        },
+        "ts": {
+          ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= (now + 60000)"
+        },
+        "$other": { ".validate": false }
       }
     },
     "commentReplies": {

@@ -80,6 +80,8 @@ var health = {};
 var journalsUnsub = {};      // { [date]: fn }
 var commentsUnsub = {};      // { [date]: fn }
 var bravosUnsub = {};        // { [date]: fn }
+var bravosByDate = {};       // { [date]: { [visitorId]: true } }
+var visitorProfiles = {};    // { [visitorId]: {name, ts} }
 var photosUnsub = {};        // { [date]: fn }
 var videosUnsub = {};        // { [date]: fn }
 // (commentLikesUnsub / commentRepliesUnsub declared above with commentLikes/commentReplies)

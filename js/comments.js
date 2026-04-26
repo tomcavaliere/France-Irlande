@@ -21,6 +21,7 @@ function renderStageCommentsHtml(i){
       var liked=!!(stageLikes[id]);
       var reply=stageReplies[id]||null;
       var replyOpen=!!_replyOpen[i+'/'+id];
+      var likeBadgeHtml=liked?'<div class="comment-like-view">❤️ Aimé par Tom</div>':'';
       var adminExtraHtml='';
       if(isAdmin){
         adminExtraHtml+=
@@ -54,6 +55,7 @@ function renderStageCommentsHtml(i){
         '<span class="comment-time">'+formatTime(c.ts)+(c._pending?' ⏳':'')+'</span>'+
         (isAdmin?'<button class="comment-del" data-action="deleteComment" data-arg="'+ei+'" data-arg2="'+eid+'">&#x1f5d1;</button>':'')+
         '<div class="comment-text">'+escHtml(c.text)+'</div>'+
+        likeBadgeHtml+
         adminExtraHtml+
         '</div>';
     });

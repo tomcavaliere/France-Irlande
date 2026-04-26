@@ -91,10 +91,62 @@ function getVisitorId(){
   return id;
 }
 
+function _saveVisitorProfile(vid){
+  if(!window._fbDb||!window._fbSet||!window._fbRef)return;
+  var name=getVisitorName();
+  if(!name)return;
+  var payload={name:name,ts:Date.now()};
+  visitorProfiles[vid]=payload;
+  window._fbSet(window._fbRef(window._fbDb,'visitorProfiles/'+vid),payload).catch(function(err){
+    console.error('[visitorProfiles/set]',err);
+  });
+}
+
+function _resolveVisitorNameById(visitorId){
+  var known=visitorProfiles[visitorId];
+  if(known&&typeof known.name==='string'&&known.name.trim()){
+    return Promise.resolve(known.name.trim());
+  }
+  if(!window._fbDb||!window._fbGet||!window._fbRef){
+    return Promise.resolve('ID '+String(visitorId||'').slice(0,8));
+  }
+  return window._fbGet(window._fbRef(window._fbDb,'visitorProfiles/'+visitorId))
+    .then(function(snap){
+      var data=snap&&snap.exists()?snap.val():null;
+      var name=data&&typeof data.name==='string'?data.name.trim():'';
+      if(name){
+        visitorProfiles[visitorId]={name:name,ts:data&&data.ts?data.ts:0};
+        return name;
+      }
+      return 'ID '+String(visitorId||'').slice(0,8);
+    })
+    .catch(function(err){
+      console.error('[visitorProfiles/get]',err);
+      return 'ID '+String(visitorId||'').slice(0,8);
+    });
+}
+
 function addBravo(date){
   var vid=getVisitorId();
+  _saveVisitorProfile(vid);
   window._fbSet(window._fbRef(window._fbDb,'bravos/'+date+'/'+vid),true).catch(function(err){
     console.error('[addBravo]',err);
+  });
+}
+
+function showBravosList(date){
+  if(!isAdmin)return;
+  var bravos=bravosByDate[date]||{};
+  var ids=Object.keys(bravos);
+  if(!ids.length){
+    showToast('Aucun bravo pour cette étape.','info');
+    return;
+  }
+  Promise.all(ids.map(_resolveVisitorNameById)).then(function(names){
+    showToast('👏 '+names.length+' bravo'+(names.length>1?'s':'')+' : '+names.join(', '),'info',7000);
+  }).catch(function(err){
+    console.error('[showBravosList]',err);
+    showToast('Impossible de charger la liste des bravos.','error');
   });
 }
 
@@ -108,12 +160,18 @@ function patchJournalText(date){
 function patchBravos(date, bravosData){
   var entry=document.querySelector('#journalList .journal-entry[data-date="'+date+'"]');
   if(!entry)return;
+  bravosByDate[date]=bravosData||{};
   var count=JournalCore.countBravos(bravosData);
   var voted=JournalCore.hasVoted(bravosData,getVisitorId());
   var countEl=entry.querySelector('.j-bravo-count');
   var btn=entry.querySelector('.j-bravo-btn');
+  var adminBtn=entry.querySelector('.j-bravo-admin-btn');
   if(countEl)countEl.textContent=isAdmin?'\uD83D\uDC4F '+count:count;
   if(btn)btn.disabled=voted;
+  if(adminBtn){
+    adminBtn.textContent='👏 '+count;
+    adminBtn.disabled=!count;
+  }
 }
 
 function _removeSkeleton(date){
@@ -156,11 +214,11 @@ function loadStageContent(date){
     _removeSkeleton(date);
   });
 
+  commentLikesUnsub[date]=window._fbOnValue(window._fbRef(window._fbDb,'commentLikes/'+date),function(snap){
+    commentLikes[date]=snap.val()||{};
+    patchStageComments(date);
+  });
   if(isAdmin){
-    commentLikesUnsub[date]=window._fbOnValue(window._fbRef(window._fbDb,'commentLikes/'+date),function(snap){
-      commentLikes[date]=snap.val()||{};
-      patchStageComments(date);
-    });
     commentRepliesUnsub[date]=window._fbOnValue(window._fbRef(window._fbDb,'commentReplies/'+date),function(snap){
       commentReplies[date]=snap.val()||{};
       patchStageComments(date);
@@ -200,6 +258,7 @@ function renderJournal(){
   journalsUnsub={};photosUnsub={};videosUnsub={};commentsUnsub={};bravosUnsub={};
   commentLikesUnsub={};commentRepliesUnsub={};
   photos={};videos={};comments={};commentLikes={};commentReplies={};
+  bravosByDate={};
   // (journals NOT cleared — needed for admin editing)
   var c=document.getElementById('journalList');c.innerHTML='';
   var dates=filterVisibleJournalDates(stages,isAdmin);
@@ -234,7 +293,7 @@ function renderJournal(){
       taHtml='<textarea class="j-ta"'+taAttr+'>'+Utils.escHtml(txt)+'</textarea>';
     }
     var bravosHtml=isAdmin
-      ?'<div class="j-bravos"><span class="j-bravo-count"></span></div>'
+      ?'<div class="j-bravos"><button class="j-bravo-admin-btn" data-action="showBravosList" data-arg="'+edate+'" disabled>👏 0</button></div>'
       :'<div class="j-bravos"><button class="j-bravo-btn" data-action="addBravo" data-arg="'+edate+'">Maith sibh! \uD83D\uDC4F</button><span class="j-bravo-count"></span></div>';
     var skeletonHtml='<div class="j-skeleton" data-skeleton-for="'+edate+'">'+
       '<div class="j-skeleton-row"></div>'+

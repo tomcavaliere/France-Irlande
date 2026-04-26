@@ -120,6 +120,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .j-bravos{display:flex;align-items:center;gap:8px;margin:8px 0}
 .j-bravo-btn{background:#f0f4ff;border:1px solid #c5d0f0;border-radius:20px;padding:6px 14px;font-size:14px;cursor:pointer}
 .j-bravo-btn:disabled{opacity:.45;cursor:default}
+.j-bravo-admin-btn{background:#f9fbff;border:1px solid #d8e0f5;border-radius:20px;padding:6px 12px;font-size:14px;cursor:pointer;color:#3f4d7a}
+.j-bravo-admin-btn:disabled{opacity:.6;cursor:default}
 .j-bravo-count{font-size:14px;color:var(--text-light)}
 .j-badge-draft{font-size:11px;padding:2px 8px;border-radius:20px;background:#f0f0f0;color:#888;border:1px solid #ddd;display:inline-block;margin-top:6px}
 .j-badge-pub{font-size:11px;padding:2px 8px;border-radius:20px;background:#e8f5e9;color:var(--green);border:1px solid var(--green);display:inline-block;margin-top:6px}
@@ -362,6 +364,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
   opacity:.45;transition:opacity .15s,transform .1s}
 .comment-like-btn:active{transform:scale(1.3)}
 .comment-like-btn.comment-liked{opacity:1}
+.comment-like-view{margin-top:8px;font-size:12px;color:#c0392b;font-weight:600}
 .comment-reply-toggle{background:none;border:none;font-size:12px;color:var(--green);
   cursor:pointer;padding:2px 4px;font-family:inherit}
 .comment-reply-toggle:active{opacity:.6}
