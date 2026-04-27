@@ -5,7 +5,8 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint js/ tests/"
+    "lint": "eslint js/ tests/",
+    "security:test": "node tests/security-check.js"
   },
   "devDependencies": {
     "eslint": "^9.39.4",
