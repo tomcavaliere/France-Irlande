@@ -11,10 +11,10 @@ const REPO_ROOT = path.resolve(__dirname, '..');
  * @returns {string[]}
  */
 function listJsFiles(dir){
-  var jsFiles = [];
-  var entries = fs.readdirSync(dir, { withFileTypes: true });
+  let jsFiles = [];
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
   entries.forEach(function(entry){
-    var entryPath = path.join(dir, entry.name);
+    const entryPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       jsFiles = jsFiles.concat(listJsFiles(entryPath));
       return;
@@ -31,11 +31,11 @@ function listJsFiles(dir){
  * @returns {Array<{line:number, text:string}>}
  */
 function findMatches(filePath, pattern, stripNonCode){
-  var rawContent = fs.readFileSync(filePath, 'utf8');
-  var content = stripNonCode ? stripCommentsAndStrings(rawContent) : rawContent;
-  var lines = content.split('\n');
-  var rawLines = rawContent.split('\n');
-  var matches = [];
+  const rawContent = fs.readFileSync(filePath, 'utf8');
+  const content = stripNonCode ? stripCommentsAndStrings(rawContent) : rawContent;
+  const lines = content.split('\n');
+  const rawLines = rawContent.split('\n');
+  const matches = [];
   lines.forEach(function(line, idx){
     if (pattern.test(line)) {
       matches.push({ line: idx + 1, text: rawLines[idx].trim() });
@@ -61,10 +61,10 @@ function pushPatternFailures(failures, title, matches){
  * @returns {string}
  */
 function stripCommentsAndStrings(code){
-  var withoutBlockComments = code.replace(/\/\*[\s\S]*?\*\//g, function(match){
+  const withoutBlockComments = code.replace(/\/\*[\s\S]*?\*\//g, function(match){
     return match.replace(/[^\n]/g, ' ');
   });
-  var withoutLineComments = withoutBlockComments.replace(/\/\/[^\n]*/g, function(match){
+  const withoutLineComments = withoutBlockComments.replace(/\/\/[^\n]*/g, function(match){
     return match.replace(/[^\n]/g, ' ');
   });
   return withoutLineComments.replace(/'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|`(?:\\.|[^`\\])*`/g, function(match){
@@ -72,31 +72,48 @@ function stripCommentsAndStrings(code){
   });
 }
 
-var failures = [];
+const failures = [];
 
 // 1) Vérifier les règles Firebase sensibles.
-var rulesPath = path.join(REPO_ROOT, 'firebase.rules.json');
-var rulesRaw = fs.readFileSync(rulesPath, 'utf8');
-var rulesJson = JSON.parse(rulesRaw);
-var rootRules = rulesJson && rulesJson.rules ? rulesJson.rules : {};
+const rulesPath = path.join(REPO_ROOT, 'firebase.rules.json');
+let rulesRaw = '';
+try {
+  rulesRaw = fs.readFileSync(rulesPath, 'utf8');
+} catch (err) {
+  failures.push(`Impossible de lire firebase.rules.json: ${err && err.message ? err.message : err}`);
+}
+let rulesJson = null;
+if (rulesRaw) {
+  try {
+    rulesJson = JSON.parse(rulesRaw);
+  } catch (err) {
+    failures.push(`JSON invalide dans firebase.rules.json: ${err && err.message ? err.message : err}`);
+  }
+}
+const rootRules = rulesJson && rulesJson.rules ? rulesJson.rules : {};
 ['expenses', 'training', 'health'].forEach(function(node){
-  var n = rootRules[node];
+  const n = rootRules[node];
   if (!n || n['.read'] !== 'auth != null' || n['.write'] !== 'auth != null') {
     failures.push(`Règles Firebase trop permissives pour "${node}" (read/write doivent être "auth != null").`);
   }
 });
 
 // 2) Vérifier la présence d'une CSP dans index.html.
-var indexPath = path.join(REPO_ROOT, 'index.html');
-var indexHtml = fs.readFileSync(indexPath, 'utf8');
-var cspMetaTagMatch = indexHtml.match(/<meta[^>]+http-equiv=["']Content-Security-Policy["'][^>]*>/i);
-var cspMetaContentMatch = cspMetaTagMatch
+const indexPath = path.join(REPO_ROOT, 'index.html');
+let indexHtml = '';
+try {
+  indexHtml = fs.readFileSync(indexPath, 'utf8');
+} catch (err) {
+  failures.push(`Impossible de lire index.html: ${err && err.message ? err.message : err}`);
+}
+const cspMetaTagMatch = indexHtml.match(/<meta[^>]+http-equiv=["']Content-Security-Policy["'][^>]*>/i);
+const cspMetaContentMatch = cspMetaTagMatch
   ? cspMetaTagMatch[0].match(/content="([^"]*)"|content='([^']*)'/i)
   : null;
 if (!cspMetaTagMatch) {
   failures.push('CSP absente dans index.html (meta Content-Security-Policy non détectée).');
 } else {
-  var cspContent = cspMetaContentMatch ? (cspMetaContentMatch[1] || cspMetaContentMatch[2] || '') : '';
+  const cspContent = cspMetaContentMatch ? (cspMetaContentMatch[1] || cspMetaContentMatch[2] || '') : '';
   if (!cspContent) {
     failures.push('CSP absente ou vide dans la meta Content-Security-Policy.');
   }
@@ -112,15 +129,15 @@ if (!cspMetaTagMatch) {
 }
 
 // 3) Scanner les patterns JS dangereux.
-var appJsFiles = listJsFiles(path.join(REPO_ROOT, 'js'));
-var scanTargets = appJsFiles.concat([indexPath]);
+const appJsFiles = listJsFiles(path.join(REPO_ROOT, 'js'));
+const scanTargets = appJsFiles.concat([indexPath]);
 
 [
   { label: 'Usage interdit de eval()', re: /\beval\s*\(/ },
   { label: 'Usage interdit de new Function()', re: /\bnew Function\s*\(/ },
   { label: 'Usage interdit de document.write()', re: /\bdocument\.write\s*\(/ },
 ].forEach(function(rule){
-  var allMatches = [];
+  const allMatches = [];
   scanTargets.forEach(function(filePath){
     findMatches(filePath, rule.re, true).forEach(function(m){
       allMatches.push({ file: filePath, line: m.line, text: m.text });
@@ -130,7 +147,7 @@ var scanTargets = appJsFiles.concat([indexPath]);
 });
 
 // 4) Interdire fetch() direct dans l'app (hors wrapper safeFetch).
-var fetchMatches = [];
+const fetchMatches = [];
 scanTargets.forEach(function(filePath){
   if (path.basename(filePath) === 'utils.js') return;
   findMatches(filePath, /\bfetch\s*\(/, true).forEach(function(m){
