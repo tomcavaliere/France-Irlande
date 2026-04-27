@@ -72,6 +72,31 @@ function stripCommentsAndStrings(code){
   });
 }
 
+/**
+ * @param {unknown} ruleValue
+ * @returns {boolean}
+ */
+function isAuthOnlyRule(ruleValue){
+  if (typeof ruleValue !== 'string') return false;
+  return /^auth\s*!==?\s*null$/.test(ruleValue.trim());
+}
+
+/**
+ * @param {string} cspContent
+ * @param {string} name
+ * @returns {string}
+ */
+function getCspDirective(cspContent, name){
+  const directives = cspContent
+    .split(';')
+    .map(function(part){ return part.trim(); })
+    .filter(Boolean);
+  const target = directives.find(function(part){
+    return part.toLowerCase().startsWith(name.toLowerCase() + ' ');
+  });
+  return target || '';
+}
+
 const failures = [];
 
 // 1) Vérifier les règles Firebase sensibles.
@@ -93,7 +118,7 @@ if (rulesRaw) {
 const rootRules = rulesJson && rulesJson.rules ? rulesJson.rules : {};
 ['expenses', 'training', 'health'].forEach(function(node){
   const n = rootRules[node];
-  if (!n || n['.read'] !== 'auth != null' || n['.write'] !== 'auth != null') {
+  if (!n || !isAuthOnlyRule(n['.read']) || !isAuthOnlyRule(n['.write'])) {
     failures.push(`Règles Firebase trop permissives pour "${node}" (read/write doivent être "auth != null").`);
   }
 });
@@ -123,8 +148,12 @@ if (!cspMetaTagMatch) {
   if (!/default-src\s/i.test(cspContent)) {
     failures.push('CSP incomplète: directive "default-src" absente.');
   }
-  if (/'unsafe-eval'/.test(cspContent)) {
+  const scriptSrc = getCspDirective(cspContent, 'script-src');
+  if (/'unsafe-eval'/.test(scriptSrc)) {
     failures.push('CSP trop permissive: "unsafe-eval" est interdit.');
+  }
+  if (/'unsafe-inline'/.test(scriptSrc)) {
+    failures.push('CSP trop permissive: "unsafe-inline" est interdit dans script-src.');
   }
 }
 
@@ -133,8 +162,9 @@ const appJsFiles = listJsFiles(path.join(REPO_ROOT, 'js'));
 const scanTargets = appJsFiles.concat([indexPath]);
 
 [
-  { label: 'Usage interdit de eval()', re: /\beval\s*\(/ },
-  { label: 'Usage interdit de new Function()', re: /\bnew Function\s*\(/ },
+  { label: 'Usage interdit de eval()', re: /\b(?:eval|window\.eval|globalThis\.eval)\s*\(/ },
+  { label: 'Usage interdit de Function()', re: /\b(?:new\s+)?Function\s*\(/ },
+  { label: 'Usage interdit de window/globalThis Function()', re: /\b(?:window|globalThis)\.Function\s*\(/ },
   { label: 'Usage interdit de document.write()', re: /\bdocument\.write\s*\(/ },
 ].forEach(function(rule){
   const allMatches = [];
@@ -150,7 +180,7 @@ const scanTargets = appJsFiles.concat([indexPath]);
 const fetchMatches = [];
 scanTargets.forEach(function(filePath){
   if (path.basename(filePath) === 'utils.js') return;
-  findMatches(filePath, /\bfetch\s*\(/, true).forEach(function(m){
+  findMatches(filePath, /\b(?:fetch|window\.fetch|globalThis\.fetch)\s*\(|\[['"]fetch['"]\]\s*\(/, true).forEach(function(m){
     fetchMatches.push({ file: filePath, line: m.line, text: m.text });
   });
 });
