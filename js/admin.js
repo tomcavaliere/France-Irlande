@@ -31,6 +31,8 @@ function setAdminUI(on){
   if(tabTraining)tabTraining.classList.toggle('vis',on);
   var tabHealth=document.getElementById('tabHealth');
   if(tabHealth)tabHealth.classList.toggle('vis',on);
+  var tabActivity=document.getElementById('tabActivity');
+  if(tabActivity)tabActivity.classList.toggle('vis',on);
   var adminBar=document.getElementById('mapAdminBar');
   if(adminBar)adminBar.classList.toggle('hidden',!on);
   var posBar=document.getElementById('posAdminBar');
@@ -50,7 +52,7 @@ function setAdminUI(on){
     if(campingsVisible)toggleCampings();
     if(campspaceVisible)toggleCampspace();
     if(waterVisible)toggleWater();
-    if(activeTab()==='depenses'||activeTab()==='stages'||activeTab()==='info'||activeTab()==='training'||activeTab()==='health')switchTab('map');
+    if(activeTab()==='depenses'||activeTab()==='stages'||activeTab()==='info'||activeTab()==='training'||activeTab()==='health'||activeTab()==='activity')switchTab('map');
   }
 }
 function exportJournal(fmt){
@@ -94,9 +96,12 @@ function logoutAdmin(){
   if(_unsubExpenses){_unsubExpenses();_unsubExpenses=null;}
   if(_unsubTraining){_unsubTraining();_unsubTraining=null;}
   if(_unsubHealth){_unsubHealth();_unsubHealth=null;}
+  if(_unsubActivity){_unsubActivity();_unsubActivity=null;}
   expenses={};
   training={};
   health={};
+  activity={};
+  _adminActivitySessionUid='';
   if(window._fbAuth)window._fbSignOut(window._fbAuth);
 }
 function resetInactivity(){
@@ -244,8 +249,25 @@ function initAuth(){
   window._fbOnAuth(window._fbAuth,function(user){
     isAdmin=!!user;
     setAdminUI(isAdmin);
-    if(isAdmin){resetInactivity();initExpenses();initTraining();initHealth();}
-    else{clearTimeout(inactivityTimer);}
+    if(isAdmin){
+      resetInactivity();
+      initExpenses();
+      initTraining();
+      initHealth();
+      initActivity();
+      var uid=user&&typeof user.uid==='string'?user.uid:'admin';
+      if(_adminActivitySessionUid!==uid){
+        _adminActivitySessionUid=uid;
+        trackActivityEvent('admin_login',{
+          name:user&&user.email?user.email:'Admin',
+          adminEmail:user&&user.email?user.email:''
+        });
+      }
+    }
+    else{
+      clearTimeout(inactivityTimer);
+      _adminActivitySessionUid='';
+    }
     Events.emit('admin:toggled');
   });
 }

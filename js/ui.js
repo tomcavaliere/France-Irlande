@@ -102,7 +102,7 @@ function activeTab(){
 }
 
 function switchTab(t){
-  if((t==='training'||t==='health')&&!isAdmin){
+  if((t==='training'||t==='health'||t==='activity')&&!isAdmin){
     showToast('Accès admin requis.','warn');
     t='map';
   }
@@ -114,6 +114,7 @@ function switchTab(t){
   if(t==='depenses')renderExpenses();
   if(t==='training')renderTraining();
   if(t==='health')renderHealth();
+  if(t==='activity')renderActivity();
   if(t==='stages')fetchWeather();
 }
 

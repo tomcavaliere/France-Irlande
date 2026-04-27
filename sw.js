@@ -1,4 +1,4 @@
-const CACHE = 'ev1-v32';
+const CACHE = 'ev1-v33';
 const PRECACHE = [
   '/',
   '/index.html',
@@ -25,6 +25,7 @@ const PRECACHE = [
   '/js/expenses.js',
   '/js/training.js',
   '/js/health.js',
+  '/js/activity.js',
   '/js/weather.js',
   '/js/journal.js',
   '/js/init.js',

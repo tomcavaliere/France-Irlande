@@ -35,6 +35,7 @@ var fbInitialized = false;
 var lastCompletedCount = 0;
 var journalDirty = false;
 var _unsubCurrent = null, _unsubStages = null, _unsubExpenses = null, _unsubTraining = null, _unsubHealth = null;
+var _unsubActivity = null;
 
 // ==== MAP ====
 var map, completedLayer, posMarker, campingLayer = null, campspaceLayer = null, waterLayer = null;
@@ -75,6 +76,10 @@ var training = {};
 
 // ==== SANTÉ ====
 var health = {};
+
+// ==== ACTIVITÉ ====
+var activity = {};
+var _adminActivitySessionUid = '';
 
 // ==== JOURNAL LAZY LISTENERS ====
 var journalsUnsub = {};      // { [date]: fn }
