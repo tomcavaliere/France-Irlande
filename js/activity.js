@@ -27,7 +27,7 @@ function _activitySafeString(v,maxLen,fallback){
 }
 
 function _activityNormalizeType(type){
-  return type==='admin_login'||type==='visitor_login'?type:'other';
+  return type==='admin_login'||type==='visitor_login'||type==='visitor_suspicious'?type:'other';
 }
 
 function _activityNormalizeEntry(raw){
@@ -43,6 +43,7 @@ function _activityNormalizeEntry(raw){
 function _activityTypeLabel(type){
   if(type==='admin_login')return 'Connexion admin';
   if(type==='visitor_login')return 'Connexion visiteur';
+  if(type==='visitor_suspicious')return 'Alerte suspecte';
   return 'Événement';
 }
 
@@ -109,6 +110,7 @@ function renderActivity(){
   var total=entries.length;
   var admins=entries.filter(function(e){return e.type==='admin_login';}).length;
   var visitors=entries.filter(function(e){return e.type==='visitor_login';}).length;
+  var suspicious=entries.filter(function(e){return e.type==='visitor_suspicious';}).length;
   var uniqueUsers={};
   entries.forEach(function(e){uniqueUsers[e.name]=true;});
   var uniqueCount=Object.keys(uniqueUsers).length;
@@ -118,6 +120,7 @@ function renderActivity(){
       '<div class="activity-card"><div class="activity-num">'+total+'</div><div class="activity-lbl">Connexions totales</div></div>'+
       '<div class="activity-card"><div class="activity-num">'+visitors+'</div><div class="activity-lbl">Visiteurs</div></div>'+
       '<div class="activity-card"><div class="activity-num">'+admins+'</div><div class="activity-lbl">Admins</div></div>'+
+      '<div class="activity-card"><div class="activity-num">'+suspicious+'</div><div class="activity-lbl">Alertes suspectes</div></div>'+
       '<div class="activity-card"><div class="activity-num">'+uniqueCount+'</div><div class="activity-lbl">Utilisateurs uniques</div></div>'+
     '</div>';
 
