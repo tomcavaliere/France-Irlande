@@ -1,6 +1,8 @@
 // activity.js
 // Admin-only activity dashboard + connection event tracking.
 
+var _activityIdCounter = 0;
+
 function _activitySafeString(v,maxLen,fallback){
   var s=typeof v==='string'?v.trim():'';
   if(!s)s=fallback||'';
@@ -106,7 +108,8 @@ function renderActivity(){
   var series=_activityLastDaysSeries(entries,7);
   var maxCount=series.reduce(function(m,it){return Math.max(m,it.count);},0);
   var bars=series.map(function(it){
-    var d=new Date(it.date+'T00:00:00Z');
+    var iso=/^\d{4}-\d{2}-\d{2}$/.test(it.date)?it.date:new Date().toISOString().slice(0,10);
+    var d=new Date(iso+'T00:00:00Z');
     if(!Number.isFinite(d.getTime()))d=new Date();
     var short=d.toLocaleDateString('fr-FR',{weekday:'short'}).replace('.','');
     var height=maxCount>0?Math.max(8,Math.round((it.count/maxCount)*56)):8;
@@ -172,7 +175,10 @@ function trackActivityEvent(type,payload){
   var fallback=cleanType==='admin_login'?'Admin':'Visiteur';
   var name=_activitySafeString(payload.name,60,fallback);
   if(!name)return;
-  var id='a_'+(crypto.randomUUID?crypto.randomUUID():Date.now()+'_'+Math.random().toString(36).slice(2,12));
+  _activityIdCounter=(_activityIdCounter+1)%1000000;
+  var id='a_'+(crypto.randomUUID
+    ? crypto.randomUUID()
+    : Date.now()+'_'+_activityIdCounter+'_'+Math.random().toString(36).slice(2,12));
   var eventData={
     type:cleanType,
     name:name,

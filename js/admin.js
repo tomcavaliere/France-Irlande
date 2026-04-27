@@ -102,6 +102,7 @@ function logoutAdmin(){
   health={};
   activity={};
   _adminActivitySessionUid='';
+  _adminActivityTracked=false;
   if(window._fbAuth)window._fbSignOut(window._fbAuth);
 }
 function resetInactivity(){
@@ -256,8 +257,9 @@ function initAuth(){
       initHealth();
       initActivity();
       var uid=user&&typeof user.uid==='string'?user.uid:'admin';
-      if(_adminActivitySessionUid!==uid){
+      if(!_adminActivityTracked||_adminActivitySessionUid!==uid){
         _adminActivitySessionUid=uid;
+        _adminActivityTracked=true;
         trackActivityEvent('admin_login',{
           name:user&&user.email?user.email:'Admin'
         });
@@ -266,6 +268,7 @@ function initAuth(){
     else{
       clearTimeout(inactivityTimer);
       _adminActivitySessionUid='';
+      _adminActivityTracked=false;
     }
     Events.emit('admin:toggled');
   });

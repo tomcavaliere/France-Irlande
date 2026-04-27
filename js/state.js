@@ -80,6 +80,7 @@ var health = {};
 // ==== ACTIVITÉ ====
 var activity = {};
 var _adminActivitySessionUid = '';
+var _adminActivityTracked = false;
 
 // ==== JOURNAL LAZY LISTENERS ====
 var journalsUnsub = {};      // { [date]: fn }
