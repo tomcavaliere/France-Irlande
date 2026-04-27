@@ -75,5 +75,6 @@ document.addEventListener('DOMContentLoaded',function(){
   setTimeout(function(){
     initAuth();initFirebase();fetchWeather();
     if(isOnline)flushQueue();
+    trackReturningVisitor();
   },800);
 });
