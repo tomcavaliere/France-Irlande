@@ -40,6 +40,18 @@ Avant toute PR:
 3. `npm test`
 4. Vérifier absence de logs de debug et code mort dans le diff
 
+## Test cybersécurité
+
+```bash
+npm run security:test
+```
+
+Le script vérifie automatiquement:
+- l'absence de patterns JS dangereux (`eval`, `new Function`, `document.write`)
+- l'absence de `fetch()` direct dans l'app (obligation d'utiliser `Utils.safeFetch`)
+- la présence d'une CSP dans `index.html`
+- le verrouillage admin-only de `expenses`, `training`, `health` dans `firebase.rules.json`
+
 ## Conventions
 
 - Architecture en séparation stricte:
