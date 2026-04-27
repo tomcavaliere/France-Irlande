@@ -259,8 +259,7 @@ function initAuth(){
       if(_adminActivitySessionUid!==uid){
         _adminActivitySessionUid=uid;
         trackActivityEvent('admin_login',{
-          name:user&&user.email?user.email:'Admin',
-          adminEmail:user&&user.email?user.email:''
+          name:user&&user.email?user.email:'Admin'
         });
       }
     }

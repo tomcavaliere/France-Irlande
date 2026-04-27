@@ -131,8 +131,7 @@ function checkVisitorPw(){
     if(actualHash===expectedHash){
       _setVisitorSession(name);
       trackActivityEvent('visitor_login',{
-        name:name,
-        visitorId:typeof getVisitorId==='function'?getVisitorId():''
+        name:name
       });
       var gate=document.getElementById('visitorGate');
       if(gate)gate.classList.remove('vis');
