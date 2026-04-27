@@ -9,11 +9,27 @@ var MAX_VISITOR_PASSWORD_LENGTH = 128;
 
 var VISITOR_AUTH_KEY  = 'ev1-visitor-auth';
 var VISITOR_NAME_KEY  = 'ev1-visitor-name';
+// Détection anti-bot:
+// - fenêtre glissante de 2 min
+// - alerte à partir de 4 échecs
+// - cooldown de 60 s entre alertes
+// Ces valeurs limitent le bruit (typos humaines) tout en remontant les rafales.
+var VISITOR_SUSPICIOUS_WINDOW_MS = 2 * 60 * 1000;
+var VISITOR_SUSPICIOUS_THRESHOLD = 4;
+var VISITOR_SUSPICIOUS_COOLDOWN_MS = 60 * 1000;
+var VISITOR_SUSPICIOUS_NAME_MAX_LENGTH = 18;
+var VISITOR_SUSPICIOUS_NAME_ELLIPSIS = '…';
+var VISITOR_SUSPICIOUS_REASON_LABELS = {
+  invalid_name:'nom invalide',
+  bad_password:'mot de passe invalide'
+};
 var _visitorPasswordHashCache = VISITOR_DEFAULT_PASSWORD_HASH;
 var _visitorPasswordHashLoaded = false;
 var _visitorPasswordHashRevision = 0;
 var _visitorGateHardLock = false;
 var _visitorActivityTracked = false;
+var _visitorFailedAttempts = [];
+var _visitorLastSuspiciousTrackTs = 0;
 
 function isVisitorAuthenticated(){
   return localStorage.getItem(VISITOR_AUTH_KEY)==='1';
@@ -104,6 +120,30 @@ function closeVisitorGate(){
   document.body.classList.remove('visitor-lock');
 }
 
+function _formatSuspiciousAlertMessage(attemptCount,reasonLabel,cleanName){
+  return 'Alerte '+attemptCount+' essais · '+reasonLabel+' · '+cleanName;
+}
+
+function _trackSuspiciousVisitorAttempt(reason,name){
+  var nowTs = Date.now();
+  _visitorFailedAttempts = _visitorFailedAttempts.filter(function(ts){
+    return Number.isFinite(ts) && (nowTs-ts) <= VISITOR_SUSPICIOUS_WINDOW_MS;
+  });
+  _visitorFailedAttempts.push(nowTs);
+  if(_visitorFailedAttempts.length < VISITOR_SUSPICIOUS_THRESHOLD)return;
+  if((nowTs-_visitorLastSuspiciousTrackTs) < VISITOR_SUSPICIOUS_COOLDOWN_MS)return;
+  _visitorLastSuspiciousTrackTs = nowTs;
+  var cleanName = typeof name==='string' ? name.trim() : '';
+  if(cleanName.length>VISITOR_SUSPICIOUS_NAME_MAX_LENGTH){
+    cleanName=cleanName.slice(0,VISITOR_SUSPICIOUS_NAME_MAX_LENGTH)+VISITOR_SUSPICIOUS_NAME_ELLIPSIS;
+  }
+  if(!cleanName)cleanName='inconnu';
+  var reasonLabel = VISITOR_SUSPICIOUS_REASON_LABELS[reason] || 'activité suspecte';
+  trackActivityEvent('visitor_suspicious',{
+    name:_formatSuspiciousAlertMessage(_visitorFailedAttempts.length,reasonLabel,cleanName)
+  });
+}
+
 function checkVisitorPw(){
   var nameEl=document.getElementById('visitorNameInput');
   var pwEl=document.getElementById('visitorPwInput');
@@ -116,6 +156,7 @@ function checkVisitorPw(){
   // Valider le nom en premier
   var nameV=Utils.validateVisitorName(name);
   if(!nameV.ok){
+    _trackSuspiciousVisitorAttempt('invalid_name',name);
     if(errEl){errEl.textContent=nameV.error;errEl.classList.add('vis');}
     if(nameEl)nameEl.focus();
     return;
@@ -130,6 +171,8 @@ function checkVisitorPw(){
     var expectedHash=r[0];
     var actualHash=r[1];
     if(actualHash===expectedHash){
+      _visitorFailedAttempts=[];
+      _visitorLastSuspiciousTrackTs=0;
       _setVisitorSession(name);
       _visitorActivityTracked=true;
       trackActivityEvent('visitor_login',{
@@ -148,6 +191,7 @@ function checkVisitorPw(){
         });
       }
     }else{
+      _trackSuspiciousVisitorAttempt('bad_password',name);
       if(errEl){errEl.textContent='Mot de passe incorrect.';errEl.classList.add('vis');}
       if(pwEl){pwEl.value='';pwEl.focus();}
     }
