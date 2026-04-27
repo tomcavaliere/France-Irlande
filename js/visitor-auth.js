@@ -130,6 +130,9 @@ function checkVisitorPw(){
     var actualHash=r[1];
     if(actualHash===expectedHash){
       _setVisitorSession(name);
+      trackActivityEvent('visitor_login',{
+        name:name
+      });
       var gate=document.getElementById('visitorGate');
       if(gate)gate.classList.remove('vis');
       _visitorGateHardLock=false;

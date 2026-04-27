@@ -2,6 +2,8 @@
 // Admin authentication, inactivity timeout, profile modal,
 // RTDB quota management, journal export.
 
+var FALLBACK_ADMIN_UID='admin';
+
 function refreshQuotaState(callback){
   if(!window._fbDb||!window._fbGet){if(callback)callback();return;}
   window._fbGet(window._fbRef(window._fbDb,'photos'))
@@ -31,6 +33,8 @@ function setAdminUI(on){
   if(tabTraining)tabTraining.classList.toggle('vis',on);
   var tabHealth=document.getElementById('tabHealth');
   if(tabHealth)tabHealth.classList.toggle('vis',on);
+  var tabActivity=document.getElementById('tabActivity');
+  if(tabActivity)tabActivity.classList.toggle('vis',on);
   var adminBar=document.getElementById('mapAdminBar');
   if(adminBar)adminBar.classList.toggle('hidden',!on);
   var posBar=document.getElementById('posAdminBar');
@@ -50,7 +54,7 @@ function setAdminUI(on){
     if(campingsVisible)toggleCampings();
     if(campspaceVisible)toggleCampspace();
     if(waterVisible)toggleWater();
-    if(activeTab()==='depenses'||activeTab()==='stages'||activeTab()==='info'||activeTab()==='training'||activeTab()==='health')switchTab('map');
+    if(activeTab()==='depenses'||activeTab()==='stages'||activeTab()==='info'||activeTab()==='training'||activeTab()==='health'||activeTab()==='activity')switchTab('map');
   }
 }
 function exportJournal(fmt){
@@ -94,9 +98,13 @@ function logoutAdmin(){
   if(_unsubExpenses){_unsubExpenses();_unsubExpenses=null;}
   if(_unsubTraining){_unsubTraining();_unsubTraining=null;}
   if(_unsubHealth){_unsubHealth();_unsubHealth=null;}
+  if(_unsubActivity){_unsubActivity();_unsubActivity=null;}
   expenses={};
   training={};
   health={};
+  activity={};
+  _adminActivitySessionUid='';
+  _adminActivityTracked=false;
   if(window._fbAuth)window._fbSignOut(window._fbAuth);
 }
 function resetInactivity(){
@@ -244,8 +252,26 @@ function initAuth(){
   window._fbOnAuth(window._fbAuth,function(user){
     isAdmin=!!user;
     setAdminUI(isAdmin);
-    if(isAdmin){resetInactivity();initExpenses();initTraining();initHealth();}
-    else{clearTimeout(inactivityTimer);}
+    if(isAdmin){
+      resetInactivity();
+      initExpenses();
+      initTraining();
+      initHealth();
+      initActivity();
+      var adminSessionId=user&&typeof user.uid==='string'?user.uid:FALLBACK_ADMIN_UID;
+      if(!_adminActivityTracked||_adminActivitySessionUid!==adminSessionId){
+        _adminActivitySessionUid=adminSessionId;
+        _adminActivityTracked=true;
+        trackActivityEvent('admin_login',{
+          name:user&&user.email?user.email:'Admin'
+        });
+      }
+    }
+    else{
+      clearTimeout(inactivityTimer);
+      _adminActivitySessionUid='';
+      _adminActivityTracked=false;
+    }
     Events.emit('admin:toggled');
   });
 }
