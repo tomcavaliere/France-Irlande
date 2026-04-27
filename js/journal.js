@@ -227,12 +227,11 @@ function loadStageContent(date){
     commentLikes[date]=snap.val()||{};
     patchStageComments(date);
   });
-  if(isAdmin){
-    commentRepliesUnsub[date]=window._fbOnValue(window._fbRef(window._fbDb,'commentReplies/'+date),function(snap){
-      commentReplies[date]=snap.val()||{};
-      patchStageComments(date);
-    });
-  }
+  // Visitor-visible: display admin replies to comments.
+  commentRepliesUnsub[date]=window._fbOnValue(window._fbRef(window._fbDb,'commentReplies/'+date),function(snap){
+    commentReplies[date]=snap.val()||{};
+    patchStageComments(date);
+  });
 }
 
 function observeJournalEntries(){
