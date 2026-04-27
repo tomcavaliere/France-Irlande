@@ -33,22 +33,22 @@ function renderStageCommentsHtml(i){
               (replyOpen?'Annuler':'&#x1f4ac; R\u00e9pondre')+
             '</button>'+
           '</div>';
-        if(reply){
-          adminExtraHtml+=
-            '<div class="comment-reply">'+
-              '<span class="comment-reply-label">&#x21b3; Tom\u00a0:</span> '+
-              '<span class="comment-reply-text">'+escHtml(reply.text)+'</span>'+
-              '<button class="comment-reply-del" data-action="deleteReply" data-arg="'+ei+'" data-arg2="'+eid+'" title="Supprimer la r\u00e9ponse">&#x1f5d1;</button>'+
-            '</div>';
-        }
-        if(replyOpen){
-          var prefill=reply?escHtml(reply.text):'';
-          adminExtraHtml+=
-            '<div class="comment-reply-form" id="reply-form-'+ei+'-'+eid+'">'+
-              '<textarea id="reply-txt-'+ei+'-'+eid+'" class="comment-reply-ta" placeholder="Ta r\u00e9ponse..." maxlength="'+Utils.LIMITS.COMMENT_TEXT+'">'+prefill+'</textarea>'+
-              '<button class="btn btn-p comment-reply-send" data-action="postReply" data-arg="'+ei+'" data-arg2="'+eid+'">Envoyer &#x1f4e8;</button>'+
-            '</div>';
-        }
+      }
+      if(reply){
+        adminExtraHtml+=
+          '<div class="comment-reply">'+
+            '<span class="comment-reply-label">&#x21b3; Tom\u00a0:</span> '+
+            '<span class="comment-reply-text">'+escHtml(reply.text)+'</span>'+
+            (isAdmin?'<button class="comment-reply-del" data-action="deleteReply" data-arg="'+ei+'" data-arg2="'+eid+'" title="Supprimer la r\u00e9ponse">&#x1f5d1;</button>':'')+
+          '</div>';
+      }
+      if(isAdmin&&replyOpen){
+        var prefill=reply?escHtml(reply.text):'';
+        adminExtraHtml+=
+          '<div class="comment-reply-form" id="reply-form-'+ei+'-'+eid+'">'+
+            '<textarea id="reply-txt-'+ei+'-'+eid+'" class="comment-reply-ta" placeholder="Ta r\u00e9ponse..." maxlength="'+Utils.LIMITS.COMMENT_TEXT+'">'+prefill+'</textarea>'+
+            '<button class="btn btn-p comment-reply-send" data-action="postReply" data-arg="'+ei+'" data-arg2="'+eid+'">Envoyer &#x1f4e8;</button>'+
+          '</div>';
       }
       html+='<div class="comment-card">'+
         '<span class="comment-name">'+escHtml(c.name)+'</span>'+
