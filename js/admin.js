@@ -258,9 +258,9 @@ function initAuth(){
       initTraining();
       initHealth();
       initActivity();
-      var uid=user&&typeof user.uid==='string'?user.uid:FALLBACK_ADMIN_UID;
-      if(!_adminActivityTracked||_adminActivitySessionUid!==uid){
-        _adminActivitySessionUid=uid;
+      var adminSessionId=user&&typeof user.uid==='string'?user.uid:FALLBACK_ADMIN_UID;
+      if(!_adminActivityTracked||_adminActivitySessionUid!==adminSessionId){
+        _adminActivitySessionUid=adminSessionId;
         _adminActivityTracked=true;
         trackActivityEvent('admin_login',{
           name:user&&user.email?user.email:'Admin'

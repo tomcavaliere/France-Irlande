@@ -2,8 +2,6 @@
 // Admin-only activity dashboard + connection event tracking.
 
 var ACTIVITY_RECENT_EVENTS_MAX = 80;
-var ACTIVITY_ID_COUNTER_MAX = 1000000;
-var _activityIdCounter = 0;
 
 function _activityRandomToken(){
   if(window.crypto&&typeof window.crypto.randomUUID==='function')return window.crypto.randomUUID();
@@ -13,6 +11,12 @@ function _activityRandomToken(){
     return Array.from(arr).map(function(v){return v.toString(16).padStart(8,'0');}).join('');
   }
   return Date.now()+'_'+Math.random().toString(36).slice(2,12);
+}
+
+function _activitySafeISODate(dateStr){
+  return /^\d{4}-\d{2}-\d{2}$/.test(dateStr)
+    ? dateStr
+    : new Date().toISOString().slice(0,10);
 }
 
 function _activitySafeString(v,maxLen,fallback){
@@ -120,7 +124,7 @@ function renderActivity(){
   var series=_activityLastDaysSeries(entries,7);
   var maxCount=series.reduce(function(m,it){return Math.max(m,it.count);},0);
   var bars=series.map(function(it){
-    var iso=/^\d{4}-\d{2}-\d{2}$/.test(it.date)?it.date:new Date().toISOString().slice(0,10);
+    var iso=_activitySafeISODate(it.date);
     var d=new Date(iso+'T00:00:00Z');
     if(!Number.isFinite(d.getTime()))d=new Date();
     var short=d.toLocaleDateString('fr-FR',{weekday:'short'}).replace('.','');
@@ -140,7 +144,7 @@ function renderActivity(){
   var topUsers=_activityTopUsers(entries,30);
   usersEl.innerHTML=
     '<div class="activity-panel">'+
-      '<div class="activity-panel-title">Noms d\'utilisateurs</div>'+
+      '<div class="activity-panel-title">Noms d’utilisateurs</div>'+
       '<div class="activity-user-list">'+
         topUsers.map(function(u){
           return '<span class="activity-user-chip">'+escHtml(u.name)+' · '+u.count+'</span>';
@@ -187,8 +191,7 @@ function trackActivityEvent(type,payload){
   var fallback=cleanType==='admin_login'?'Admin':'Visiteur';
   var name=_activitySafeString(payload.name,60,fallback);
   if(!name)return;
-  _activityIdCounter=(_activityIdCounter+1)%ACTIVITY_ID_COUNTER_MAX;
-  var id='a_'+_activityRandomToken()+'_'+_activityIdCounter;
+  var id='a_'+_activityRandomToken();
   var eventData={
     type:cleanType,
     name:name,
