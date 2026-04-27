@@ -2,6 +2,8 @@
 // Admin authentication, inactivity timeout, profile modal,
 // RTDB quota management, journal export.
 
+var FALLBACK_ADMIN_UID='admin';
+
 function refreshQuotaState(callback){
   if(!window._fbDb||!window._fbGet){if(callback)callback();return;}
   window._fbGet(window._fbRef(window._fbDb,'photos'))
@@ -256,7 +258,7 @@ function initAuth(){
       initTraining();
       initHealth();
       initActivity();
-      var uid=user&&typeof user.uid==='string'?user.uid:'admin';
+      var uid=user&&typeof user.uid==='string'?user.uid:FALLBACK_ADMIN_UID;
       if(!_adminActivityTracked||_adminActivitySessionUid!==uid){
         _adminActivitySessionUid=uid;
         _adminActivityTracked=true;

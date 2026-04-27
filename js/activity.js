@@ -1,7 +1,19 @@
 // activity.js
 // Admin-only activity dashboard + connection event tracking.
 
+var ACTIVITY_RECENT_EVENTS_MAX = 80;
+var ACTIVITY_ID_COUNTER_MAX = 1000000;
 var _activityIdCounter = 0;
+
+function _activityRandomToken(){
+  if(window.crypto&&typeof window.crypto.randomUUID==='function')return window.crypto.randomUUID();
+  if(window.crypto&&typeof window.crypto.getRandomValues==='function'){
+    var arr=new Uint32Array(4);
+    window.crypto.getRandomValues(arr);
+    return Array.from(arr).map(function(v){return v.toString(16).padStart(8,'0');}).join('');
+  }
+  return Date.now()+'_'+Math.random().toString(36).slice(2,12);
+}
 
 function _activitySafeString(v,maxLen,fallback){
   var s=typeof v==='string'?v.trim():'';
@@ -140,7 +152,7 @@ function renderActivity(){
     '<div class="activity-panel">'+
       '<div class="activity-panel-title">Dernières connexions</div>'+
       '<div class="activity-event-list">'+
-        entries.slice(0,80).map(function(e){
+        entries.slice(0,ACTIVITY_RECENT_EVENTS_MAX).map(function(e){
           return '<div class="activity-event">'+
             '<div class="activity-event-top"><b>'+escHtml(e.name)+'</b><span>'+escHtml(_activityTypeLabel(e.type))+'</span></div>'+
             '<div class="activity-event-meta">'+formatTime(e.ts)+'</div>'+
@@ -175,10 +187,8 @@ function trackActivityEvent(type,payload){
   var fallback=cleanType==='admin_login'?'Admin':'Visiteur';
   var name=_activitySafeString(payload.name,60,fallback);
   if(!name)return;
-  _activityIdCounter=(_activityIdCounter+1)%1000000;
-  var id='a_'+(crypto.randomUUID
-    ? crypto.randomUUID()
-    : Date.now()+'_'+_activityIdCounter+'_'+Math.random().toString(36).slice(2,12));
+  _activityIdCounter=(_activityIdCounter+1)%ACTIVITY_ID_COUNTER_MAX;
+  var id='a_'+_activityRandomToken()+'_'+_activityIdCounter;
   var eventData={
     type:cleanType,
     name:name,
