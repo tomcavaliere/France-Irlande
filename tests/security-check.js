@@ -67,6 +67,8 @@ function stripCommentsAndStrings(code){
   const withoutLineComments = withoutBlockComments.replace(/\/\/[^\n]*/g, function(match){
     return match.replace(/[^\n]/g, ' ');
   });
+  // Limitation connue: ne parse pas les templates imbriqués complexes (${`...${...}`}),
+  // mais couvre le cas standard de cette app pour réduire les faux positifs.
   return withoutLineComments.replace(/'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|`(?:\\.|[^`\\])*`/g, function(match){
     return match.replace(/[^\n]/g, ' ');
   });
@@ -78,7 +80,8 @@ function stripCommentsAndStrings(code){
  */
 function isAuthOnlyRule(ruleValue){
   if (typeof ruleValue !== 'string') return false;
-  return /^auth\s*!==?\s*null$/.test(ruleValue.trim());
+  const v = ruleValue.trim();
+  return /^auth\s*!==?\s*null(?:\s*&&[\s\S]+)?$/.test(v) || /^null\s*!==?\s*auth(?:\s*&&[\s\S]+)?$/.test(v);
 }
 
 /**
@@ -149,10 +152,10 @@ if (!cspMetaTagMatch) {
     failures.push('CSP incomplète: directive "default-src" absente.');
   }
   const scriptSrc = getCspDirective(cspContent, 'script-src');
-  if (/'unsafe-eval'/.test(scriptSrc)) {
+  if (/(?:'|")?unsafe-eval(?:'|")?/.test(scriptSrc)) {
     failures.push('CSP trop permissive: "unsafe-eval" est interdit.');
   }
-  if (/'unsafe-inline'/.test(scriptSrc)) {
+  if (/(?:'|")?unsafe-inline(?:'|")?/.test(scriptSrc)) {
     failures.push('CSP trop permissive: "unsafe-inline" est interdit dans script-src.');
   }
 }
@@ -180,7 +183,7 @@ const scanTargets = appJsFiles.concat([indexPath]);
 const fetchMatches = [];
 scanTargets.forEach(function(filePath){
   if (path.basename(filePath) === 'utils.js') return;
-  findMatches(filePath, /\b(?:fetch|window\.fetch|globalThis\.fetch)\s*\(|\[['"]fetch['"]\]\s*\(/, true).forEach(function(m){
+  findMatches(filePath, /\b(?:fetch|window\.fetch|globalThis\.fetch)\s*\(|\[(?:['"`])fetch(?:['"`])\]\s*\(/, true).forEach(function(m){
     fetchMatches.push({ file: filePath, line: m.line, text: m.text });
   });
 });
