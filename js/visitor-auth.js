@@ -13,6 +13,7 @@ var _visitorPasswordHashCache = VISITOR_DEFAULT_PASSWORD_HASH;
 var _visitorPasswordHashLoaded = false;
 var _visitorPasswordHashRevision = 0;
 var _visitorGateHardLock = false;
+var _visitorActivityTracked = false;
 
 function isVisitorAuthenticated(){
   return localStorage.getItem(VISITOR_AUTH_KEY)==='1';
@@ -130,6 +131,7 @@ function checkVisitorPw(){
     var actualHash=r[1];
     if(actualHash===expectedHash){
       _setVisitorSession(name);
+      _visitorActivityTracked=true;
       trackActivityEvent('visitor_login',{
         name:name
       });
@@ -205,6 +207,17 @@ function updateVisitorPassword(){
   }).finally(function(){
     if(saveBtn)saveBtn.disabled=false;
   });
+}
+
+// Enregistre un événement d'activité pour un visiteur déjà authentifié (retour sur l'app).
+// Appelée une seule fois par chargement de page depuis init.js, après initialisation Firebase.
+function trackReturningVisitor(){
+  if(_visitorActivityTracked)return;
+  if(!isVisitorAuthenticated())return;
+  var name=getVisitorName();
+  if(!name)return;
+  _visitorActivityTracked=true;
+  trackActivityEvent('visitor_login',{name:name});
 }
 
 // Raccourcis clavier dans le modal visiteur
