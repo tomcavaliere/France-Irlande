@@ -88,6 +88,7 @@ function initFirebase(){
 }
 
 function openCarnetTab(){
+  if(_unsubStages&&_unsubJournals)return;
   if(!window._fbDb)return;
   if(!_unsubStages){
     _unsubStages=window._fbOnValue(window._fbRef(window._fbDb,'stages'),function(snap){
@@ -101,6 +102,8 @@ function openCarnetTab(){
       journals=snap.val()||{};
       saveLocalCache();
       Events.emit('state:journal-changed');
+    },function(err){
+      console.error('[onValue/journals]',err);
     });
   }
 }
@@ -205,6 +208,11 @@ function _removeSkeleton(date){
   if(sk&&sk.parentNode)sk.parentNode.removeChild(sk);
 }
 
+/**
+ * Returns true when at least one lazy per-stage listener is already attached.
+ * @param {string} date
+ * @returns {boolean}
+ */
 function hasLazyListeners(date){
   return !!(
     photosUnsub[date]||
