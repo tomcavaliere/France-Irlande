@@ -34,7 +34,7 @@ var _journalSaveTimers = {}; // { [date]: timeoutId }
 var fbInitialized = false;
 var lastCompletedCount = 0;
 var journalDirty = false;
-var _unsubCurrent = null, _unsubStages = null, _unsubExpenses = null, _unsubTraining = null, _unsubHealth = null;
+var _unsubCurrent = null, _unsubStages = null, _unsubJournals = null, _unsubExpenses = null, _unsubTraining = null, _unsubHealth = null;
 var _unsubActivity = null;
 
 // ==== MAP ====
@@ -83,7 +83,6 @@ var _adminActivitySessionUid = '';
 var _adminActivityTracked = false;
 
 // ==== JOURNAL LAZY LISTENERS ====
-var journalsUnsub = {};      // { [date]: fn }
 var commentsUnsub = {};      // { [date]: fn }
 var bravosUnsub = {};        // { [date]: fn }
 var bravosByDate = {};       // { [date]: { [visitorId]: true } }

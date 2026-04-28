@@ -1,6 +1,6 @@
 // journal.js
 // Journal rendering, save/flush, Firebase subscriptions,
-// lazy content loading, bravos, and visitor ID.
+// text preloading, lazy media loading, bravos, and visitor ID.
 
 // ==== JOURNAL SAVE ====
 // Called via event delegation on <textarea data-event="input">.
@@ -88,13 +88,21 @@ function initFirebase(){
 }
 
 function openCarnetTab(){
-  if(_unsubStages)return;
   if(!window._fbDb)return;
-  _unsubStages=window._fbOnValue(window._fbRef(window._fbDb,'stages'),function(snap){
-    stages=snap.val()||{};
-    saveLocalCache();
-    Events.emit('state:stages-changed');
-  });
+  if(!_unsubStages){
+    _unsubStages=window._fbOnValue(window._fbRef(window._fbDb,'stages'),function(snap){
+      stages=snap.val()||{};
+      saveLocalCache();
+      Events.emit('state:stages-changed');
+    });
+  }
+  if(!_unsubJournals){
+    _unsubJournals=window._fbOnValue(window._fbRef(window._fbDb,'journals'),function(snap){
+      journals=snap.val()||{};
+      saveLocalCache();
+      Events.emit('state:journal-changed');
+    });
+  }
 }
 
 // ==== BRAVOS ====
@@ -175,16 +183,6 @@ function showBravosList(date){
   });
 }
 
-function patchJournalText(date){
-  var entry=document.querySelector('#journalList .journal-entry[data-date="'+date+'"]');
-  if(!entry)return;
-  var ta=entry.querySelector('.j-ta');
-  if(ta&&document.activeElement!==ta){
-    ta.value=journals[date]||'';
-    resizeJournalTextarea(ta);
-  }
-}
-
 function patchBravos(date, bravosData){
   var entry=document.querySelector('#journalList .journal-entry[data-date="'+date+'"]');
   if(!entry)return;
@@ -208,15 +206,8 @@ function _removeSkeleton(date){
 }
 
 function loadStageContent(date){
-  if(journalsUnsub[date])return;
+  if(photosUnsub[date])return;
   if(!window._fbDb)return;
-
-  journalsUnsub[date]=window._fbOnValue(window._fbRef(window._fbDb,'journals/'+date),function(snap){
-    journals[date]=snap.val()||'';
-    saveLocalCache();
-    patchJournalText(date);
-    _removeSkeleton(date);
-  });
 
   photosUnsub[date]=window._fbOnValue(window._fbRef(window._fbDb,'photos/'+date),function(snap){
     photos[date]=snap.val()||{};
@@ -277,13 +268,13 @@ function observeJournalEntries(){
 // ==== JOURNAL RENDER ====
 function renderJournal(){
   if(photoObserver)photoObserver.disconnect();
-  // Teardown all lazy listeners
-  [journalsUnsub, photosUnsub, videosUnsub, commentsUnsub, bravosUnsub, commentLikesUnsub, commentRepliesUnsub].forEach(function(map){
+  // Teardown all lazy listeners (media/comments/bravos)
+  [photosUnsub, videosUnsub, commentsUnsub, bravosUnsub, commentLikesUnsub, commentRepliesUnsub].forEach(function(map){
     Object.values(map).forEach(function(unsub){
       if(typeof unsub==='function')unsub();
     });
   });
-  journalsUnsub={};photosUnsub={};videosUnsub={};commentsUnsub={};bravosUnsub={};
+  photosUnsub={};videosUnsub={};commentsUnsub={};bravosUnsub={};
   commentLikesUnsub={};commentRepliesUnsub={};
   photos={};videos={};comments={};commentLikes={};commentReplies={};
   bravosByDate={};
