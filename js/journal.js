@@ -5,10 +5,17 @@
 // ==== JOURNAL SAVE ====
 // Called via event delegation on <textarea data-event="input">.
 // Signature: (arg, _arg2, el) — reads the current value from the element.
+var MIN_JOURNAL_TEXTAREA_HEIGHT=70;
+
+/**
+ * Autosize a journal textarea so all text stays visible without inner scrolling.
+ * @param {HTMLTextAreaElement|null|undefined} ta
+ * @returns {void}
+ */
 function resizeJournalTextarea(ta){
   if(!ta)return;
   ta.style.height='auto';
-  ta.style.height=Math.max(ta.scrollHeight,70)+'px';
+  ta.style.height=Math.max(ta.scrollHeight,MIN_JOURNAL_TEXTAREA_HEIGHT)+'px';
 }
 
 function onJournalInput(date, _arg2, el){
