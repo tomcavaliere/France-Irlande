@@ -205,8 +205,19 @@ function _removeSkeleton(date){
   if(sk&&sk.parentNode)sk.parentNode.removeChild(sk);
 }
 
+function hasLazyListeners(date){
+  return !!(
+    photosUnsub[date]||
+    videosUnsub[date]||
+    commentsUnsub[date]||
+    bravosUnsub[date]||
+    commentLikesUnsub[date]||
+    commentRepliesUnsub[date]
+  );
+}
+
 function loadStageContent(date){
-  if(photosUnsub[date]||videosUnsub[date]||commentsUnsub[date]||bravosUnsub[date])return;
+  if(hasLazyListeners(date))return;
   if(!window._fbDb)return;
 
   photosUnsub[date]=window._fbOnValue(window._fbRef(window._fbDb,'photos/'+date),function(snap){
