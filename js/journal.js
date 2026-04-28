@@ -5,8 +5,22 @@
 // ==== JOURNAL SAVE ====
 // Called via event delegation on <textarea data-event="input">.
 // Signature: (arg, _arg2, el) — reads the current value from the element.
+var MIN_JOURNAL_TEXTAREA_HEIGHT=70;
+
+/**
+ * Autosize a journal textarea so all text stays visible without inner scrolling.
+ * @param {HTMLTextAreaElement|null|undefined} ta
+ * @returns {void}
+ */
+function resizeJournalTextarea(ta){
+  if(!ta)return;
+  ta.style.height='auto';
+  ta.style.height=Math.max(ta.scrollHeight,MIN_JOURNAL_TEXTAREA_HEIGHT)+'px';
+}
+
 function onJournalInput(date, _arg2, el){
   if(!isAdmin)return;
+  resizeJournalTextarea(el);
   var text=el?el.value:'';
   journals[date]=text;
   clearTimeout(_journalSaveTimers[date]);
@@ -46,7 +60,10 @@ function patchJournal(){
     var date=entry.dataset.date;
     if(!date)return;
     var ta=entry.querySelector('.j-ta');
-    if(ta&&document.activeElement!==ta){ta.value=journals[date]||'';}
+    if(ta&&document.activeElement!==ta){
+      ta.value=journals[date]||'';
+      resizeJournalTextarea(ta);
+    }
     patchMedia(date);
   });
 }
@@ -162,7 +179,10 @@ function patchJournalText(date){
   var entry=document.querySelector('#journalList .journal-entry[data-date="'+date+'"]');
   if(!entry)return;
   var ta=entry.querySelector('.j-ta');
-  if(ta&&document.activeElement!==ta){ta.value=journals[date]||'';}
+  if(ta&&document.activeElement!==ta){
+    ta.value=journals[date]||'';
+    resizeJournalTextarea(ta);
+  }
 }
 
 function patchBravos(date, bravosData){
@@ -322,6 +342,10 @@ function renderJournal(){
   if(!hasAny){
     c.innerHTML='<div class="empty-state empty-state-lg">'+
       'Le journal appara\u00eetra ici apr\u00e8s la mise \u00e0 jour de position.</div>';
+  } else {
+    c.querySelectorAll('.j-ta').forEach(function(ta){
+      resizeJournalTextarea(ta);
+    });
   }
   observeJournalEntries();
 }
