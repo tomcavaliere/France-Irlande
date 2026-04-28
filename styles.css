@@ -112,7 +112,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .j-date{font-size:11px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
 .j-stage{font-size:14px;font-weight:600;margin:3px 0 8px}
 .j-ta{width:100%;border:1px solid #e0e0e0;border-radius:10px;padding:10px;font-family:inherit;
-  font-size:14px;resize:vertical;min-height:70px;line-height:1.5;color:var(--text);background:#fafafa}
+  font-size:14px;resize:none;overflow:hidden;min-height:70px;line-height:1.5;color:var(--text);background:#fafafa}
 .j-ta:focus{outline:none;border-color:var(--green);background:#fff}
 .j-rating{display:flex;gap:3px;margin-top:8px}
 .j-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
