@@ -88,7 +88,6 @@ function initFirebase(){
 }
 
 function openCarnetTab(){
-  if(_unsubStages&&_unsubJournals)return;
   if(!window._fbDb)return;
   if(!_unsubStages){
     _unsubStages=window._fbOnValue(window._fbRef(window._fbDb,'stages'),function(snap){
@@ -104,6 +103,7 @@ function openCarnetTab(){
       Events.emit('state:journal-changed');
     },function(err){
       console.error('[onValue/journals]',err);
+      showToast('Impossible de charger les textes du journal.','error');
     });
   }
 }
