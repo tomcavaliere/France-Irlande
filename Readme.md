@@ -71,3 +71,7 @@ Le script vérifie automatiquement:
 ## Déploiement
 
 - Déploiement GitHub Pages: `https://tomcavaliere.github.io/France-Irlande/`
+
+## Licence
+
+Ce projet est **propriétaire**. Voir le fichier [`LICENSE`](./LICENSE).
