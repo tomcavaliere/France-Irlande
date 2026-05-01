@@ -42,7 +42,7 @@ function compressImage(file,cb){
   img.onerror=function(err){
     URL.revokeObjectURL(url);
     console.error('[compressImage] image load failed',err);
-    showToast('Impossible de lire une des photos sélectionnées. Réessaie avec une autre image.','error',5000);
+    showToast('Impossible de lire une des photos sélectionnées. Réessaye avec une autre image.','error',5000);
     cb(null);
   };
   img.src=url;
@@ -100,7 +100,7 @@ function _processPhotoUploadQueue(date){
     delete photoUploadStateByDate[date];
     _syncPhotoUploadUi(date);
     refreshQuotaState();
-    if(state.failures)showToast(state.failures+' photo(s) non uploadée(s).','warn',5000);
+    if(state.failures)showToast(_photoUploadFailureLabel(state.failures),'warn',5000);
     return;
   }
   state.running=true;
@@ -147,6 +147,10 @@ function _syncPhotoUploadUi(date){
   }
   addBtn.classList.remove('j-uploading');
   if(label)label.textContent='Photo';
+}
+
+function _photoUploadFailureLabel(count){
+  return count===1 ? '1 photo non uploadée.' : count+' photos non uploadées.';
 }
 
 function deletePhoto(i,id){
