@@ -12,6 +12,19 @@ function _makeCommentEntityId(prefix){
   return prefix+Date.now()+'_'+Math.random().toString(36).slice(2,6);
 }
 
+function _copyNonEmptyObject(source,key){
+  var value=source&&source[key];
+  return value&&typeof value==='object'&&Object.keys(value).length
+    ? Object.assign({},value)
+    : null;
+}
+
+function _deleteEmptyChild(obj,key){
+  if(obj&&obj[key]&&typeof obj[key]==='object'&&!Object.keys(obj[key]).length){
+    delete obj[key];
+  }
+}
+
 function _replyKey(date,id){
   return date+'/'+id;
 }
@@ -74,8 +87,10 @@ function _ensureLocalCommentReply(date,id){
     ts:current&&current.ts?current.ts:0,
     authorName:current&&current.authorName?current.authorName:DEFAULT_ADMIN_REPLY_AUTHOR
   };
-  if(current&&Object.keys(current.likes).length)next.likes=Object.assign({},current.likes);
-  if(current&&Object.keys(current.replies).length)next.replies=Object.assign({},current.replies);
+  var likesCopy=_copyNonEmptyObject(current,'likes');
+  var repliesCopy=_copyNonEmptyObject(current,'replies');
+  if(likesCopy)next.likes=likesCopy;
+  if(repliesCopy)next.replies=repliesCopy;
   if(!commentReplies[date])commentReplies[date]={};
   commentReplies[date][id]=next;
   return commentReplies[date][id];
@@ -302,8 +317,10 @@ function postReply(date,id){
   if(!text){if(txtEl)txtEl.focus();return;}
   var current=_normalizeCommentReply(commentReplies[date]&&commentReplies[date][id]);
   var data={text:text,ts:Date.now(),authorName:_getCurrentAdminReplyAuthorName()};
-  if(current&&Object.keys(current.likes).length)data.likes=Object.assign({},current.likes);
-  if(current&&Object.keys(current.replies).length)data.replies=Object.assign({},current.replies);
+  var likesCopy=_copyNonEmptyObject(current,'likes');
+  var repliesCopy=_copyNonEmptyObject(current,'replies');
+  if(likesCopy)data.likes=likesCopy;
+  if(repliesCopy)data.replies=repliesCopy;
   if(!commentReplies[date])commentReplies[date]={};
   commentReplies[date][id]=data;
   delete _replyOpen[_replyKey(date,id)];
@@ -340,7 +357,7 @@ function likeReply(date,id){
   if(!target.likes||typeof target.likes!=='object')target.likes={};
   if(target.likes[vid]){
     delete target.likes[vid];
-    if(!Object.keys(target.likes).length)delete target.likes;
+    _deleteEmptyChild(target,'likes');
     tryWrite('remove','commentReplies/'+date+'/'+id+'/likes/'+vid).catch(function(err){
       console.error('[likeReply] remove failed',err);
     });
@@ -392,7 +409,7 @@ function postReplyThread(date,id){
     return;
   }
   var vid=getVisitorId();
-  var replyId=_makeCommentEntityId('r');
+  var replyId=_makeCommentEntityId('vr');
   var data={name:name,text:text,ts:Date.now()};
   var target=_ensureLocalCommentReply(date,id);
   _saveVisitorProfile(vid);
@@ -415,7 +432,7 @@ function deleteReplyThreadItem(date,id,replyId){
   if(!normalized||!normalized.replies||!normalized.replies[replyId])return;
   var target=_ensureLocalCommentReply(date,id);
   if(target.replies)delete target.replies[replyId];
-  if(target.replies&&!Object.keys(target.replies).length)delete target.replies;
+  _deleteEmptyChild(target,'replies');
   patchStageComments(date);
   tryWrite('remove','commentReplies/'+date+'/'+id+'/replies/'+replyId).catch(function(err){
     console.error('[deleteReplyThreadItem]',err);
