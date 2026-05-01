@@ -115,7 +115,10 @@ function switchTab(t){
   if(t==='activity'&&prev!=='activity')activityVisibleCount=ACTIVITY_INITIAL_EVENTS;
   if(t==='journal'||t==='stages')openCarnetTab();
   if(t==='map'&&map)setTimeout(function(){map.invalidateSize();},100);
-  if(t==='journal'&&prev!=='journal'){renderJournal();journalDirty=false;}
+  if(t==='journal'&&prev!=='journal'){
+    renderJournal();
+    if(journalDirty)journalDirty=false;
+  }
   else if(t==='journal'&&journalDirty){renderJournal();journalDirty=false;}
   if(t==='depenses')renderExpenses();
   if(t==='training')renderTraining();

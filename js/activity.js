@@ -100,7 +100,7 @@ function _activityShouldIgnoreEntry(entry){
 }
 
 function showMoreActivityEntries(){
-  activityVisibleCount=Math.max(ACTIVITY_INITIAL_EVENTS,activityVisibleCount+ACTIVITY_INITIAL_EVENTS);
+  activityVisibleCount+=ACTIVITY_INITIAL_EVENTS;
   renderActivity();
 }
 
@@ -172,7 +172,7 @@ function renderActivity(){
       '</div>'+
     '</div>';
 
-  var recentLimit=Math.max(1,Math.round(activityVisibleCount||ACTIVITY_INITIAL_EVENTS));
+  var recentLimit=activityVisibleCount||ACTIVITY_INITIAL_EVENTS;
   var recentEntries=entries.slice(0,recentLimit);
   listEl.innerHTML=
     '<div class="activity-panel">'+

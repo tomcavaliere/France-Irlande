@@ -305,7 +305,7 @@ function renderJournal(){
   // (journals NOT cleared — needed for admin editing)
   var c=document.getElementById('journalList');c.innerHTML='';
   var dates=filterVisibleJournalDates(stages,isAdmin);
-  var visibleCount=Math.max(1,Math.round(journalVisibleCount||JOURNAL_INITIAL_DAYS));
+  var visibleCount=journalVisibleCount||JOURNAL_INITIAL_DAYS;
   var visibleDates=dates.slice(0,visibleCount);
   var hasAny=false;
   visibleDates.forEach(function(date){
