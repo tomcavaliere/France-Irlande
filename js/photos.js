@@ -1,6 +1,10 @@
 // photos.js
 // Photo compression, upload, deletion, and rendering.
 
+var _photoUploadInput = null;
+var _photoUploadPendingDate = '';
+var _photoUploadStateByDate = {};
+
 function compressImage(file,cb){
   var img=new Image();
   var url=URL.createObjectURL(file);
@@ -11,8 +15,16 @@ function compressImage(file,cb){
     if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
     if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}
     var canvas=document.createElement('canvas');
+    var ctx=null;
     canvas.width=w;canvas.height=h;
-    canvas.getContext('2d').drawImage(img,0,0,w,h);
+    ctx=canvas.getContext('2d');
+    if(!ctx){
+      console.error('[compressImage] canvas context unavailable');
+      alert('Impossible de préparer cette photo pour l\'upload.');
+      cb(null);
+      return;
+    }
+    ctx.drawImage(img,0,0,w,h);
     // Compression itérative : réduit la qualité jusqu'à passer sous 490 000 chars
     var quality=0.80;
     var b64;
@@ -27,6 +39,12 @@ function compressImage(file,cb){
     }
     cb(b64);
   };
+  img.onerror=function(err){
+    URL.revokeObjectURL(url);
+    console.error('[compressImage] image load failed',err);
+    alert('Impossible de lire une des photos sélectionnées. Réessaie avec une autre image.');
+    cb(null);
+  };
   img.src=url;
 }
 
@@ -37,37 +55,98 @@ function uploadPhoto(i){
     alert('Quota Firebase atteint (≥ 90%). Upload bloqué. Supprime d\'anciennes photos avant d\'en ajouter.');
     return;
   }
-  var input=document.createElement('input');
-  input.type='file';input.accept='image/*';input.multiple=true;
-  input.onchange=function(){
-    var files=Array.from(input.files);
-    var addBtn=document.getElementById('photos-add-'+i);
-    function uploadNext(idx){
-      if(idx>=files.length){
-        if(addBtn)addBtn.classList.remove('j-uploading');
-        return;
-      }
-      if(addBtn)addBtn.classList.add('j-uploading');
-      compressImage(files[idx],function(b64){
-        if(!b64){uploadNext(idx+1);return;}
-        var id='p'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
-        window._fbSet(window._fbRef(window._fbDb,'photos/'+i+'/'+id),b64)
-          .then(function(){
-            if(!photos[i])photos[i]={};
-            photos[i][id]=b64;
-            patchMedia(i);
-            refreshQuotaState();
-            uploadNext(idx+1);
-          })
-          .catch(function(err){
-            console.error('[uploadPhoto] set failed',err);
-            uploadNext(idx+1);
-          });
-      });
-    }
-    uploadNext(0);
-  };
+  var input=_ensurePhotoUploadInput();
+  _photoUploadPendingDate=i;
+  input.value='';
   input.click();
+}
+
+function _ensurePhotoUploadInput(){
+  if(_photoUploadInput)return _photoUploadInput;
+  var input=document.createElement('input');
+  input.type='file';
+  input.accept='image/*';
+  input.multiple=true;
+  input.hidden=true;
+  input.addEventListener('change',function(){
+    var date=_photoUploadPendingDate;
+    var files=Array.from(input.files||[]);
+    _photoUploadPendingDate='';
+    if(!date||!files.length)return;
+    _enqueuePhotoUpload(date,files);
+  });
+  document.body.appendChild(input);
+  _photoUploadInput=input;
+  return input;
+}
+
+function _enqueuePhotoUpload(date,files){
+  var state=_photoUploadStateByDate[date];
+  if(!state){
+    state={queue:[],processed:0,total:0,failures:0,running:false};
+    _photoUploadStateByDate[date]=state;
+  }
+  state.queue=state.queue.concat(files);
+  state.total+=files.length;
+  _syncPhotoUploadUi(date);
+  _processPhotoUploadQueue(date);
+}
+
+function _processPhotoUploadQueue(date){
+  var state=_photoUploadStateByDate[date];
+  if(!state||state.running)return;
+  var file=state.queue.shift();
+  if(!file){
+    delete _photoUploadStateByDate[date];
+    _syncPhotoUploadUi(date);
+    refreshQuotaState();
+    if(state.failures)showToast(state.failures+' photo(s) non importée(s).','warn',5000);
+    return;
+  }
+  state.running=true;
+  _syncPhotoUploadUi(date);
+  compressImage(file,function(b64){
+    if(!b64){
+      state.failures++;
+      state.processed++;
+      state.running=false;
+      _syncPhotoUploadUi(date);
+      _processPhotoUploadQueue(date);
+      return;
+    }
+    var id='p'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+    window._fbSet(window._fbRef(window._fbDb,'photos/'+date+'/'+id),b64)
+      .then(function(){
+        if(!photos[date])photos[date]={};
+        photos[date][id]=b64;
+        state.processed++;
+        patchMedia(date);
+      })
+      .catch(function(err){
+        state.failures++;
+        state.processed++;
+        console.error('[uploadPhoto] set failed',err);
+      })
+      .finally(function(){
+        state.running=false;
+        _syncPhotoUploadUi(date);
+        _processPhotoUploadQueue(date);
+      });
+  });
+}
+
+function _syncPhotoUploadUi(date){
+  var addBtn=document.getElementById('photos-add-'+date);
+  if(!addBtn)return;
+  var label=addBtn.querySelector('span:last-child');
+  var state=_photoUploadStateByDate[date];
+  if(state){
+    addBtn.classList.add('j-uploading');
+    if(label)label.textContent='Upload '+state.processed+'/'+state.total;
+    return;
+  }
+  addBtn.classList.remove('j-uploading');
+  if(label)label.textContent='Photo';
 }
 
 function deletePhoto(i,id){
@@ -128,4 +207,5 @@ function patchMedia(date){
   var tmp=document.createElement('div');
   tmp.innerHTML=renderMediaHtml(date);
   container.replaceWith(tmp.firstChild);
+  _syncPhotoUploadUi(date);
 }
