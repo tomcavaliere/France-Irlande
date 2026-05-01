@@ -1,9 +1,9 @@
 // photos.js
 // Photo compression, upload, deletion, and rendering.
 
-var _photoUploadInput = null;
-var _photoUploadPendingDate = '';
-var _photoUploadStateByDate = {};
+var photoUploadInput = null;
+var photoUploadPendingDate = '';
+var photoUploadStateByDate = {};
 
 function compressImage(file,cb){
   var img=new Image();
@@ -20,7 +20,7 @@ function compressImage(file,cb){
     ctx=canvas.getContext('2d');
     if(!ctx){
       console.error('[compressImage] canvas context unavailable');
-      alert('Impossible de préparer cette photo pour l\'upload.');
+      showToast('Impossible de préparer cette photo pour l\'upload.','error',5000);
       cb(null);
       return;
     }
@@ -42,7 +42,7 @@ function compressImage(file,cb){
   img.onerror=function(err){
     URL.revokeObjectURL(url);
     console.error('[compressImage] image load failed',err);
-    alert('Impossible de lire une des photos sélectionnées. Réessaie avec une autre image.');
+    showToast('Impossible de lire une des photos sélectionnées. Réessaie avec une autre image.','error',5000);
     cb(null);
   };
   img.src=url;
@@ -56,35 +56,35 @@ function uploadPhoto(i){
     return;
   }
   var input=_ensurePhotoUploadInput();
-  _photoUploadPendingDate=i;
+  photoUploadPendingDate=i;
   input.value='';
   input.click();
 }
 
 function _ensurePhotoUploadInput(){
-  if(_photoUploadInput)return _photoUploadInput;
+  if(photoUploadInput)return photoUploadInput;
   var input=document.createElement('input');
   input.type='file';
   input.accept='image/*';
   input.multiple=true;
   input.hidden=true;
   input.addEventListener('change',function(){
-    var date=_photoUploadPendingDate;
+    var date=photoUploadPendingDate;
     var files=Array.from(input.files||[]);
-    _photoUploadPendingDate='';
+    photoUploadPendingDate='';
     if(!date||!files.length)return;
     _enqueuePhotoUpload(date,files);
   });
   document.body.appendChild(input);
-  _photoUploadInput=input;
+  photoUploadInput=input;
   return input;
 }
 
 function _enqueuePhotoUpload(date,files){
-  var state=_photoUploadStateByDate[date];
+  var state=photoUploadStateByDate[date];
   if(!state){
     state={queue:[],processed:0,total:0,failures:0,running:false};
-    _photoUploadStateByDate[date]=state;
+    photoUploadStateByDate[date]=state;
   }
   state.queue=state.queue.concat(files);
   state.total+=files.length;
@@ -93,14 +93,14 @@ function _enqueuePhotoUpload(date,files){
 }
 
 function _processPhotoUploadQueue(date){
-  var state=_photoUploadStateByDate[date];
+  var state=photoUploadStateByDate[date];
   if(!state||state.running)return;
   var file=state.queue.shift();
   if(!file){
-    delete _photoUploadStateByDate[date];
+    delete photoUploadStateByDate[date];
     _syncPhotoUploadUi(date);
     refreshQuotaState();
-    if(state.failures)showToast(state.failures+' photo(s) non importée(s).','warn',5000);
+    if(state.failures)showToast(state.failures+' photo(s) non uploadée(s).','warn',5000);
     return;
   }
   state.running=true;
@@ -139,7 +139,7 @@ function _syncPhotoUploadUi(date){
   var addBtn=document.getElementById('photos-add-'+date);
   if(!addBtn)return;
   var label=addBtn.querySelector('span:last-child');
-  var state=_photoUploadStateByDate[date];
+  var state=photoUploadStateByDate[date];
   if(state){
     addBtn.classList.add('j-uploading');
     if(label)label.textContent='Upload '+state.processed+'/'+state.total;
