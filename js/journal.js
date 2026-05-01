@@ -6,6 +6,14 @@
 // Called via event delegation on <textarea data-event="input">.
 // Signature: (arg, _arg2, el) — reads the current value from the element.
 var MIN_JOURNAL_TEXTAREA_HEIGHT=70;
+var COLLECTION_SNAPSHOT_TTL_MS=2*60*1000;
+var STAGE_CONTENT_SNAPSHOT_TTL_MS=10*60*1000;
+var _stagesFetchedAt=0;
+var _journalsFetchedAt=0;
+var _stagesFetchPromise=null;
+var _journalsFetchPromise=null;
+var _stageContentFetchedAt={};
+var _stageContentPending={};
 
 /**
  * Autosize a journal textarea so all text stays visible without inner scrolling.
@@ -68,6 +76,153 @@ function patchJournal(){
   });
 }
 
+function _isFreshFetch(lastTs, ttlMs){
+  return Number.isFinite(lastTs)&&lastTs>0&&(Date.now()-lastTs)<ttlMs;
+}
+
+function _ensureStageContentMeta(date){
+  if(!_stageContentFetchedAt[date])_stageContentFetchedAt[date]={};
+  return _stageContentFetchedAt[date];
+}
+
+function _ensureStageContentPending(date){
+  if(!_stageContentPending[date])_stageContentPending[date]={};
+  return _stageContentPending[date];
+}
+
+function _markStageContentFetched(date, key){
+  _ensureStageContentMeta(date)[key]=Date.now();
+}
+
+function _isStageContentLoaded(date, key){
+  var meta=_stageContentFetchedAt[date];
+  return !!(meta&&meta[key]);
+}
+
+function _isStageContentFresh(date, key){
+  var meta=_stageContentFetchedAt[date];
+  return !!(meta&&_isFreshFetch(meta[key],STAGE_CONTENT_SNAPSHOT_TTL_MS));
+}
+
+function _setStageContentPending(date, key, promise){
+  _ensureStageContentPending(date)[key]=promise;
+}
+
+function _getStageContentPending(date, key){
+  var pending=_stageContentPending[date];
+  return pending?pending[key]:null;
+}
+
+function _clearStageContentPending(date, key){
+  var pending=_stageContentPending[date];
+  if(!pending)return;
+  delete pending[key];
+  if(!Object.keys(pending).length)delete _stageContentPending[date];
+}
+
+function _isStageFullyHydrated(date){
+  return ['photos','videos','comments','bravos','commentLikes','commentReplies'].every(function(key){
+    return _isStageContentLoaded(date,key);
+  });
+}
+
+function _cleanupRemovedStageContent(){
+  var knownDates=stages&&typeof stages==='object'?stages:{};
+  Object.keys(_stageContentFetchedAt).forEach(function(date){
+    if(Object.prototype.hasOwnProperty.call(knownDates,date))return;
+    [photosUnsub, videosUnsub, commentsUnsub, bravosUnsub, commentLikesUnsub, commentRepliesUnsub].forEach(function(map){
+      var unsub=map[date];
+      if(typeof unsub==='function')unsub();
+      delete map[date];
+    });
+    delete photos[date];
+    delete videos[date];
+    delete comments[date];
+    delete commentLikes[date];
+    delete commentReplies[date];
+    delete bravosByDate[date];
+    delete _stageContentFetchedAt[date];
+    delete _stageContentPending[date];
+  });
+}
+
+function teardownStageContentSubscriptions(){
+  [photosUnsub, videosUnsub, commentsUnsub, bravosUnsub, commentLikesUnsub, commentRepliesUnsub].forEach(function(map){
+    Object.values(map).forEach(function(unsub){
+      if(typeof unsub==='function')unsub();
+    });
+  });
+  photosUnsub={};
+  videosUnsub={};
+  commentsUnsub={};
+  bravosUnsub={};
+  commentLikesUnsub={};
+  commentRepliesUnsub={};
+}
+
+function _mergePendingComments(date, incoming){
+  var merged=Object.assign({},incoming&&typeof incoming==='object'?incoming:{});
+  var existing=comments[date];
+  if(!existing||typeof existing!=='object')return merged;
+  Object.keys(existing).forEach(function(id){
+    var comment=existing[id];
+    if(comment&&comment._pending&&!merged[id]){
+      merged[id]=comment;
+    }
+  });
+  return merged;
+}
+
+function _fetchStagesSnapshot(force){
+  if(!window._fbDb||!window._fbGet||!window._fbRef)return Promise.resolve(stages);
+  if(_stagesFetchPromise)return _stagesFetchPromise;
+  if(!force&&Object.keys(stages||{}).length&&_isFreshFetch(_stagesFetchedAt,COLLECTION_SNAPSHOT_TTL_MS)){
+    return Promise.resolve(stages);
+  }
+  _stagesFetchPromise=window._fbGet(window._fbRef(window._fbDb,'stages'))
+    .then(function(snap){
+      stages=snap.val()||{};
+      _stagesFetchedAt=Date.now();
+      saveLocalCache();
+      Events.emit('state:stages-changed');
+      return stages;
+    })
+    .catch(function(err){
+      console.error('[get/stages]',err);
+      showToast('Impossible de charger les étapes.','error');
+      return stages;
+    })
+    .finally(function(){
+      _stagesFetchPromise=null;
+    });
+  return _stagesFetchPromise;
+}
+
+function _fetchJournalsSnapshot(force){
+  if(!window._fbDb||!window._fbGet||!window._fbRef)return Promise.resolve(journals);
+  if(_journalsFetchPromise)return _journalsFetchPromise;
+  if(!force&&Object.keys(journals||{}).length&&_isFreshFetch(_journalsFetchedAt,COLLECTION_SNAPSHOT_TTL_MS)){
+    return Promise.resolve(journals);
+  }
+  _journalsFetchPromise=window._fbGet(window._fbRef(window._fbDb,'journals'))
+    .then(function(snap){
+      journals=snap.val()||{};
+      _journalsFetchedAt=Date.now();
+      saveLocalCache();
+      Events.emit('state:journal-changed');
+      return journals;
+    })
+    .catch(function(err){
+      console.error('[get/journals]',err);
+      showToast('Impossible de charger les textes du journal.','error');
+      return journals;
+    })
+    .finally(function(){
+      _journalsFetchPromise=null;
+    });
+  return _journalsFetchPromise;
+}
+
 // ==== FIREBASE SUBSCRIPTIONS ====
 function initFirebase(){
   if(!window._fbDb)return;
@@ -89,23 +244,33 @@ function initFirebase(){
 
 function openCarnetTab(){
   if(!window._fbDb)return;
-  if(!_unsubStages){
-    _unsubStages=window._fbOnValue(window._fbRef(window._fbDb,'stages'),function(snap){
-      stages=snap.val()||{};
-      saveLocalCache();
-      Events.emit('state:stages-changed');
-    });
+  if(isAdmin){
+    if(!_unsubStages){
+      _unsubStages=window._fbOnValue(window._fbRef(window._fbDb,'stages'),function(snap){
+        stages=snap.val()||{};
+        _stagesFetchedAt=Date.now();
+        saveLocalCache();
+        Events.emit('state:stages-changed');
+      });
+    }
+    if(!_unsubJournals){
+      _unsubJournals=window._fbOnValue(window._fbRef(window._fbDb,'journals'),function(snap){
+        journals=snap.val()||{};
+        _journalsFetchedAt=Date.now();
+        saveLocalCache();
+        Events.emit('state:journal-changed');
+      },function(err){
+        console.error('[onValue/journals]',err);
+        showToast('Impossible de charger les textes du journal.','error');
+      });
+    }
+    return;
   }
-  if(!_unsubJournals){
-    _unsubJournals=window._fbOnValue(window._fbRef(window._fbDb,'journals'),function(snap){
-      journals=snap.val()||{};
-      saveLocalCache();
-      Events.emit('state:journal-changed');
-    },function(err){
-      console.error('[onValue/journals]',err);
-      showToast('Impossible de charger les textes du journal.','error');
-    });
-  }
+  if(_unsubStages){_unsubStages();_unsubStages=null;}
+  if(_unsubJournals){_unsubJournals();_unsubJournals=null;}
+  teardownStageContentSubscriptions();
+  _fetchStagesSnapshot(false);
+  _fetchJournalsSnapshot(false);
 }
 
 // ==== BRAVOS ====
@@ -165,8 +330,18 @@ function _resolveVisitorNameById(visitorId){
 function addBravo(date){
   var vid=getVisitorId();
   _saveVisitorProfile(vid);
+  if(!bravosByDate[date])bravosByDate[date]={};
+  if(bravosByDate[date][vid]){
+    patchBravos(date,bravosByDate[date]);
+    return;
+  }
+  bravosByDate[date][vid]=true;
+  _markStageContentFetched(date,'bravos');
+  patchBravos(date,bravosByDate[date]);
   window._fbSet(window._fbRef(window._fbDb,'bravos/'+date+'/'+vid),true).catch(function(err){
     console.error('[addBravo]',err);
+    if(bravosByDate[date])delete bravosByDate[date][vid];
+    patchBravos(date,bravosByDate[date]||{});
   });
 }
 
@@ -208,60 +383,85 @@ function _removeSkeleton(date){
   if(sk&&sk.parentNode)sk.parentNode.removeChild(sk);
 }
 
-/**
- * Returns true when at least one lazy per-stage listener is already attached.
- * @param {string} date
- * @returns {boolean}
- */
-function hasLazyListeners(date){
-  return !!(
-    photosUnsub[date]||
-    videosUnsub[date]||
-    commentsUnsub[date]||
-    bravosUnsub[date]||
-    commentLikesUnsub[date]||
-    commentRepliesUnsub[date]
-  );
+function _applyStageContentSnapshot(date, key, snap){
+  var raw=snap&&snap.exists()?snap.val():null;
+  if(key==='photos'){
+    photos[date]=raw||{};
+    patchMedia(date);
+  }else if(key==='videos'){
+    videos[date]=raw||{};
+    patchMedia(date);
+  }else if(key==='comments'){
+    comments[date]=_mergePendingComments(date,raw);
+    saveCommentsCache(date,comments[date]);
+    patchStageComments(date);
+  }else if(key==='bravos'){
+    patchBravos(date,Object.assign({},raw||{},bravosByDate[date]||{}));
+  }else if(key==='commentLikes'){
+    commentLikes[date]=raw||{};
+    patchStageComments(date);
+  }else if(key==='commentReplies'){
+    commentReplies[date]=raw||{};
+    patchStageComments(date);
+  }
+  _markStageContentFetched(date,key);
+  if(_isStageFullyHydrated(date))_removeSkeleton(date);
+}
+
+function _stageUnsubMap(key){
+  if(key==='photos')return photosUnsub;
+  if(key==='videos')return videosUnsub;
+  if(key==='comments')return commentsUnsub;
+  if(key==='bravos')return bravosUnsub;
+  if(key==='commentLikes')return commentLikesUnsub;
+  if(key==='commentReplies')return commentRepliesUnsub;
+  return null;
+}
+
+function _loadStageNode(date, key, path, errContext){
+  if(!window._fbDb)return;
+  if(isAdmin){
+    var unsubMap=_stageUnsubMap(key);
+    if(unsubMap&&unsubMap[date])return;
+    if(unsubMap){
+      unsubMap[date]=window._fbOnValue(window._fbRef(window._fbDb,path),function(snap){
+        _applyStageContentSnapshot(date,key,snap);
+      },function(err){
+        console.error(errContext,err);
+      });
+    }
+    return;
+  }
+  if(_isStageContentFresh(date,key))return;
+  var pending=_getStageContentPending(date,key);
+  if(pending)return;
+  var promise=window._fbGet(window._fbRef(window._fbDb,path))
+    .then(function(snap){
+      _applyStageContentSnapshot(date,key,snap);
+    })
+    .catch(function(err){
+      console.error(errContext,err);
+    })
+    .finally(function(){
+      _clearStageContentPending(date,key);
+    });
+  _setStageContentPending(date,key,promise);
 }
 
 function loadStageContent(date){
-  if(hasLazyListeners(date))return;
   if(!window._fbDb)return;
-
-  photosUnsub[date]=window._fbOnValue(window._fbRef(window._fbDb,'photos/'+date),function(snap){
-    photos[date]=snap.val()||{};
-    patchMedia(date);
+  if(_isStageFullyHydrated(date)&&['photos','videos','comments','bravos','commentLikes','commentReplies'].every(function(key){
+    return _isStageContentFresh(date,key);
+  })){
     _removeSkeleton(date);
-  });
-
-  videosUnsub[date]=window._fbOnValue(window._fbRef(window._fbDb,'videos/'+date),function(snap){
-    videos[date]=snap.val()||{};
-    patchMedia(date);
-    _removeSkeleton(date);
-  });
-
-  commentsUnsub[date]=window._fbOnValue(window._fbRef(window._fbDb,'comments/'+date),function(snap){
-    comments[date]=snap.val()||{};
-    saveCommentsCache(date,comments[date]);
-    patchStageComments(date);
-    _removeSkeleton(date);
-  });
-
-  bravosUnsub[date]=window._fbOnValue(window._fbRef(window._fbDb,'bravos/'+date),function(snap){
-    patchBravos(date,snap.val()||{});
-    _removeSkeleton(date);
-  });
-
-  // Visitor-visible: display liked comments (likes are admin-written).
-  commentLikesUnsub[date]=window._fbOnValue(window._fbRef(window._fbDb,'commentLikes/'+date),function(snap){
-    commentLikes[date]=snap.val()||{};
-    patchStageComments(date);
-  });
-  // Visitor-visible: display admin replies to comments.
-  commentRepliesUnsub[date]=window._fbOnValue(window._fbRef(window._fbDb,'commentReplies/'+date),function(snap){
-    commentReplies[date]=snap.val()||{};
-    patchStageComments(date);
-  });
+    return;
+  }
+  _loadStageNode(date,'photos','photos/'+date,'[get/photos]');
+  _loadStageNode(date,'videos','videos/'+date,'[get/videos]');
+  _loadStageNode(date,'comments','comments/'+date,'[get/comments]');
+  _loadStageNode(date,'bravos','bravos/'+date,'[get/bravos]');
+  _loadStageNode(date,'commentLikes','commentLikes/'+date,'[get/commentLikes]');
+  _loadStageNode(date,'commentReplies','commentReplies/'+date,'[get/commentReplies]');
 }
 
 function observeJournalEntries(){
@@ -292,17 +492,7 @@ function showMoreJournalEntries(){
 // ==== JOURNAL RENDER ====
 function renderJournal(){
   if(photoObserver)photoObserver.disconnect();
-  // Teardown all lazy listeners (media/comments/bravos)
-  [photosUnsub, videosUnsub, commentsUnsub, bravosUnsub, commentLikesUnsub, commentRepliesUnsub].forEach(function(map){
-    Object.values(map).forEach(function(unsub){
-      if(typeof unsub==='function')unsub();
-    });
-  });
-  photosUnsub={};videosUnsub={};commentsUnsub={};bravosUnsub={};
-  commentLikesUnsub={};commentRepliesUnsub={};
-  photos={};videos={};comments={};commentLikes={};commentReplies={};
-  bravosByDate={};
-  // (journals NOT cleared — needed for admin editing)
+  _cleanupRemovedStageContent();
   var c=document.getElementById('journalList');c.innerHTML='';
   var dates=filterVisibleJournalDates(stages,isAdmin);
   var visibleCount=journalVisibleCount;
@@ -340,11 +530,13 @@ function renderJournal(){
     var bravosHtml=isAdmin
       ?'<div class="j-bravos"><button class="j-bravo-admin-btn" data-action="showBravosList" data-arg="'+edate+'" disabled>👏 0</button></div>'
       :'<div class="j-bravos"><button class="j-bravo-btn" data-action="addBravo" data-arg="'+edate+'">Maith sibh! \uD83D\uDC4F</button><span class="j-bravo-count"></span></div>';
-    var skeletonHtml='<div class="j-skeleton" data-skeleton-for="'+edate+'">'+
-      '<div class="j-skeleton-row"></div>'+
-      '<div class="j-skeleton-row"></div>'+
-      '<div class="j-skeleton-media"></div>'+
-    '</div>';
+    var skeletonHtml=_isStageFullyHydrated(date)?'':(
+      '<div class="j-skeleton" data-skeleton-for="'+edate+'">'+
+        '<div class="j-skeleton-row"></div>'+
+        '<div class="j-skeleton-row"></div>'+
+        '<div class="j-skeleton-media"></div>'+
+      '</div>'
+    );
     entry.innerHTML=
       '<div class="j-date">'+dateLabel+'</div>'+
       (kmInfo?'<div class="j-stage">'+kmInfo+'</div>':'')+

@@ -95,6 +95,9 @@ function logoutAdmin(){
   closeAdminDropdown();
   flushJournals();
   saveExpensesCache();
+  if(_unsubStages){_unsubStages();_unsubStages=null;}
+  if(_unsubJournals){_unsubJournals();_unsubJournals=null;}
+  if(typeof teardownStageContentSubscriptions==='function')teardownStageContentSubscriptions();
   if(_unsubExpenses){_unsubExpenses();_unsubExpenses=null;}
   if(_unsubTraining){_unsubTraining();_unsubTraining=null;}
   if(_unsubHealth){_unsubHealth();_unsubHealth=null;}
@@ -269,6 +272,9 @@ function initAuth(){
     }
     else{
       clearTimeout(inactivityTimer);
+      if(_unsubStages){_unsubStages();_unsubStages=null;}
+      if(_unsubJournals){_unsubJournals();_unsubJournals=null;}
+      if(typeof teardownStageContentSubscriptions==='function')teardownStageContentSubscriptions();
       _adminActivitySessionUid='';
       _adminActivityTracked=false;
     }
