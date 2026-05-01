@@ -172,8 +172,9 @@ function renderActivity(){
       '</div>'+
     '</div>';
 
-  var recentLimit=activityVisibleCount||ACTIVITY_INITIAL_EVENTS;
+  var recentLimit=activityVisibleCount;
   var recentEntries=entries.slice(0,recentLimit);
+  var remaining=entries.length-recentEntries.length;
   listEl.innerHTML=
     '<div class="activity-panel">'+
       '<div class="activity-panel-title">Dernières connexions</div>'+
@@ -184,8 +185,8 @@ function renderActivity(){
             '<div class="activity-event-meta">'+formatTime(e.ts)+'</div>'+
           '</div>';
         }).join('')+
-        (entries.length>recentEntries.length
-          ?'<div class="load-more-wrap"><button class="btn btn-o" data-action="showMoreActivityEntries">Afficher '+Math.min(ACTIVITY_INITIAL_EVENTS,entries.length-recentEntries.length)+' connexions de plus</button></div>'
+        (remaining>0
+          ?'<div class="load-more-wrap"><button class="btn btn-o" data-action="showMoreActivityEntries">Afficher davantage ('+remaining+')</button></div>'
           :'')+
       '</div>'+
     '</div>';
