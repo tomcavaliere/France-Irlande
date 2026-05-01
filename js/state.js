@@ -66,7 +66,7 @@ var tracksLayer = null;      // L.layerGroup des polylines oranges (réelles)
 // ==== COMMENTAIRES ====
 var comments = {};        // { [date]: { [id]: {name, text, ts} } }
 var commentLikes = {};    // { [date]: { [id]: true } }  — admin only
-var commentReplies = {};  // { [date]: { [id]: {text, ts} } }  — admin only
+var commentReplies = {};  // { [date]: { [id]: {text, ts, authorName?, likes?, replies?} } }
 var commentLikesUnsub = {};
 var commentRepliesUnsub = {};
 
