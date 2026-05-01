@@ -3,6 +3,7 @@
 
 var photoUploadInput = null;
 var photoUploadPendingDate = '';
+// { [date]: { queue: File[], processed: number, total: number, failures: number, running: boolean } }
 var photoUploadStateByDate = {};
 
 function compressImage(file,cb){
@@ -47,7 +48,7 @@ function compressImage(file,cb){
   img.src=url;
 }
 
-function uploadPhoto(i){
+function uploadPhoto(date){
   if(!isAdmin)return;
   if(!isOnline){alert('Upload impossible hors-ligne. Les photos ne sont pas mises en cache (taille). Réessaie au retour du réseau.');return;}
   if(_quotaState.level==='block'){
@@ -55,7 +56,7 @@ function uploadPhoto(i){
     return;
   }
   var input=_ensurePhotoUploadInput();
-  photoUploadPendingDate=i;
+  photoUploadPendingDate=date;
   input.value='';
   input.click();
 }
@@ -141,7 +142,7 @@ function _syncPhotoUploadUi(date){
   var state=photoUploadStateByDate[date];
   if(state){
     addBtn.classList.add('j-uploading');
-    if(label)label.textContent=`Upload ${state.processed}/${state.total}`;
+    if(label)label.textContent='Upload '+state.processed+'/'+state.total;
     return;
   }
   addBtn.classList.remove('j-uploading');
@@ -149,7 +150,7 @@ function _syncPhotoUploadUi(date){
 }
 
 function _photoUploadFailureLabel(count){
-  return count===1 ? '1 photo non uploadée.' : `${count} photos non uploadées.`;
+  return count===1 ? '1 photo non uploadée.' : count+' photos non uploadées.';
 }
 
 function deletePhoto(i,id){
