@@ -8,6 +8,7 @@
 var MIN_JOURNAL_TEXTAREA_HEIGHT=70;
 var COLLECTION_SNAPSHOT_TTL_MS=2*60*1000;
 var STAGE_CONTENT_SNAPSHOT_TTL_MS=10*60*1000;
+var STAGE_CONTENT_KEYS=['photos','videos','comments','bravos','commentLikes','commentReplies'];
 var _stagesFetchedAt=0;
 var _journalsFetchedAt=0;
 var _stagesFetchPromise=null;
@@ -121,7 +122,7 @@ function _clearStageContentPending(date, key){
 }
 
 function _isStageFullyHydrated(date){
-  return ['photos','videos','comments','bravos','commentLikes','commentReplies'].every(function(key){
+  return STAGE_CONTENT_KEYS.every(function(key){
     return _isStageContentLoaded(date,key);
   });
 }
@@ -450,7 +451,7 @@ function _loadStageNode(date, key, path, errContext){
 
 function loadStageContent(date){
   if(!window._fbDb)return;
-  if(_isStageFullyHydrated(date)&&['photos','videos','comments','bravos','commentLikes','commentReplies'].every(function(key){
+  if(_isStageFullyHydrated(date)&&STAGE_CONTENT_KEYS.every(function(key){
     return _isStageContentFresh(date,key);
   })){
     _removeSkeleton(date);
