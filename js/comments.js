@@ -7,6 +7,10 @@
 var _replyOpen = {};
 var _replyThreadOpen = {};
 var DEFAULT_ADMIN_REPLY_AUTHOR = 'Tom';
+var ADMIN_NAME_MAPPINGS = [
+  {match:'chloe',label:'Chloé'},
+  {match:'tom',label:'Tom'}
+];
 
 function _makeCommentEntityId(prefix){
   return prefix+Date.now()+'_'+Math.random().toString(36).slice(2,6);
@@ -49,8 +53,10 @@ function _normalizeAdminReplyAuthorName(value){
     normalized=raw.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   }catch(_err){}
   var lowered=normalized.toLowerCase();
-  if(lowered.indexOf('chloe')!==-1)return 'Chloé';
-  if(lowered.indexOf('tom')!==-1)return 'Tom';
+  var mapped=ADMIN_NAME_MAPPINGS.find(function(entry){
+    return lowered.indexOf(entry.match)!==-1;
+  });
+  if(mapped)return mapped.label;
   if(raw.indexOf('@')!==-1)raw=raw.split('@')[0];
   raw=raw.replace(/[._-]+/g,' ').trim();
   if(!raw)return 'Admin';
@@ -59,6 +65,11 @@ function _normalizeAdminReplyAuthorName(value){
   }).join(' ');
 }
 
+/**
+ * Résout le nom à afficher pour la réponse admin courante.
+ * Priorité: displayName Firebase, puis email, puis fallback normalisé "Admin".
+ * @returns {string}
+ */
 function _getCurrentAdminReplyAuthorName(){
   var user=window._fbAuth&&window._fbAuth.currentUser;
   var candidate=user&&typeof user.displayName==='string'&&user.displayName.trim()
@@ -317,6 +328,7 @@ function postReply(date,id){
   if(!text){if(txtEl)txtEl.focus();return;}
   var current=_normalizeCommentReply(commentReplies[date]&&commentReplies[date][id]);
   var data={text:text,ts:Date.now(),authorName:_getCurrentAdminReplyAuthorName()};
+  // Préserver les interactions visiteurs existantes quand un admin modifie sa réponse.
   var likesCopy=_copyNonEmptyObject(current,'likes');
   var repliesCopy=_copyNonEmptyObject(current,'replies');
   if(likesCopy)data.likes=likesCopy;
