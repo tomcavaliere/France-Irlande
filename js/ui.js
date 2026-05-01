@@ -49,6 +49,10 @@ var ACTIONS={
   toggleReplyForm:function(a,b){toggleReplyForm(a,b);},
   postReply:function(a,b){postReply(a,b);},
   deleteReply:function(a,b){deleteReply(a,b);},
+  likeReply:function(a,b){likeReply(a,b);},
+  toggleReplyThreadForm:function(a,b){toggleReplyThreadForm(a,b);},
+  postReplyThread:function(a,b){postReplyThread(a,b);},
+  deleteReplyThreadItem:function(a,b,c){deleteReplyThreadItem(a,b,c);},
   openLightbox:function(a,b){openLightbox(a,b);},
   deletePhoto:function(a,b){deletePhoto(a,b);},
   uploadPhoto:function(a){uploadPhoto(a);},
@@ -88,7 +92,7 @@ function _delegateEvent(e){
   var wanted=el.dataset.event||'click';
   if(wanted!==e.type)return;
   if(el.dataset.stop)e.stopPropagation();
-  invokeAction(el.dataset.action,[el.dataset.arg,el.dataset.arg2,el,e]);
+  invokeAction(el.dataset.action,[el.dataset.arg,el.dataset.arg2,el.dataset.arg3,el,e]);
 }
 
 function initEventDelegation(){

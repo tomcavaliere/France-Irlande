@@ -121,9 +121,35 @@
     "commentReplies": {
       ".read": true,
       "$date": {
+        ".validate": "root.child('stages').child($date).exists()",
         "$id": {
           ".write": "auth != null",
-          ".validate": "!newData.exists() || (newData.hasChildren(['text','ts']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 500 && newData.child('ts').isNumber() && newData.child('ts').val() > 0)"
+          ".validate": "!newData.exists() || (newData.hasChildren(['text','ts']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 500 && newData.child('ts').isNumber() && newData.child('ts').val() > 0 && newData.child('ts').val() <= (now + 60000) && (!newData.child('authorName').exists() || (newData.child('authorName').isString() && newData.child('authorName').val().length > 0 && newData.child('authorName').val().length <= 30)))",
+          "text": {
+            ".write": "auth != null",
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 500"
+          },
+          "ts": {
+            ".write": "auth != null",
+            ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= (now + 60000)"
+          },
+          "authorName": {
+            ".write": "auth != null",
+            ".validate": "!newData.exists() || (newData.isString() && newData.val().length > 0 && newData.val().length <= 30)"
+          },
+          "likes": {
+            "$visitorId": {
+              ".write": "(!data.exists() && newData.val() === true) || (data.exists() && !newData.exists())",
+              ".validate": "newData.val() === true"
+            }
+          },
+          "replies": {
+            "$replyId": {
+              ".write": "!data.exists() || auth != null",
+              ".validate": "!newData.exists() || (newData.hasChildren(['name','text','ts']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 30 && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 500 && newData.child('ts').isNumber() && newData.child('ts').val() > 0 && newData.child('ts').val() <= (now + 60000))"
+            }
+          },
+          "$other": { ".validate": false }
         }
       }
     },
