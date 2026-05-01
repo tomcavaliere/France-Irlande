@@ -85,7 +85,7 @@ function _ensureLocalCommentReply(date,id){
   var next={
     text:current&&current.text?current.text:'',
     ts:current&&current.ts?current.ts:0,
-    authorName:current&&current.authorName?current.authorName:DEFAULT_ADMIN_REPLY_AUTHOR
+    authorName:current?current.authorName:DEFAULT_ADMIN_REPLY_AUTHOR
   };
   var likesCopy=_copyNonEmptyObject(current,'likes');
   var repliesCopy=_copyNonEmptyObject(current,'replies');
@@ -405,7 +405,7 @@ function postReplyThread(date,id){
   var lastSent=_getLastReplyTs(date,id);
   if(Utils.isCommentOnCooldown(lastSent)){
     var secs=Utils.commentCooldownRemaining(lastSent);
-    showToast('Merci ! Attends encore '+secs+' seconde'+(secs>1?'s':'')+' avant de répondre à nouveau.','warn');
+    showToast('Merci ! Attends encore '+secs+' seconde'+(secs>1?'s':'')+' avant de répondre à nouveau à cette réponse.','warn');
     return;
   }
   var vid=getVisitorId();
