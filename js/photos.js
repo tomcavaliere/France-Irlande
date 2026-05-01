@@ -15,9 +15,8 @@ function compressImage(file,cb){
     if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
     if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}
     var canvas=document.createElement('canvas');
-    var ctx=null;
     canvas.width=w;canvas.height=h;
-    ctx=canvas.getContext('2d');
+    var ctx=canvas.getContext('2d');
     if(!ctx){
       console.error('[compressImage] canvas context unavailable');
       showToast('Impossible de préparer cette photo pour l\'upload.','error',5000);
@@ -142,7 +141,7 @@ function _syncPhotoUploadUi(date){
   var state=photoUploadStateByDate[date];
   if(state){
     addBtn.classList.add('j-uploading');
-    if(label)label.textContent='Upload '+state.processed+'/'+state.total;
+    if(label)label.textContent=`Upload ${state.processed}/${state.total}`;
     return;
   }
   addBtn.classList.remove('j-uploading');
@@ -150,7 +149,7 @@ function _syncPhotoUploadUi(date){
 }
 
 function _photoUploadFailureLabel(count){
-  return count===1 ? '1 photo non uploadée.' : count+' photos non uploadées.';
+  return count===1 ? '1 photo non uploadée.' : `${count} photos non uploadées.`;
 }
 
 function deletePhoto(i,id){
