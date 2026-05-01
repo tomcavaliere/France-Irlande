@@ -6,6 +6,11 @@
 // Key: "date/commentId", value: true
 var _replyOpen = {};
 var _replyThreadOpen = {};
+var DEFAULT_ADMIN_REPLY_AUTHOR = 'Tom';
+
+function _makeCommentEntityId(prefix){
+  return prefix+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+}
 
 function _replyKey(date,id){
   return date+'/'+id;
@@ -56,7 +61,7 @@ function _normalizeCommentReply(raw){
   return {
     text:text,
     ts:typeof raw.ts==='number'?raw.ts:0,
-    authorName:_normalizeAdminReplyAuthorName(raw.authorName||'Tom'),
+    authorName:_normalizeAdminReplyAuthorName(raw.authorName||DEFAULT_ADMIN_REPLY_AUTHOR),
     likes:(raw.likes&&typeof raw.likes==='object')?raw.likes:{},
     replies:(raw.replies&&typeof raw.replies==='object')?raw.replies:{}
   };
@@ -67,7 +72,7 @@ function _ensureLocalCommentReply(date,id){
   var next={
     text:current&&current.text?current.text:'',
     ts:current&&current.ts?current.ts:0,
-    authorName:current&&current.authorName?current.authorName:'Tom'
+    authorName:current&&current.authorName?current.authorName:DEFAULT_ADMIN_REPLY_AUTHOR
   };
   if(current&&Object.keys(current.likes).length)next.likes=Object.assign({},current.likes);
   if(current&&Object.keys(current.replies).length)next.replies=Object.assign({},current.replies);
@@ -226,7 +231,7 @@ function postComment(i){
   }
   // Verrou anti-double-clic
   if(sendBtn)sendBtn.disabled=true;
-  var id='c'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+  var id=_makeCommentEntityId('c');
   var data={name:name,text:text,ts:Date.now()};
   // Optimistic UI
   if(!comments[i])comments[i]={};
@@ -387,7 +392,7 @@ function postReplyThread(date,id){
     return;
   }
   var vid=getVisitorId();
-  var replyId='r'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+  var replyId=_makeCommentEntityId('r');
   var data={name:name,text:text,ts:Date.now()};
   var target=_ensureLocalCommentReply(date,id);
   _saveVisitorProfile(vid);
