@@ -41,6 +41,7 @@ var ACTIONS={
   onJournalInput:function(a,b,el,e){onJournalInput(a,b,el,e);},
   addBravo:function(a){addBravo(a);},
   showBravosList:function(a){showBravosList(a);},
+  showMoreJournalEntries:function(){showMoreJournalEntries();},
   deleteExpense:function(a){deleteExpense(a);},
   postComment:function(a){postComment(a);},
   deleteComment:function(a,b){deleteComment(a,b);},
@@ -61,7 +62,8 @@ var ACTIONS={
   checkVisitorPw:function(){checkVisitorPw();},
   showVisitorGate:function(){showVisitorGate();},
   closeVisitorGate:function(){closeVisitorGate();},
-  navigateToJournalEntry:function(a){navigateToJournalEntry(a);}
+  navigateToJournalEntry:function(a){navigateToJournalEntry(a);},
+  showMoreActivityEntries:function(){showMoreActivityEntries();}
 };
 
 function invokeAction(name, args){
@@ -102,15 +104,19 @@ function activeTab(){
 }
 
 function switchTab(t){
+  var prev=activeTab();
   if((t==='training'||t==='health'||t==='activity')&&!isAdmin){
     showToast('Accès admin requis.','warn');
     t='map';
   }
   document.querySelectorAll('.tab').forEach(function(e){e.classList.toggle('active',e.dataset.page===t);});
   document.querySelectorAll('.page').forEach(function(e){e.classList.toggle('active',e.id==='page-'+t);});
+  if(t==='journal'&&prev!=='journal')journalVisibleCount=JOURNAL_INITIAL_DAYS;
+  if(t==='activity'&&prev!=='activity')activityVisibleCount=ACTIVITY_INITIAL_EVENTS;
   if(t==='journal'||t==='stages')openCarnetTab();
   if(t==='map'&&map)setTimeout(function(){map.invalidateSize();},100);
-  if(t==='journal'&&journalDirty){renderJournal();journalDirty=false;}
+  if(t==='journal'&&prev!=='journal'){renderJournal();journalDirty=false;}
+  else if(t==='journal'&&journalDirty){renderJournal();journalDirty=false;}
   if(t==='depenses')renderExpenses();
   if(t==='training')renderTraining();
   if(t==='health')renderHealth();

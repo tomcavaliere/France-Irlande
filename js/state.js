@@ -29,6 +29,8 @@ var _sessionCountdown = null;
 
 // ==== JOURNAL SAVE ====
 var _journalSaveTimers = {}; // { [date]: timeoutId }
+var JOURNAL_INITIAL_DAYS = 3;
+var journalVisibleCount = JOURNAL_INITIAL_DAYS;
 
 // ==== FIREBASE SUBSCRIPTIONS ====
 var fbInitialized = false;
@@ -81,6 +83,8 @@ var health = {};
 var activity = {};
 var _adminActivitySessionUid = '';
 var _adminActivityTracked = false;
+var ACTIVITY_INITIAL_EVENTS = 20;
+var activityVisibleCount = ACTIVITY_INITIAL_EVENTS;
 
 // ==== JOURNAL LAZY LISTENERS ====
 var commentsUnsub = {};      // { [date]: fn }

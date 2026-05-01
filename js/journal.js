@@ -284,6 +284,11 @@ function observeJournalEntries(){
   });
 }
 
+function showMoreJournalEntries(){
+  journalVisibleCount=Number.MAX_SAFE_INTEGER;
+  renderJournal();
+}
+
 // ==== JOURNAL RENDER ====
 function renderJournal(){
   if(photoObserver)photoObserver.disconnect();
@@ -300,8 +305,10 @@ function renderJournal(){
   // (journals NOT cleared — needed for admin editing)
   var c=document.getElementById('journalList');c.innerHTML='';
   var dates=filterVisibleJournalDates(stages,isAdmin);
+  var visibleCount=Math.max(1,Math.round(journalVisibleCount||JOURNAL_INITIAL_DAYS));
+  var visibleDates=dates.slice(0,visibleCount);
   var hasAny=false;
-  dates.forEach(function(date){
+  visibleDates.forEach(function(date){
     var d=stages[date];
     hasAny=true;
     var entry=document.createElement('div');
@@ -356,6 +363,13 @@ function renderJournal(){
     c.querySelectorAll('.j-ta').forEach(function(ta){
       resizeJournalTextarea(ta);
     });
+    if(dates.length>visibleDates.length){
+      var remaining=dates.length-visibleDates.length;
+      var moreWrap=document.createElement('div');
+      moreWrap.className='load-more-wrap';
+      moreWrap.innerHTML='<button class="btn btn-o" data-action="showMoreJournalEntries">Afficher les '+remaining+' jours précédents</button>';
+      c.appendChild(moreWrap);
+    }
   }
   observeJournalEntries();
 }

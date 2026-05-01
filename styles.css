@@ -507,6 +507,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .activity-event-top{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12px}
 .activity-event-top span{font-size:11px;color:var(--text-light)}
 .activity-event-meta{margin-top:2px;font-size:11px;color:var(--text-light)}
+.load-more-wrap{display:flex;justify-content:center;margin:12px 0 8px}
 
 /* Sélection segment */
 

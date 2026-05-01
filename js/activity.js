@@ -1,7 +1,6 @@
 // activity.js
 // Admin-only activity dashboard + connection event tracking.
 
-var ACTIVITY_RECENT_EVENTS_MAX = 80;
 // Garder cette liste alignée avec firebase.rules.json (/activity/$id/type).
 var ACTIVITY_VALID_TYPES = ['admin_login','visitor_login','visitor_suspicious'];
 
@@ -88,6 +87,23 @@ function _activityTopUsers(entries,maxUsers){
     .slice(0,Math.max(1,Math.round(maxUsers||20)));
 }
 
+function _activityNormalizeVisitorName(name){
+  return _activitySafeString(name,60,'').toLowerCase();
+}
+
+function _activityShouldIgnoreEntry(entry){
+  if(!entry||typeof entry!=='object')return false;
+  if(entry.type==='admin_login')return true;
+  if(entry.type!=='visitor_login')return false;
+  var normalized=_activityNormalizeVisitorName(entry.name);
+  return normalized==='tom'||normalized==='chloe';
+}
+
+function showMoreActivityEntries(){
+  activityVisibleCount=Math.max(ACTIVITY_INITIAL_EVENTS,activityVisibleCount+ACTIVITY_INITIAL_EVENTS);
+  renderActivity();
+}
+
 function renderActivity(){
   if(!isAdmin)return;
   var summaryEl=document.getElementById('activitySummary');
@@ -100,6 +116,7 @@ function renderActivity(){
     .map(function(id){return _activityNormalizeEntry(activity[id]);})
     .filter(function(e){return e.ts>0;})
     .sort(function(a,b){return b.ts-a.ts;});
+  entries=entries.filter(function(e){return !_activityShouldIgnoreEntry(e);});
 
   if(!entries.length){
     summaryEl.innerHTML='<div class="empty-state">Aucune activité enregistrée pour le moment.</div>';
@@ -110,7 +127,6 @@ function renderActivity(){
   }
 
   var total=entries.length;
-  var admins=entries.filter(function(e){return e.type==='admin_login';}).length;
   var visitors=entries.filter(function(e){return e.type==='visitor_login';}).length;
   var suspicious=entries.filter(function(e){return e.type==='visitor_suspicious';}).length;
   var uniqueUsers={};
@@ -121,7 +137,6 @@ function renderActivity(){
     '<div class="activity-summary-grid">'+
       '<div class="activity-card"><div class="activity-num">'+total+'</div><div class="activity-lbl">Connexions totales</div></div>'+
       '<div class="activity-card"><div class="activity-num">'+visitors+'</div><div class="activity-lbl">Visiteurs</div></div>'+
-      '<div class="activity-card"><div class="activity-num">'+admins+'</div><div class="activity-lbl">Admins</div></div>'+
       '<div class="activity-card"><div class="activity-num">'+suspicious+'</div><div class="activity-lbl">Alertes suspectes</div></div>'+
       '<div class="activity-card"><div class="activity-num">'+uniqueCount+'</div><div class="activity-lbl">Utilisateurs uniques</div></div>'+
     '</div>';
@@ -157,16 +172,21 @@ function renderActivity(){
       '</div>'+
     '</div>';
 
+  var recentLimit=Math.max(1,Math.round(activityVisibleCount||ACTIVITY_INITIAL_EVENTS));
+  var recentEntries=entries.slice(0,recentLimit);
   listEl.innerHTML=
     '<div class="activity-panel">'+
       '<div class="activity-panel-title">Dernières connexions</div>'+
       '<div class="activity-event-list">'+
-        entries.slice(0,ACTIVITY_RECENT_EVENTS_MAX).map(function(e){
+        recentEntries.map(function(e){
           return '<div class="activity-event">'+
             '<div class="activity-event-top"><b>'+escHtml(e.name)+'</b><span>'+escHtml(_activityTypeLabel(e.type))+'</span></div>'+
             '<div class="activity-event-meta">'+formatTime(e.ts)+'</div>'+
           '</div>';
         }).join('')+
+        (entries.length>recentEntries.length
+          ?'<div class="load-more-wrap"><button class="btn btn-o" data-action="showMoreActivityEntries">Afficher '+Math.min(ACTIVITY_INITIAL_EVENTS,entries.length-recentEntries.length)+' connexions de plus</button></div>'
+          :'')+
       '</div>'+
     '</div>';
 }
