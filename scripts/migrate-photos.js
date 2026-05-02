@@ -32,8 +32,6 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 
-'use strict';
-
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
