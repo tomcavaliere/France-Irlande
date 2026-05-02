@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { createRequire } from 'node:module';
 /**
  * migrate-photos.js
  * Migrates legacy RTDB base64 photo entries to Firebase Storage + lightweight RTDB metadata.
@@ -29,7 +30,7 @@
  *   Failed entries are logged individually; the script continues with the rest.
  */
 
-'use strict';
+const require = createRequire(import.meta.url);
 
 const fs = require('fs');
 const path = require('path');
