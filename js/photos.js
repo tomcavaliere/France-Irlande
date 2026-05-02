@@ -5,16 +5,20 @@ var photoUploadInput = null;
 var photoUploadPendingDate = '';
 // { [date]: { queue: File[], processed: number, total: number, failures: number, running: boolean } }
 var photoUploadStateByDate = {};
+var PHOTO_UPLOAD_MAX_DIMENSION = 960;
+var PHOTO_UPLOAD_INITIAL_QUALITY = 0.65;
+var PHOTO_UPLOAD_MIN_QUALITY = 0.35;
+var PHOTO_UPLOAD_QUALITY_STEP = 0.10;
+var PHOTO_UPLOAD_MAX_BASE64_CHARS = 490000;
 
 function compressImage(file,cb){
   var img=new Image();
   var url=URL.createObjectURL(file);
   img.onload=function(){
     URL.revokeObjectURL(url);
-    var MAX=1200;
     var w=img.width,h=img.height;
-    if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
-    if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}
+    if(w>PHOTO_UPLOAD_MAX_DIMENSION){h=Math.round(h*PHOTO_UPLOAD_MAX_DIMENSION/w);w=PHOTO_UPLOAD_MAX_DIMENSION;}
+    if(h>PHOTO_UPLOAD_MAX_DIMENSION){w=Math.round(w*PHOTO_UPLOAD_MAX_DIMENSION/h);h=PHOTO_UPLOAD_MAX_DIMENSION;}
     var canvas=document.createElement('canvas');
     canvas.width=w;canvas.height=h;
     var ctx=canvas.getContext('2d');
@@ -25,14 +29,13 @@ function compressImage(file,cb){
       return;
     }
     ctx.drawImage(img,0,0,w,h);
-    // Compression itérative : réduit la qualité jusqu'à passer sous 490 000 chars
-    var quality=0.80;
+    var quality=PHOTO_UPLOAD_INITIAL_QUALITY;
     var b64;
     do{
       b64=canvas.toDataURL('image/jpeg',quality);
-      quality=Math.round((quality-0.10)*100)/100;
-    }while(b64.length>=490000&&quality>0);
-    if(b64.length>=490000){
+      quality=Math.round((quality-PHOTO_UPLOAD_QUALITY_STEP)*100)/100;
+    }while(b64.length>=PHOTO_UPLOAD_MAX_BASE64_CHARS&&quality>=PHOTO_UPLOAD_MIN_QUALITY);
+    if(b64.length>=PHOTO_UPLOAD_MAX_BASE64_CHARS){
       alert('Photo trop lourde même après compression maximale. Essaie de la redimensionner avant upload.');
       cb(null);
       return;
