@@ -341,6 +341,25 @@
     return remaining > 0 ? Math.ceil(remaining / 1000) : 0;
   }
 
+  // Retourne l'URL ou la chaîne base64 d'une photo (format legacy ou nouveau).
+  // - legacy : photo = "<base64>" → retourne la chaîne directement
+  // - nouveau : photo = { url, path, ts } → retourne photo.url
+  // - invalide / null → retourne ''
+  function getPhotoUrl(photo) {
+    if (!photo) return '';
+    if (typeof photo === 'string') return photo;
+    if (typeof photo === 'object' && typeof photo.url === 'string') return photo.url;
+    return '';
+  }
+
+  // Retourne le path Storage d'une photo (nouveau format uniquement).
+  // - nouveau : photo = { url, path, ts } → retourne photo.path
+  // - legacy / invalide → retourne ''
+  function getPhotoPath(photo) {
+    if (!photo || typeof photo !== 'object') return '';
+    return typeof photo.path === 'string' ? photo.path : '';
+  }
+
   // Dates à afficher dans le carnet. Visiteur : published=true seulement.
   function filterVisibleJournalDates(stages, isAdmin) {
     if (!stages || typeof stages !== 'object') return [];
@@ -379,7 +398,9 @@
     COMMENT_COOLDOWN_MS: COMMENT_COOLDOWN_MS,
     isCommentOnCooldown: isCommentOnCooldown,
     commentCooldownRemaining: commentCooldownRemaining,
-    validateVisitorName: validateVisitorName
+    validateVisitorName: validateVisitorName,
+    getPhotoUrl: getPhotoUrl,
+    getPhotoPath: getPhotoPath
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

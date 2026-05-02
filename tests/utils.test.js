@@ -8,7 +8,8 @@ const {
   EXPENSE_CATEGORIES, EXPENSE_PERSONS, LIMITS,
   computeQuotaBytes, formatBytes, quotaLevel, RTDB_QUOTA_BYTES,
   safeFetch, computeKmDay, filterTracksByStages, isOfflineable: _isOfflineable, actionLabel: _actionLabel, filterVisibleJournalDates: _filterVisibleJournalDates,
-  COMMENT_COOLDOWN_MS, isCommentOnCooldown, commentCooldownRemaining
+  COMMENT_COOLDOWN_MS, isCommentOnCooldown, commentCooldownRemaining,
+  getPhotoUrl, getPhotoPath
 } = utils;
 
 describe('escAttr', () => {
@@ -879,5 +880,63 @@ describe('validateVisitorName', () => {
   it('accepte les espaces en début/fin après trim', () => {
     // Après trim, "  Jean  " → "Jean", valide
     expect(validateVisitorName('  Jean  ')).toEqual({ ok: true });
+  });
+});
+
+describe('getPhotoUrl', () => {
+  it('retourne la chaîne telle quelle pour un legacy base64', () => {
+    expect(getPhotoUrl('data:image/jpeg;base64,abc123')).toBe('data:image/jpeg;base64,abc123');
+  });
+
+  it('retourne url pour un objet nouveau format', () => {
+    expect(getPhotoUrl({ url: 'https://storage.example.com/photo.jpg', path: 'photos/2026-05-02/p1.jpg', ts: 1234 }))
+      .toBe('https://storage.example.com/photo.jpg');
+  });
+
+  it('retourne \'\' pour null', () => {
+    expect(getPhotoUrl(null)).toBe('');
+  });
+
+  it('retourne \'\' pour undefined', () => {
+    expect(getPhotoUrl(undefined)).toBe('');
+  });
+
+  it('retourne \'\' pour un objet sans url', () => {
+    expect(getPhotoUrl({ path: 'photos/2026-05-02/p1.jpg', ts: 1234 })).toBe('');
+  });
+
+  it('retourne \'\' pour un objet avec url non-string', () => {
+    expect(getPhotoUrl({ url: 42, path: 'photos/2026-05-02/p1.jpg', ts: 1234 })).toBe('');
+  });
+
+  it('retourne \'\' pour un nombre', () => {
+    expect(getPhotoUrl(42)).toBe('');
+  });
+});
+
+describe('getPhotoPath', () => {
+  it('retourne le path pour un objet nouveau format', () => {
+    expect(getPhotoPath({ url: 'https://storage.example.com/photo.jpg', path: 'photos/2026-05-02/p1.jpg', ts: 1234 }))
+      .toBe('photos/2026-05-02/p1.jpg');
+  });
+
+  it('retourne \'\' pour une chaîne base64 (legacy)', () => {
+    expect(getPhotoPath('data:image/jpeg;base64,abc123')).toBe('');
+  });
+
+  it('retourne \'\' pour null', () => {
+    expect(getPhotoPath(null)).toBe('');
+  });
+
+  it('retourne \'\' pour undefined', () => {
+    expect(getPhotoPath(undefined)).toBe('');
+  });
+
+  it('retourne \'\' pour un objet sans path', () => {
+    expect(getPhotoPath({ url: 'https://storage.example.com/photo.jpg', ts: 1234 })).toBe('');
+  });
+
+  it('retourne \'\' pour un objet avec path non-string', () => {
+    expect(getPhotoPath({ url: 'https://x.com', path: 99, ts: 1234 })).toBe('');
   });
 });
