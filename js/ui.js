@@ -171,7 +171,8 @@ function _buildLightboxItems(date){
   var stageVideos=videos[date]||{};
   var items=[];
   Object.keys(stagePhotos).forEach(function(id){
-    items.push({id:id,type:'photo',src:stagePhotos[id]});
+    var src=Utils.getPhotoUrl(stagePhotos[id]);
+    if(src)items.push({id:id,type:'photo',src:src});
   });
   Object.keys(stageVideos).forEach(function(id){
     items.push({id:id,type:'video',src:stageVideos[id]});
@@ -219,7 +220,7 @@ function openLightbox(id,i){
     _lightboxItems=[{
       id:id,
       type:isVideo?'video':'photo',
-      src:isVideo?((videos[i]&&videos[i][id])||''):((photos[i]&&photos[i][id])||id)
+      src:isVideo?((videos[i]&&videos[i][id])||''):Utils.getPhotoUrl(photos[i]&&photos[i][id])
     }];
     _lightboxIndex=0;
   }

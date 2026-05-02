@@ -1,5 +1,5 @@
 // photos.js
-// Photo compression, upload, deletion, and rendering.
+// Photo compression, upload (Firebase Storage), deletion, and rendering.
 
 var photoUploadInput = null;
 var photoUploadPendingDate = '';
@@ -7,10 +7,9 @@ var photoUploadPendingDate = '';
 var photoUploadStateByDate = {};
 var PHOTO_UPLOAD_MAX_DIMENSION = 960;
 var PHOTO_UPLOAD_INITIAL_QUALITY = 0.65;
-var PHOTO_UPLOAD_MIN_QUALITY = 0.35;
-var PHOTO_UPLOAD_QUALITY_STEP = 0.10;
-var PHOTO_UPLOAD_MAX_BASE64_CHARS = 490000;
 
+// Compresse une image (redimensionne + encode JPEG) et appelle cb(blob).
+// Appelle cb(null) en cas d'erreur.
 function compressImage(file,cb){
   var img=new Image();
   var url=URL.createObjectURL(file);
@@ -29,18 +28,15 @@ function compressImage(file,cb){
       return;
     }
     ctx.drawImage(img,0,0,w,h);
-    var quality=PHOTO_UPLOAD_INITIAL_QUALITY;
-    var b64;
-    do{
-      b64=canvas.toDataURL('image/jpeg',quality);
-      quality=Math.round((quality-PHOTO_UPLOAD_QUALITY_STEP)*100)/100;
-    }while(b64.length>=PHOTO_UPLOAD_MAX_BASE64_CHARS&&quality>=PHOTO_UPLOAD_MIN_QUALITY);
-    if(b64.length>=PHOTO_UPLOAD_MAX_BASE64_CHARS){
-      alert('Photo trop lourde même après compression maximale. Essaie de la redimensionner avant upload.');
-      cb(null);
-      return;
-    }
-    cb(b64);
+    canvas.toBlob(function(blob){
+      if(!blob){
+        console.error('[compressImage] canvas.toBlob failed');
+        showToast('Impossible de préparer cette photo pour l\'upload.','error',5000);
+        cb(null);
+        return;
+      }
+      cb(blob);
+    },'image/jpeg',PHOTO_UPLOAD_INITIAL_QUALITY);
   };
   img.onerror=function(err){
     URL.revokeObjectURL(url);
@@ -108,8 +104,8 @@ function _processPhotoUploadQueue(date){
   }
   state.running=true;
   _syncPhotoUploadUi(date);
-  compressImage(file,function(b64){
-    if(!b64){
+  compressImage(file,function(blob){
+    if(!blob){
       state.failures++;
       state.processed++;
       state.running=false;
@@ -118,23 +114,49 @@ function _processPhotoUploadQueue(date){
       return;
     }
     var id='p'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
-    window._fbSet(window._fbRef(window._fbDb,'photos/'+date+'/'+id),b64)
-      .then(function(){
-        if(!photos[date])photos[date]={};
-        photos[date][id]=b64;
-        state.processed++;
-        patchMedia(date);
-      })
-      .catch(function(err){
+    var storagePath='photos/'+date+'/'+id+'.jpg';
+    var sRef=window._fbStorageRef(window._fbStorage,storagePath);
+    var uploadTask=window._fbUploadResumable(sRef,blob);
+    uploadTask.on('state_changed',
+      function(snapshot){
+        var pct=Math.round(snapshot.bytesTransferred/snapshot.totalBytes*100);
+        var addBtn=document.getElementById('photos-add-'+date);
+        var label=addBtn?addBtn.querySelector('span:last-child'):null;
+        if(label)label.textContent='Upload '+state.processed+'/'+state.total+' ('+pct+'%)';
+      },
+      function(err){
         state.failures++;
         state.processed++;
-        console.error('[uploadPhoto] set failed',err);
-      })
-      .finally(function(){
+        console.error('[uploadPhoto] storage upload failed',err);
         state.running=false;
         _syncPhotoUploadUi(date);
         _processPhotoUploadQueue(date);
-      });
+      },
+      function(){
+        window._fbGetDownloadURL(uploadTask.snapshot.ref)
+          .then(function(url){
+            var meta={url:url,path:storagePath,ts:Date.now()};
+            return window._fbSet(window._fbRef(window._fbDb,'photos/'+date+'/'+id),meta)
+              .then(function(){return meta;});
+          })
+          .then(function(meta){
+            if(!photos[date])photos[date]={};
+            photos[date][id]=meta;
+            state.processed++;
+            patchMedia(date);
+          })
+          .catch(function(err){
+            state.failures++;
+            state.processed++;
+            console.error('[uploadPhoto] post-upload failed',err);
+          })
+          .then(function(){
+            state.running=false;
+            _syncPhotoUploadUi(date);
+            _processPhotoUploadQueue(date);
+          });
+      }
+    );
   });
 }
 
@@ -163,6 +185,16 @@ function deletePhoto(i,id){
     message:'Cette photo sera définitivement supprimée. Action irréversible.'
   }).then(function(ok){
     if(!ok)return;
+    var photo=photos[i]&&photos[i][id];
+    var storagePath=Utils.getPhotoPath(photo);
+    if(storagePath){
+      var sRef=window._fbStorageRef(window._fbStorage,storagePath);
+      window._fbDeleteObject(sRef)
+        .catch(function(err){
+          console.error('[deletePhoto] storage delete failed',err);
+          showToast('Erreur lors de la suppression du fichier Storage. Le fichier peut rester orphelin.','error',4000);
+        });
+    }
     window._fbRemove(window._fbRef(window._fbDb,'photos/'+i+'/'+id))
       .then(function(){refreshQuotaState();})
       .catch(function(err){console.error('[deletePhoto] remove failed',err);});
@@ -177,7 +209,8 @@ function renderMediaHtml(date){
   var ed=escAttr(date);
   var items=[];
   Object.keys(stagePhotos).forEach(function(id){
-    items.push({id:id,type:'photo',src:stagePhotos[id]});
+    var src=Utils.getPhotoUrl(stagePhotos[id]);
+    if(src)items.push({id:id,type:'photo',src:src});
   });
   Object.keys(stageVideos).forEach(function(id){
     items.push({id:id,type:'video',src:stageVideos[id]});
