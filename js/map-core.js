@@ -151,7 +151,7 @@ function updateMap(){
 
 // Châteaux de la Loire — marqueurs touristiques
 function initChateaux(){
-  var icon=L.divIcon({className:'',iconSize:[26,26],iconAnchor:[13,13],
+  var icon=L.divIcon({className:'',iconSize:[12,12],iconAnchor:[6,6],
     html:'<div class="marker-chateau">&#x1f3f0;</div>'});
 
   var chateaux=[
@@ -176,7 +176,7 @@ function initChateaux(){
 
 // Wild Atlantic Way — sites incontournables Cork → Sligo
 function initIrelandSites(){
-  var icon=L.divIcon({className:'',iconSize:[26,26],iconAnchor:[13,13],
+  var icon=L.divIcon({className:'',iconSize:[12,12],iconAnchor:[6,6],
     html:'<div class="marker-ireland">&#x2618;&#xfe0f;</div>'});
 
   var sites=[
