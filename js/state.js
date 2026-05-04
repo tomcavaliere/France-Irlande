@@ -28,7 +28,7 @@ var _lastActivity = Date.now();
 var _sessionCountdown = null;
 
 // ==== JOURNAL SAVE ====
-var _journalSaveTimers = {};   // { [date]: latestPendingText }
+var _journalPendingDrafts = {}; // { [date]: latestPendingText }
 var _journalSaveInflight = {}; // { [date]: Promise }
 var JOURNAL_INITIAL_DAYS = 3;
 var journalVisibleCount = JOURNAL_INITIAL_DAYS;
