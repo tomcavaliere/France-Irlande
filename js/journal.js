@@ -59,8 +59,9 @@ function onJournalInput(date, _arg2, el){
 
 function flushJournals(){
   Object.keys(_journalSaveTimers).forEach(function(date){
+    var text=typeof _journalSaveTimers[date]==='string'?_journalSaveTimers[date]:(journals[date]||'');
     if(!isOnline||!window._fbDb||_journalSaveInflight[date]){
-      queueWrite('journals/'+date,journals[date]||'');
+      queueWrite('journals/'+date,text);
       return;
     }
     _persistPendingJournal(date);
