@@ -27,40 +27,44 @@ function resizeJournalTextarea(ta){
   ta.style.height=Math.max(ta.scrollHeight,MIN_JOURNAL_TEXTAREA_HEIGHT)+'px';
 }
 
+function _persistPendingJournal(date){
+  if(_journalSaveInflight[date])return _journalSaveInflight[date];
+  if(!Object.prototype.hasOwnProperty.call(_journalSaveTimers,date))return Promise.resolve();
+  if(!isOnline||!window._fbDb||!window._fbSet||!window._fbRef)return Promise.resolve();
+  var text=typeof _journalSaveTimers[date]==='string'?_journalSaveTimers[date]:'';
+  _journalSaveInflight[date]=window._fbSet(window._fbRef(window._fbDb,'journals/'+date),text)
+    .catch(function(err){
+      console.error('[persistJournal]',err);
+      showToast('Journal non sauvé — nouvelle tentative au prochain retour réseau','error',6000);
+      queueWrite('journals/'+date,text);
+    })
+    .finally(function(){
+      delete _journalSaveInflight[date];
+      if(_journalSaveTimers[date]===text)delete _journalSaveTimers[date];
+      if(Object.prototype.hasOwnProperty.call(_journalSaveTimers,date))_persistPendingJournal(date);
+    });
+  return _journalSaveInflight[date];
+}
+
 function onJournalInput(date, _arg2, el){
   if(!isAdmin)return;
   resizeJournalTextarea(el);
-  var text=el?el.value:'';
+  var text=el&&typeof el.value==='string'?el.value:'';
   journals[date]=text;
-  clearTimeout(_journalSaveTimers[date]);
-  _journalSaveTimers[date]=setTimeout(function(){
-    if(isOnline&&window._fbDb){
-      window._fbSet(window._fbRef(window._fbDb,'journals/'+date),text)
-        .catch(function(err){
-          console.error('[onJournalInput]',err);
-          showToast('Journal non sauvé — nouvelle tentative au prochain retour réseau','error',6000);
-          queueWrite('journals/'+date,text);
-        });
-    } else {
-      queueWrite('journals/'+date,text);
-    }
-  },60000);
+  saveLocalCache();
+  _journalSaveTimers[date]=text;
+  if(!isOnline||!window._fbDb||!window._fbSet||!window._fbRef)return;
+  _persistPendingJournal(date);
 }
 
 function flushJournals(){
   Object.keys(_journalSaveTimers).forEach(function(date){
-    clearTimeout(_journalSaveTimers[date]);
-    if(isOnline&&window._fbDb){
-      window._fbSet(window._fbRef(window._fbDb,'journals/'+date),journals[date]||'')
-        .catch(function(err){
-          console.error('[flushJournals]',err);
-          queueWrite('journals/'+date,journals[date]||'');
-        });
-    } else {
+    if(!isOnline||!window._fbDb||_journalSaveInflight[date]){
       queueWrite('journals/'+date,journals[date]||'');
+      return;
     }
+    _persistPendingJournal(date);
   });
-  _journalSaveTimers={};
 }
 
 function patchJournal(){
@@ -85,7 +89,9 @@ function _mergeRemoteJournalsWithPendingDrafts(remoteData){
   var source=(remoteData&&typeof remoteData==='object')?remoteData:{};
   var merged=Object.assign({},source);
   Object.keys(_journalSaveTimers||{}).forEach(function(date){
-    merged[date]=typeof journals[date]==='string'?journals[date]:'';
+    merged[date]=typeof _journalSaveTimers[date]==='string'
+      ?_journalSaveTimers[date]
+      :(typeof journals[date]==='string'?journals[date]:'');
   });
   return merged;
 }

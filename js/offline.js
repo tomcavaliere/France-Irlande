@@ -144,6 +144,7 @@ window.addEventListener('online', function(){
   isOnline=true;
   setSyncDot(offlineQueue.length?'queued':'online');
   flushQueue();
+  if(isAdmin)flushJournals();
 });
 window.addEventListener('offline', function(){
   isOnline=false;
