@@ -82,10 +82,10 @@ function _isFreshFetch(lastTs, ttlMs){
 }
 
 function _mergeRemoteJournalsWithPendingDrafts(remoteData){
-  var merged=Object.assign({},remoteData&&typeof remoteData==='object'?remoteData:{});
+  var source=(remoteData&&typeof remoteData==='object')?remoteData:{};
+  var merged=Object.assign({},source);
   Object.keys(_journalSaveTimers||{}).forEach(function(date){
-    if(!Object.prototype.hasOwnProperty.call(journals,date))return;
-    merged[date]=journals[date]||'';
+    merged[date]=typeof journals[date]==='string'?journals[date]:'';
   });
   return merged;
 }
