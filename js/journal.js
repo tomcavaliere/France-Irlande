@@ -81,6 +81,15 @@ function _isFreshFetch(lastTs, ttlMs){
   return Number.isFinite(lastTs)&&lastTs>0&&(Date.now()-lastTs)<ttlMs;
 }
 
+function _mergeRemoteJournalsWithPendingDrafts(remoteData){
+  var source=(remoteData&&typeof remoteData==='object')?remoteData:{};
+  var merged=Object.assign({},source);
+  Object.keys(_journalSaveTimers||{}).forEach(function(date){
+    merged[date]=typeof journals[date]==='string'?journals[date]:'';
+  });
+  return merged;
+}
+
 function _ensureStageContentMeta(date){
   if(!_stageContentFetchedAt[date])_stageContentFetchedAt[date]={};
   return _stageContentFetchedAt[date];
@@ -207,7 +216,7 @@ function _fetchJournalsSnapshot(force){
   }
   _journalsFetchPromise=window._fbGet(window._fbRef(window._fbDb,'journals'))
     .then(function(snap){
-      journals=snap.val()||{};
+      journals=_mergeRemoteJournalsWithPendingDrafts(snap.val());
       _journalsFetchedAt=Date.now();
       saveLocalCache();
       Events.emit('state:journal-changed');
@@ -256,7 +265,7 @@ function openCarnetTab(){
     }
     if(!_unsubJournals){
       _unsubJournals=window._fbOnValue(window._fbRef(window._fbDb,'journals'),function(snap){
-        journals=snap.val()||{};
+        journals=_mergeRemoteJournalsWithPendingDrafts(snap.val());
         _journalsFetchedAt=Date.now();
         saveLocalCache();
         Events.emit('state:journal-changed');
