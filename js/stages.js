@@ -250,7 +250,7 @@ function openManualStageModal(){
     '<div class="m-sub">Ajoute une étape manquante en choisissant sa date. Si une entrée existe déjà, la création est annulée.</div>'+
     '<div class="stage-modal-form">'+
       '<label class="stage-modal-label" for="manualStageDate">Date de l\'étape</label>'+
-      '<input type="date" class="visitor-input" id="manualStageDate" max="'+escAttr(todayISO)+'">'+
+      '<input type="date" class="visitor-input" id="manualStageDate" max="'+escAttr(todayISO)+'" required aria-describedby="manualStageErr">'+
       '<div class="visitor-err" id="manualStageErr"></div>'+
       '<div class="stage-modal-actions">'+
         '<button class="btn btn-o" data-action="closeModal">Annuler</button>'+
