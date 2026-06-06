@@ -244,7 +244,8 @@ function deleteJournalEntry(date){
 function openManualStageModal(){
   if(!isAdmin)return;
   var body=document.getElementById('modalBody');
-  var todayISO=new Date().toISOString().slice(0,10);
+  var nowTs=Date.now();
+  var todayISO=new Date(nowTs).toISOString().slice(0,10);
   body.innerHTML=
     '<div class="m-title">Créer une étape</div>'+
     '<div class="m-sub">Ajoute une étape manquante en choisissant sa date. Si une entrée existe déjà, la création est annulée.</div>'+
@@ -270,26 +271,23 @@ function createManualStage(){
   var errEl=document.getElementById('manualStageErr');
   if(!dateEl||!errEl)return;
   errEl.classList.remove('vis');
-  var result=StagesCore.buildManualStage((dateEl.value||'').trim(),stages,current,Date.now());
+  var nowTs=Date.now();
+  var dateISO=(dateEl.value||'').trim();
+  var result=StagesCore.buildManualStage(dateISO,stages,current,nowTs);
   if(!result.ok){
     errEl.textContent=result.error;
     errEl.classList.add('vis');
     return;
   }
-  var dateISO=dateEl.value.trim();
-  stages=Object.assign({},stages,{[dateISO]:result.stageData});
-  Events.emit('state:stages-changed');
   window._fbSet(window._fbRef(window._fbDb,'stages/'+dateISO),result.stageData)
     .then(function(){
+      stages=Object.assign({},stages,{[dateISO]:result.stageData});
+      Events.emit('state:stages-changed');
       closeModal();
       showToast('Étape créée pour '+StagesCore.formatStageDateLabel(dateISO)+'.','ok');
-      Events.emit('state:journal-changed');
     })
     .catch(function(err){
       console.error('[createManualStage]',err);
-      delete stages[dateISO];
-      stages=Object.assign({},stages);
-      Events.emit('state:stages-changed');
       errEl.textContent='Erreur lors de la création de l\'étape.';
       errEl.classList.add('vis');
     });
