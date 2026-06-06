@@ -5,10 +5,20 @@ function renderStages(){
   var c=document.getElementById('stagesList');
   if(!c)return;
   c.innerHTML='';
+  if(isAdmin){
+    var tools=document.createElement('div');
+    tools.className='stage-create-box';
+    tools.innerHTML='<button class="btn btn-p stage-create-btn w-full" data-action="openManualStageModal">➕ Créer une étape</button>';
+    c.appendChild(tools);
+  }
   var dates=Object.keys(stages).sort();
   if(!dates.length){
-    c.innerHTML='<div class="empty-state">'+
-      'Les étapes apparaîtront ici après la mise à jour de position chaque soir.</div>';
+    var empty=document.createElement('div');
+    empty.className='empty-state';
+    empty.textContent=isAdmin
+      ?'Aucune étape pour le moment. Utilise le bouton ci-dessus pour créer une étape manquante ou mets à jour la position GPS.'
+      :'Les étapes apparaîtront ici après la mise à jour de position chaque soir.';
+    c.appendChild(empty);
     updateRecap();return;
   }
   dates.forEach(function(date,idx){
@@ -231,4 +241,56 @@ function deleteJournalEntry(date){
     ]).then(function(){ Events.emit('state:journal-changed'); })
       .catch(function(err){ console.error('[deleteJournalEntry]',err); });
   });
+}
+
+function openManualStageModal(){
+  if(!isAdmin)return;
+  var body=document.getElementById('modalBody');
+  var nowTs=Date.now();
+  var todayISO=new Date(nowTs).toISOString().slice(0,10);
+  body.innerHTML=
+    '<div class="m-title">Créer une étape</div>'+
+    '<div class="m-sub">Ajoute une étape manquante en choisissant sa date. Si une entrée existe déjà, la création est annulée.</div>'+
+    '<div class="stage-modal-form">'+
+      '<label class="stage-modal-label" for="manualStageDate">Date de l\'étape</label>'+
+      '<input type="date" class="visitor-input" id="manualStageDate" max="'+escAttr(todayISO)+'" required aria-required="true" aria-describedby="manualStageErr">'+
+      '<div class="visitor-err" id="manualStageErr"></div>'+
+      '<div class="stage-modal-actions">'+
+        '<button class="btn btn-o" data-action="closeModal">Annuler</button>'+
+        '<button class="btn btn-p" data-action="createManualStage">Créer</button>'+
+      '</div>'+
+    '</div>';
+  document.getElementById('stageModal').classList.add('vis');
+  setTimeout(function(){
+    var input=document.getElementById('manualStageDate');
+    if(input)input.focus();
+  },50);
+}
+
+function createManualStage(){
+  if(!isAdmin)return;
+  var dateEl=document.getElementById('manualStageDate');
+  var errEl=document.getElementById('manualStageErr');
+  if(!dateEl||!errEl)return;
+  errEl.classList.remove('vis');
+  var nowTs=Date.now();
+  var dateISO=(dateEl.value||'').trim();
+  var result=StagesCore.buildManualStage(dateISO,stages,current,nowTs);
+  if(!result.ok){
+    errEl.textContent=result.error;
+    errEl.classList.add('vis');
+    return;
+  }
+  window._fbSet(window._fbRef(window._fbDb,'stages/'+dateISO),result.stageData)
+    .then(function(){
+      stages=Object.assign({},stages,{[dateISO]:result.stageData});
+      Events.emit('state:stages-changed');
+      closeModal();
+      showToast('Étape créée pour '+StagesCore.formatStageDateLabel(dateISO)+'.','ok');
+    })
+    .catch(function(err){
+      console.error('[createManualStage]',err);
+      errEl.textContent='Erreur lors de la création de l\'étape.';
+      errEl.classList.add('vis');
+    });
 }

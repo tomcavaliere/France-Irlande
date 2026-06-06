@@ -85,6 +85,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .stage-card.done{border-left-color:#bbb}
 .stage-card.done .s-title{text-decoration:line-through;color:#999}
 .stage-card.next{border-left-color:var(--orange);box-shadow:0 2px 16px rgba(232,119,46,.2)}
+.stage-create-box{margin-bottom:10px}
+.stage-create-btn{box-shadow:var(--shadow)}
 .s-hdr{display:flex;justify-content:space-between;align-items:flex-start}
 .s-del{position:absolute;top:10px;right:10px;background:none;border:none;color:#e74c3c;font-size:18px;cursor:pointer;line-height:1;padding:2px 4px}
 .s-write{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--green);background:none;border:1px solid var(--green);border-radius:20px;padding:3px 10px;cursor:pointer;margin-top:6px}
@@ -155,6 +157,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .m-item-type.hostel{background:#e3f2fd;color:#1565c0}
 .m-item-type.bb{background:#fce4ec;color:#c62828}
 .m-item-type.bivouac{background:#fff3e0;color:#e65100}
+.stage-modal-form{display:flex;flex-direction:column;gap:12px}
+.stage-modal-label{font-size:13px;font-weight:600;color:var(--green)}
+.stage-modal-actions{display:flex;gap:10px}
+.stage-modal-actions .btn{flex:1}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
   padding:10px 20px;border-radius:10px;border:none;font-size:14px;font-weight:600;cursor:pointer}
