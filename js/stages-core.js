@@ -17,6 +17,11 @@
     var dt=new Date(Date.UTC(parts[0],parts[1]-1,parts[2]));
     return dt.getUTCFullYear()===parts[0]&&dt.getUTCMonth()===(parts[1]-1)&&dt.getUTCDate()===parts[2];
   }
+  /**
+   * Valide et normalise une source de position issue d'une étape ou de /current.
+   * @param {object|null} source
+   * @returns {{lat:number, lon:number, kmTotal:number}|null}
+   */
   function normalizeStageSource(source){
     if(!source||typeof source!=='object')return null;
     var lat=Number(source.lat);
@@ -25,6 +30,13 @@
     if(!isFinite(lat)||!isFinite(lon)||!isFinite(kmTotal))return null;
     return {lat:lat,lon:lon,kmTotal:Math.round(kmTotal*10)/10};
   }
+  /**
+   * Cherche d'abord l'étape la plus récente avant la date ciblée.
+   * Si aucune n'existe, retombe sur la première étape après cette date.
+   * @param {string} dateISO
+   * @param {Object<string, object>} stages
+   * @returns {{lat:number, lon:number, kmTotal:number}|null}
+   */
   function findStageAnchor(dateISO,stages){
     var dates=Object.keys(stages||{}).sort();
     for(var i=dates.length-1;i>=0;i--){
@@ -35,6 +47,14 @@
     }
     return null;
   }
+  /**
+   * Construit une étape manquante à partir d'une date saisie en admin.
+   * @param {string} dateISO
+   * @param {Object<string, object>} stages
+   * @param {object|null} current
+   * @param {number} nowTs
+   * @returns {{ok:boolean, error?:string, stageData?:object}}
+   */
   function buildManualStage(dateISO,stages,current,nowTs){
     if(!isValidStageDate(dateISO))return {ok:false,error:'Choisis une date valide.'};
     stages=stages||{};
