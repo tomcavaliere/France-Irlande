@@ -15,7 +15,9 @@ function renderStages(){
   if(!dates.length){
     var empty=document.createElement('div');
     empty.className='empty-state';
-    empty.textContent='Les étapes apparaîtront ici après la mise à jour de position chaque soir.';
+    empty.textContent=isAdmin
+      ?'Aucune étape pour le moment. Utilise le bouton ci-dessus pour créer une étape manquante ou mets à jour la position GPS.'
+      :'Les étapes apparaîtront ici après la mise à jour de position chaque soir.';
     c.appendChild(empty);
     updateRecap();return;
   }
