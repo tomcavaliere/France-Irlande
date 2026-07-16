@@ -32,14 +32,19 @@ var _visitorFailedAttempts = [];
 var _visitorLastSuspiciousTrackTs = 0;
 
 function isVisitorAuthenticated(){
+  // Démo : accès direct, sans jamais poser le flag réel dans localStorage
+  // (sinon un visiteur démo déverrouillerait la vraie version).
+  if(window.DEMO_MODE)return true;
   return localStorage.getItem(VISITOR_AUTH_KEY)==='1';
 }
 
 function getVisitorName(){
+  if(window.DEMO_MODE)return 'Visiteur démo';
   return localStorage.getItem(VISITOR_NAME_KEY)||'';
 }
 
 function _setVisitorSession(name){
+  if(window.DEMO_MODE)return;
   localStorage.setItem(VISITOR_AUTH_KEY,'1');
   localStorage.setItem(VISITOR_NAME_KEY,name);
 }

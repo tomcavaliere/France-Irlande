@@ -98,7 +98,8 @@ var videosUnsub = {};        // { [date]: fn }
 var photoObserver = null;
 
 // ==== OFFLINE ====
-var offlineQueue = JSON.parse(localStorage.getItem('offlineQueue') || '[]');
+// En démo : queue vierge — la vraie queue reste intacte dans localStorage.
+var offlineQueue = window.DEMO_MODE ? [] : JSON.parse(localStorage.getItem('offlineQueue') || '[]');
 var isOnline = navigator.onLine;
 
 // ==== CONVENIENCE WRAPPERS ====

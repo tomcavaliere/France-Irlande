@@ -1,6 +1,11 @@
 // offline.js
 // Offline cache (localStorage), offline queue, tryWrite, flushQueue.
 // Manages synchronisation between local state and Firebase RTDB.
+//
+// Mode démo : toutes les fonctions localStorage sont neutralisées pour ne pas
+// (a) afficher les vraies données cachées du device, (b) écraser le cache réel
+// avec du fictif, (c) drainer une vraie offlineQueue vers le stub démo
+// (perte silencieuse de données réelles).
 
 var COMMENTS_CACHE_MAX=50;
 var MAX_OFFLINE_QUEUE=200;
@@ -13,6 +18,7 @@ function _warnOfflineCoreMissing(){
 }
 
 function saveLocalCache(){
+  if(window.DEMO_MODE)return;
   try{localStorage.setItem('ev1-current-cache',JSON.stringify(current));}catch(e){console.warn('[cache] current non sauvegardé',e);}
   try{localStorage.setItem('ev1-stages-cache',JSON.stringify(stages));}catch(e){console.warn('[cache] stages non sauvegardé',e);}
   try{localStorage.setItem('ev1-journals-cache',JSON.stringify(journals));}
@@ -20,21 +26,25 @@ function saveLocalCache(){
 }
 
 function loadLocalCache(){
+  if(window.DEMO_MODE)return;
   try{var c=localStorage.getItem('ev1-current-cache');if(c)current=JSON.parse(c);}catch(e){console.warn('[cache] current illisible',e);}
   try{var s=localStorage.getItem('ev1-stages-cache');if(s)stages=JSON.parse(s)||{};}catch(e){console.warn('[cache] stages illisible',e);}
   try{var j=localStorage.getItem('ev1-journals-cache');if(j)journals=JSON.parse(j)||{};}catch(e){console.warn('[cache] journals illisible',e);}
 }
 
 function saveExpensesCache(){
+  if(window.DEMO_MODE)return;
   try{localStorage.setItem('ev1-expenses-cache',JSON.stringify(expenses));}catch(e){console.warn('[cache] expenses non sauvegardé',e);}
 }
 
 function loadExpensesCache(){
+  if(window.DEMO_MODE)return;
   try{var e=localStorage.getItem('ev1-expenses-cache');if(e)expenses=JSON.parse(e)||{};}catch(e){console.warn('[cache] expenses illisible',e);}
 }
 
 // Cache commentaires par étape (lecture hors-ligne). Taille limitée : 50 étapes max.
 function saveCommentsCache(date,data){
+  if(window.DEMO_MODE)return;
   var key='ev1-cmts-'+date;
   try{
     localStorage.setItem(key,JSON.stringify(data));
@@ -50,6 +60,7 @@ function saveCommentsCache(date,data){
   }catch(e){console.warn('[cache] commentaires non sauvegardés pour '+date,e);}
 }
 function loadAllCommentsCache(){
+  if(window.DEMO_MODE)return;
   try{
     var idxRaw=localStorage.getItem('ev1-cmts-idx');
     if(!idxRaw)return;
@@ -70,6 +81,7 @@ function loadAllCommentsCache(){
 }
 
 function persistQueue(){
+  if(window.DEMO_MODE)return;
   try{localStorage.setItem('offlineQueue',JSON.stringify(offlineQueue));}catch(_e){
     console.warn('localStorage plein, queue offline non sauvegardée');
   }
@@ -110,6 +122,7 @@ function tryWrite(op, path, data){
 }
 
 function flushQueue(){
+  if(window.DEMO_MODE)return;
   if(!offlineQueue.length||!window._fbDb)return;
   setSyncDot('syncing');
   var queue=offlineQueue.slice();
