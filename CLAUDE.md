@@ -9,7 +9,8 @@ Tracé complet : France (Annecy → Roscoff) + Irlande (Cork → Sligo).
 - **Carte** : Leaflet 1.9.4 (CDN unpkg, mis en cache par le SW).
 - **Backend** : Firebase RTDB `france-irlande-bike`, région `europe-west1`. Lecture publique sauf `expenses`, `training`, `health` (auth uniquement).
 - **Deploy** : GitHub Pages → `https://tomcavaliere.github.io/France-Irlande/`
-- **PWA** : service worker `sw.js` (cache `ev1-v28`), `manifest.json`.
+- **PWA** : service worker `sw.js` (cache `ev1-v34`), `manifest.json`.
+- **Mode démo** : lien CV public (`…/#demo` ou bouton du gate) — backend Firebase remplacé par des stubs en mémoire, données 100 % fictives (voir section « Mode démo »).
 - **Tests** : Vitest (`npm test` / `npm run test:watch`). Aucun bundler, aucun jsdom — Node pur.
 - **Lint/CI** : ESLint 9 flat config + GitHub Actions (`.github/workflows/ci.yml`) lance `npm run lint` puis `npm test` sur chaque push/PR.
 
@@ -32,6 +33,11 @@ js/
   journal-core.js           — comptage bravos, labels km/date purs (testé)
   stages-core.js            — flag pays, labels date étape, totaux recap purs (testé)
   visitor-auth-core.js      — normalisation hash, extraction config, validation mot de passe purs (testé)
+  # Mode démo
+  demo-core.js              — arbre par chemin (pathGet/Set/Remove), snapshots, flag purs (testé)
+  demo-flag.js              — pose window.DEMO_MODE au parse (non-defer — la CSP interdit l'inline)
+  demo-data.js              — données 100 % fictives : 6 étapes irlandaises sur le vrai tracé (généré)
+  demo-mode.js              — stubs window._fb* (RTDB/Auth/Storage), bandeau démo, entrée/sortie
   # UI
   ui.js                     — toast, confirm dialog, lightbox, sync dot, délégation
   admin.js                  — login, profil, inactivité, quota photos
@@ -61,14 +67,15 @@ js/
   utils.js                  — helpers purs : escaping, formatage, validation, quota (testé)
 tests/
   gps-core.test.js          — 46 tests Vitest
-  utils.test.js             — 124 tests Vitest
+  utils.test.js             — 149 tests Vitest
   campings-core.test.js     — 8 tests Vitest
   events-core.test.js       — 10 tests Vitest
   offline-core.test.js      — 11 tests Vitest
   weather-core.test.js      — 6 tests Vitest
   journal-core.test.js      — 11 tests Vitest
-  stages-core.test.js       — 10 tests Vitest
+  stages-core.test.js       — 16 tests Vitest
   visitor-auth-core.test.js — 14 tests Vitest
+  demo-core.test.js         — 25 tests Vitest
   fixtures/route-sample.js  — 50 pts GPS réels sous-échantillonnés (25 FR + 25 IE)
   README.md                 — doc tests, couverture, comment ajouter un test
 docs/superpowers/
@@ -81,7 +88,7 @@ storage.rules               — règles Firebase Storage versionnées (vidéos <
 package.json                — scripts test + lint (vitest ^4.1.4, eslint ^9.39.4)
 ```
 
-Total : 240 tests Vitest répartis sur 9 fichiers.
+Total : 296 tests Vitest répartis sur 10 fichiers.
 
 ## Architecture JS — séparation stricte des responsabilités
 
@@ -182,7 +189,7 @@ Mini event-bus : `Events.on(name, fn)`, `Events.off(name, fn)`, `Events.emit(nam
 
 ## Points non-évidents — ne jamais casser
 
-- **Photos** : base64 dans RTDB (pas Firebase Storage — payant). Lazy load via `IntersectionObserver`. Listeners RTDB désabonnés à chaque `renderJournal()` pour éviter les fuites mémoire.
+- **Photos** : fichiers sur Firebase Storage, meta `{url, path, ts}` dans RTDB (les anciennes entrées base64 restent valides — voir la règle `photos`). Lazy load via `IntersectionObserver`. Listeners RTDB désabonnés à chaque `renderJournal()` pour éviter les fuites mémoire.
 - **Journal** : debounce 60 s **par date** + `flushJournals()` déclenché via `flushState()` sur `beforeunload` ET `visibilitychange:hidden` (iOS Safari ne déclenche pas `beforeunload`).
 - **Publication journal** : champ `published: boolean` dans `stages[date]`. Absence du champ = brouillon, invisible pour les visiteurs. `renderJournal()` filtre via `filterVisibleJournalDates(stages, isAdmin)`.
 - **Boot visiteur** : charge uniquement `/current` (~100 B). `/stages` chargé à l'ouverture de l'onglet Carnet. Photos, commentaires, bravos et journal chargés lazy par date via `IntersectionObserver` (`loadStageContent`).
@@ -191,6 +198,17 @@ Mini event-bus : `Events.on(name, fn)`, `Events.off(name, fn)`, `Events.emit(nam
 - **Admin** : déconnexion auto après 3 min d'inactivité.
 - **`TOTAL_KM` fixture ≠ prod** : la fixture de test (~2337 km) est sous-échantillonnée, la prod fait ~2978 km. Ne pas confondre dans les assertions.
 
+## Mode démo
+
+Version publique pour lien CV : mêmes fonctionnalités, données 100 % fictives, zéro contact Firebase.
+
+- **Activation** : bouton « Découvrir la version démo » sur le gate visiteur (flag `localStorage['ev1-demo']='1'` + reload) ou lien direct `…/#demo`. `js/demo-flag.js` (chargé **sans defer**, la CSP interdit l'inline) pose `window.DEMO_MODE` au parse, avant tout script différé.
+- **Bascule unique** : en démo, `firebase-init.js` n'importe pas Firebase ; `js/demo-mode.js` installe des stubs `window._fb*` (RTDB, Auth, Storage) alimentés par un arbre en mémoire cloné depuis `DEMO_DATA`. Les ~30 sites d'appel sont inchangés. Écritures fonctionnelles mais volatiles : recharger réinitialise la démo.
+- **Admin démo** : bouton « Tester le mode admin » du bandeau — faux `signIn` sans mot de passe, tout le flux admin existant fonctionne (auto-déconnexion 3 min comprise).
+- **Uploads démo** : photos/vidéos passent par un faux uploadTask, l'URL retournée est un `URL.createObjectURL(blob)` (d'où la directive CSP `media-src blob:`).
+- **Isolation stricte** : en démo, ne jamais lire/écrire les caches `ev1-*`, `offlineQueue` ni la session visiteur (`isVisitorAuthenticated()` retourne `true` sans toucher localStorage). Guards dans `offline.js`, `state.js`, `visitor-auth.js`. Ne pas les retirer : un visiteur démo pourrait sinon déverrouiller la vraie version ou corrompre/vider la vraie queue offline.
+- La vraie version reste strictement inchangée quand `DEMO_MODE` est falsy.
+
 ## Firebase RTDB — règles d'accès
 
 | Nœud | Lecture | Écriture |
@@ -198,7 +216,7 @@ Mini event-bus : `Events.on(name, fn)`, `Events.off(name, fn)`, `Events.emit(nam
 | `current` | publique | auth + validate structure `lat/lon/kmTotal/date/ts` |
 | `stages/$date` | publique | auth + validate `lat/lon/kmTotal` |
 | `journals/$date` | publique | auth + validate string ≤ 5000 |
-| `photos/$date/$id` | publique | auth + validate < 500 000 chars base64 |
+| `photos/$date/$id` | publique | auth + validate meta `{url, path, ts}` (ou legacy string base64 < 500 000 chars) |
 | `videos/$date/$id` | publique | auth + validate URL Firebase Storage ≤ 500 chars |
 | `tracks/$date` | publique | auth + validate `coords/kmDay/ts` |
 | `comments/$date/$id` | publique | création sans auth, modif/suppr auth — validation name/text |
