@@ -671,3 +671,4 @@ body.demo-mode .content{top:calc(var(--header-height) + env(safe-area-inset-top,
 .visitor-demo-sep{display:flex;align-items:center;gap:10px;color:var(--text-light);
   font-size:12px;margin:14px 0}
 .visitor-demo-sep::before,.visitor-demo-sep::after{content:'';flex:1;height:1px;background:#e0dcd2}
+@media (max-width:480px){.demo-banner-label-long{display:none}}

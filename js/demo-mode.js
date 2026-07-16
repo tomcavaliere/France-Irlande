@@ -142,7 +142,7 @@ function demoToggleAdmin(){
     var banner=document.createElement('div');
     banner.id='demoBanner';
     banner.setAttribute('role','status');
-    banner.innerHTML='<span class="demo-banner-label">🎬 Mode démo — données fictives</span>'+
+    banner.innerHTML='<span class="demo-banner-label">🎬 Démo<span class="demo-banner-label-long"> — données fictives</span></span>'+
       '<button type="button" class="demo-banner-btn" id="demoAdminBtn" data-action="demoToggleAdmin"></button>'+
       '<button type="button" class="demo-banner-btn demo-banner-exit" data-action="exitDemoMode">✕ Quitter</button>';
     document.body.appendChild(banner);
