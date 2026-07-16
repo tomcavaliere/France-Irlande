@@ -42,6 +42,7 @@ export default [
   {
     files: [
       'js/gps-core.js',
+      'js/demo-core.js',
       'js/offline-core.js',
       'js/weather-core.js',
       'js/campings-core.js',

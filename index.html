@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.firebasedatabase.app https://*.europe-west1.firebasedatabase.app https://unpkg.com https://*.tile.openstreetmap.org https://api.open-meteo.com https://overpass-api.de https://opencampingmap.org; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.firebasedatabase.app https://*.europe-west1.firebasedatabase.app wss://*.firebasedatabase.app wss://*.europe-west1.firebasedatabase.app https://www.gstatic.com https://unpkg.com https://*.tile.openstreetmap.org https://api.open-meteo.com https://overpass-api.de https://opencampingmap.org; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://unpkg.com; script-src 'self' https://www.gstatic.com https://apis.google.com https://unpkg.com https://*.europe-west1.firebasedatabase.app; frame-src https://france-irlande-bike.firebaseapp.com;">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.firebasedatabase.app https://*.europe-west1.firebasedatabase.app https://unpkg.com https://*.tile.openstreetmap.org https://api.open-meteo.com https://overpass-api.de https://opencampingmap.org; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.firebasedatabase.app https://*.europe-west1.firebasedatabase.app wss://*.firebasedatabase.app wss://*.europe-west1.firebasedatabase.app https://www.gstatic.com https://unpkg.com https://*.tile.openstreetmap.org https://api.open-meteo.com https://overpass-api.de https://opencampingmap.org; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://unpkg.com; script-src 'self' https://www.gstatic.com https://apis.google.com https://unpkg.com https://*.europe-west1.firebasedatabase.app; frame-src https://france-irlande-bike.firebaseapp.com; media-src 'self' blob: https://*.googleapis.com;">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -10,6 +10,9 @@
 <meta name="theme-color" content="#1a5e1f">
 <link rel="manifest" href="manifest.json">
 <title>biketrip — Annecy → Sligo</title>
+<!-- Flag démo évalué au parse (sans defer) — la CSP interdit les scripts inline -->
+<script src="js/demo-core.js"></script>
+<script src="js/demo-flag.js"></script>
 <script type="module" src="js/firebase-init.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -25,6 +28,8 @@
 <script defer src="js/visitor-auth-core.js"></script>
 <script defer src="js/route-data.js"></script>
 <script defer src="js/state.js"></script>
+<script defer src="js/demo-data.js"></script>
+<script defer src="js/demo-mode.js"></script>
 <script defer src="js/ui.js"></script>
 <script defer src="js/offline.js"></script>
 <script defer src="js/admin.js"></script>
@@ -152,6 +157,8 @@
     </div>
     <div class="visitor-err" id="visitorGateErr"></div>
     <button class="btn btn-p w-full" data-action="checkVisitorPw">Accéder au carnet 🗺️</button>
+    <div class="visitor-demo-sep">ou</div>
+    <button class="btn btn-o w-full" data-action="enterDemoMode">🎬 Découvrir la version démo</button>
   </div>
 </div>
 

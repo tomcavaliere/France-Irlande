@@ -13,6 +13,9 @@
 // when the overlay backdrop itself is the click target (not a descendant).
 
 var ACTIONS={
+  enterDemoMode:function(){enterDemoMode();},
+  exitDemoMode:function(){exitDemoMode();},
+  demoToggleAdmin:function(){demoToggleAdmin();},
   toggleSyncPopover:function(){toggleSyncPopover();},
   toggleAdmin:function(){toggleAdmin();},
   openProfileModal:function(){openProfileModal();},

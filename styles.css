@@ -654,3 +654,20 @@ body.visitor-lock #visitorGate{background:var(--bg)}
 .mb-8{margin-bottom:8px}
 .empty-state{text-align:center;color:var(--text-light);font-size:13px;padding:24px 0}
 .empty-state-lg{padding:32px 0}
+
+/* ==== MODE DÉMO ==== */
+#demoBanner{position:fixed;left:0;right:0;z-index:998;
+  top:calc(var(--header-height) + env(safe-area-inset-top,0px));
+  height:var(--demo-banner-height,40px);
+  background:#4a2d7a;color:#fff;display:flex;align-items:center;justify-content:center;
+  gap:8px;padding:0 8px;font-size:12px;font-weight:600;
+  box-shadow:0 2px 8px rgba(0,0,0,0.15);white-space:nowrap;overflow-x:auto}
+.demo-banner-label{flex-shrink:0}
+.demo-banner-btn{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.4);
+  border-radius:8px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0}
+.demo-banner-btn:active{background:rgba(255,255,255,.3)}
+.demo-banner-exit{background:none}
+body.demo-mode .content{top:calc(var(--header-height) + env(safe-area-inset-top,0px) + var(--demo-banner-height,40px))}
+.visitor-demo-sep{display:flex;align-items:center;gap:10px;color:var(--text-light);
+  font-size:12px;margin:14px 0}
+.visitor-demo-sep::before,.visitor-demo-sep::after{content:'';flex:1;height:1px;background:#e0dcd2}
