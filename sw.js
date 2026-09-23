@@ -1,4 +1,4 @@
-const CACHE = 'ev1-v35';
+const CACHE = 'ev1-v36';
 // Chemins RELATIFS au scope du SW : le site est servi sous /France-Irlande/
 // (GitHub Pages). Un chemin absolu ('/index.html') viserait la racine du
 // domaine → 404 → cache.addAll rejette → le SW ne s'installe jamais.
@@ -7,6 +7,8 @@ const PRECACHE = [
   './',
   './index.html',
   './styles.css',
+  './vendor/leaflet/leaflet.css',
+  './vendor/leaflet/leaflet.js',
   './manifest.json',
   './campspace-data.js',
   './js/firebase-init.js',
@@ -41,9 +43,7 @@ const PRECACHE = [
   './js/activity.js',
   './js/weather.js',
   './js/journal.js',
-  './js/init.js',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+  './js/init.js'
 ];
 
 self.addEventListener('install', function(e){
@@ -87,7 +87,7 @@ self.addEventListener('fetch', function(e){
     );
     return;
   }
-  // Libs externes : cache d'abord, réseau en fallback
+  // Autres ressources (CSS, images, libs) : cache d'abord, réseau en fallback
   e.respondWith(
     caches.match(e.request).then(function(cached){
       if(cached) return cached;

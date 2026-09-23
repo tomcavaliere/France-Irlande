@@ -8,6 +8,7 @@ export default [
       'js/route-data.js',
       'campspace-data.js',
       'sw.js',
+      'vendor/',
     ],
   },
   {
