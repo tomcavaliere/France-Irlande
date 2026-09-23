@@ -99,7 +99,19 @@ var photoObserver = null;
 
 // ==== OFFLINE ====
 // En démo : queue vierge — la vraie queue reste intacte dans localStorage.
-var offlineQueue = window.DEMO_MODE ? [] : JSON.parse(localStorage.getItem('offlineQueue') || '[]');
+// Lecture protégée : une valeur corrompue ne doit pas interrompre state.js
+// (les globales déclarées plus bas deviendraient indéfinies).
+function _readStoredOfflineQueue(){
+  if(window.DEMO_MODE)return [];
+  try{
+    var parsed=JSON.parse(localStorage.getItem('offlineQueue')||'[]');
+    return Array.isArray(parsed)?parsed:[];
+  }catch(e){
+    console.error('[state] offlineQueue illisible, file réinitialisée',e);
+    return [];
+  }
+}
+var offlineQueue = _readStoredOfflineQueue();
 var isOnline = navigator.onLine;
 
 // ==== CONVENIENCE WRAPPERS ====
