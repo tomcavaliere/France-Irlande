@@ -139,6 +139,7 @@ function renderStageCommentsHtml(i){
   var stageReplies=commentReplies[i]||{};
   var visitorName=!isAdmin?getVisitorName():'';
   var visitorId=(!isAdmin&&visitorName)?getVisitorId():'';
+  var visitorCanWrite=!isAdmin&&!visitorWritesDisabled();
   var ids=Object.keys(stageCmts).sort(function(a,b){return (stageCmts[a].ts||0)-(stageCmts[b].ts||0);});
   var ei=escAttr(i);
   var html='<div class="stage-comments" id="scmts-'+ei+'">';
@@ -180,7 +181,7 @@ function renderStageCommentsHtml(i){
               (replyLikeCount?'<span class="comment-reply-like-count">❤️ '+replyLikeCount+'</span>':'')+
               (replyRepliesCount?'<span class="comment-reply-thread-count">&#x1f4ac; '+replyRepliesCount+'</span>':'')+
             '</div>'+
-            (!isAdmin?
+            (visitorCanWrite?
               '<div class="comment-reply-actions">'+
                 '<button class="comment-reply-like-btn'+(replyLiked?' comment-reply-like-btn-liked':'')+'" data-action="likeReply" data-arg="'+ei+'" data-arg2="'+eid+'" aria-label="'+(replyLiked?'Retirer le like':'Aimer la réponse')+'">'+
                   (replyLiked?'&#x2764;&#xfe0f; Aimé':'&#x1f90d; Aimer')+
@@ -190,7 +191,7 @@ function renderStageCommentsHtml(i){
                 '</button>'+
               '</div>':'')+
             _renderReplyThreadRepliesHtml(i,id,reply)+
-            (!isAdmin&&replyThreadOpen?
+            (visitorCanWrite&&replyThreadOpen?
               '<div class="comment-reply-form comment-reply-thread-form" id="reply-thread-form-'+ei+'-'+eid+'">'+
                 '<textarea id="reply-thread-txt-'+ei+'-'+eid+'" class="comment-reply-ta" placeholder="Ta réponse..." maxlength="'+Utils.LIMITS.COMMENT_TEXT+'"></textarea>'+
                 '<button class="btn btn-p comment-reply-send" data-action="postReplyThread" data-arg="'+ei+'" data-arg2="'+eid+'">Envoyer &#x1f4e8;</button>'+
@@ -215,7 +216,7 @@ function renderStageCommentsHtml(i){
         '</div>';
     });
   }
-  if(!isAdmin){
+  if(visitorCanWrite){
     html+='<div class="comment-form comment-form-visitor comment-form-spaced" data-stage-date="'+ei+'">';
     if(visitorName){
       html+='<div class="comment-as">En tant que <strong>'+escHtml(visitorName)+'</strong>'+
@@ -234,6 +235,7 @@ function _getLastCommentTs(date){return parseInt(localStorage.getItem(_commentCo
 function _setLastCommentTs(date){localStorage.setItem(_commentCooldownKey(date),String(Date.now()));}
 
 function postComment(i){
+  if(visitorWritesDisabled())return;
   var name=getVisitorName();
   var txtEl=document.getElementById('ctxt-'+i);
   var sendBtn=document.querySelector('#scmts-'+i+' .comment-send');
@@ -354,7 +356,7 @@ function deleteReply(date,id){
 }
 
 function likeReply(date,id){
-  if(isAdmin)return;
+  if(isAdmin||visitorWritesDisabled())return;
   var name=getVisitorName();
   if(!name){
     showToast('Identifie-toi pour aimer une réponse.','warn');
@@ -383,7 +385,7 @@ function likeReply(date,id){
 }
 
 function toggleReplyThreadForm(date,id){
-  if(isAdmin)return;
+  if(isAdmin||visitorWritesDisabled())return;
   var reply=_normalizeCommentReply(commentReplies[date]&&commentReplies[date][id]);
   if(!reply)return;
   var key=_replyKey(date,id);
@@ -398,7 +400,7 @@ function toggleReplyThreadForm(date,id){
 }
 
 function postReplyThread(date,id){
-  if(isAdmin)return;
+  if(isAdmin||visitorWritesDisabled())return;
   var name=getVisitorName();
   var txtEl=document.getElementById('reply-thread-txt-'+date+'-'+id);
   var text=txtEl?txtEl.value.trim():'';

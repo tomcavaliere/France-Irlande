@@ -302,6 +302,7 @@ function getVisitorId(){
 }
 
 function _saveVisitorProfile(vid){
+  if(visitorWritesDisabled())return;
   if(!window._fbDb||!window._fbSet||!window._fbRef)return;
   if(!vid)return;
   var name=getVisitorName();
@@ -345,6 +346,7 @@ function _resolveVisitorNameById(visitorId){
 }
 
 function addBravo(date){
+  if(visitorWritesDisabled())return;
   var vid=getVisitorId();
   _saveVisitorProfile(vid);
   if(!bravosByDate[date])bravosByDate[date]={};
@@ -387,7 +389,8 @@ function patchBravos(date, bravosData){
   var countEl=entry.querySelector('.j-bravo-count');
   var btn=entry.querySelector('.j-bravo-btn');
   var adminBtn=entry.querySelector('.j-bravo-admin-btn');
-  if(countEl)countEl.textContent=isAdmin?'\uD83D\uDC4F '+count:count;
+  // Sans bouton (admin, carnet archivé) le compteur porte lui-même l'emoji.
+  if(countEl)countEl.textContent=(isAdmin||!btn)?'\uD83D\uDC4F '+count:count;
   if(btn)btn.disabled=voted;
   if(adminBtn){
     adminBtn.textContent='👏 '+count;
@@ -546,7 +549,9 @@ function renderJournal(){
     }
     var bravosHtml=isAdmin
       ?'<div class="j-bravos"><button class="j-bravo-admin-btn" data-action="showBravosList" data-arg="'+edate+'" disabled>👏 0</button></div>'
-      :'<div class="j-bravos"><button class="j-bravo-btn" data-action="addBravo" data-arg="'+edate+'">Maith sibh! \uD83D\uDC4F</button><span class="j-bravo-count"></span></div>';
+      :visitorWritesDisabled()
+        ?'<div class="j-bravos"><span class="j-bravo-count"></span></div>'
+        :'<div class="j-bravos"><button class="j-bravo-btn" data-action="addBravo" data-arg="'+edate+'">Maith sibh! \uD83D\uDC4F</button><span class="j-bravo-count"></span></div>';
     var skeletonHtml=_isStageFullyHydrated(date)?'':(
       '<div class="j-skeleton" data-skeleton-for="'+edate+'">'+
         '<div class="j-skeleton-row"></div>'+
@@ -569,6 +574,12 @@ function renderJournal(){
     c.innerHTML='<div class="empty-state empty-state-lg">'+
       'Le journal appara\u00eetra ici apr\u00e8s la mise \u00e0 jour de position.</div>';
   } else {
+    if(visitorWritesDisabled()){
+      var note=document.createElement('div');
+      note.className='archive-note';
+      note.textContent='🏁 Voyage terminé — le carnet est archivé en lecture seule.';
+      c.insertBefore(note,c.firstChild);
+    }
     c.querySelectorAll('.j-ta').forEach(function(ta){
       resizeJournalTextarea(ta);
     });

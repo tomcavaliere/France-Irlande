@@ -213,6 +213,8 @@ function trackActivityEvent(type,payload){
   if(!window._fbDb||!window._fbSet||!window._fbRef)return;
   var cleanType=_activityNormalizeType(type);
   if(cleanType==='other')return;
+  // Carnet archivé : plus de suivi des connexions visiteurs (écriture refusée).
+  if(cleanType!=='admin_login'&&visitorWritesDisabled())return;
   payload=payload&&typeof payload==='object'?payload:{};
   var fallback=cleanType==='admin_login'?'Admin':'Visiteur';
   var name=_activitySafeString(payload.name,60,fallback);

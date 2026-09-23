@@ -12,6 +12,12 @@ var stages = {};             // { [date]: { lat, lon, kmTotal, kmDay, elevGain, 
 // Caches lazy par date (peuplés à la demande)
 var journals = {};           // { [date]: "texte" }
 
+// ==== ARCHIVE ====
+// Voyage terminé : la vraie version est un carnet en lecture seule pour les
+// visiteurs (les règles RTDB refusent toute écriture non authentifiée).
+// La démo reste entièrement interactive.
+var ARCHIVED = !window.DEMO_MODE;
+
 // ==== ADMIN ====
 var isAdmin = false;
 var inactivityTimer = null;
@@ -123,6 +129,15 @@ function computeKmDay(kmTotal, stg, todayISO) { return Utils.computeKmDay(kmTota
 function isOfflineable(path) { return Utils.isOfflineable(path); }
 function actionLabel(path) { return Utils.actionLabel(path); }
 function filterVisibleJournalDates(stg, admin) { return Utils.filterVisibleJournalDates(stg, admin); }
+
+/**
+ * Vrai si les écritures visiteur (commentaires, bravos, likes, profils,
+ * activité) sont désactivées : carnet archivé et utilisateur non admin.
+ * @returns {boolean}
+ */
+function visitorWritesDisabled(){
+  return ARCHIVED && !isAdmin;
+}
 
 /**
  * Returns the effective tracks map used for map/counter rendering.
