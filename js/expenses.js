@@ -151,7 +151,7 @@ function initExpenses(){
   var descEl=document.getElementById('depDesc');
   if(descEl)descEl.setAttribute('maxlength',String(Utils.LIMITS.EXPENSE_DESC));
   if(_unsubExpenses)_unsubExpenses();
-  _unsubExpenses=window._fbOnValue(window._fbRef(window._fbDb,'expenses'),function(snap){
+  _unsubExpenses=Db.on('expenses',function(snap){
     expenses=snap.val()||{};
     saveExpensesCache();
     Events.emit('state:expenses-changed');

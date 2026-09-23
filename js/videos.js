@@ -57,9 +57,7 @@ function uploadVideo(date){
         var snapRef=uploadTask.snapshot.ref;
         window._fbGetDownloadURL(snapRef)
           .then(function(url){
-            return window._fbSet(
-              window._fbRef(window._fbDb,'videos/'+date+'/'+id),url
-            ).then(function(){return url;});
+            return Db.set('videos/'+date+'/'+id,url).then(function(){return url;});
           })
           .then(function(url){
             _videoUploadTasks=_videoUploadTasks.filter(function(t){return t!==uploadTask;});
@@ -111,7 +109,7 @@ function deleteVideo(date,id){
     var sRef=window._fbStorageRef(window._fbStorage,'videos/'+date+'/'+id);
     window._fbDeleteObject(sRef)
       .catch(function(err){console.error('[deleteVideo] storage delete failed',err);});
-    window._fbRemove(window._fbRef(window._fbDb,'videos/'+date+'/'+id))
+    Db.remove('videos/'+date+'/'+id)
       .catch(function(err){console.error('[deleteVideo] rtdb remove failed',err);});
     if(videos[date])delete videos[date][id];
     patchMedia(date);

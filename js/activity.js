@@ -195,9 +195,8 @@ function renderActivity(){
 function initActivity(){
   if(!isAdmin)return;
   if(_unsubActivity){_unsubActivity();_unsubActivity=null;}
-  if(!window._fbDb||!window._fbOnValue||!window._fbRef)return;
-  _unsubActivity=window._fbOnValue(
-    window._fbRef(window._fbDb,'activity'),
+  if(!Db.ready())return;
+  _unsubActivity=Db.on('activity',
     function(snap){
       activity=snap.val()||{};
       renderActivity();
@@ -210,7 +209,7 @@ function initActivity(){
 }
 
 function trackActivityEvent(type,payload){
-  if(!window._fbDb||!window._fbSet||!window._fbRef)return;
+  if(!Db.ready())return;
   var cleanType=_activityNormalizeType(type);
   if(cleanType==='other')return;
   // Carnet archivé : plus de suivi des connexions visiteurs (écriture refusée).
@@ -225,7 +224,7 @@ function trackActivityEvent(type,payload){
     name:name,
     ts:Date.now()
   };
-  window._fbSet(window._fbRef(window._fbDb,'activity/'+id),eventData).catch(function(err){
+  Db.set('activity/'+id,eventData).catch(function(err){
     console.error('[activity/track]',err);
   });
 }

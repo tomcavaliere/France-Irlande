@@ -110,10 +110,10 @@ function enqueueOp(op, path, data){
 // Tente une écriture Firebase, ou la met en queue si offline / échec.
 // Retourne une Promise qui résout dans tous les cas (queue = succès logique).
 function tryWrite(op, path, data){
-  if(!isOnline||!window._fbDb){enqueueOp(op,path,data);return Promise.resolve({queued:true});}
+  if(!isOnline||!Db.ready()){enqueueOp(op,path,data);return Promise.resolve({queued:true});}
   var p=(op==='remove')
-    ? window._fbRemove(window._fbRef(window._fbDb,path))
-    : window._fbSet(window._fbRef(window._fbDb,path),data);
+    ? Db.remove(path)
+    : Db.set(path,data);
   return p.then(function(){return {queued:false};}).catch(function(err){
     console.error('[tryWrite] '+op+' '+path+' failed, queueing',err);
     enqueueOp(op,path,data);
@@ -123,7 +123,7 @@ function tryWrite(op, path, data){
 
 function flushQueue(){
   if(window.DEMO_MODE)return;
-  if(!offlineQueue.length||!window._fbDb)return;
+  if(!offlineQueue.length||!Db.ready())return;
   setSyncDot('syncing');
   var queue=offlineQueue.slice();
   offlineQueue=[];
@@ -134,8 +134,7 @@ function flushQueue(){
   queue.forEach(function(item){
     chain=chain.then(function(){
       var op=item.op||'set';
-      var ref=window._fbRef(window._fbDb,item.path);
-      var p=(op==='remove')?window._fbRemove(ref):window._fbSet(ref,item.data);
+      var p=(op==='remove')?Db.remove(item.path):Db.set(item.path,item.data);
       return p.catch(function(err){
         console.error('[flushQueue] '+op+' '+item.path+' failed',err);
         failed.push(item);

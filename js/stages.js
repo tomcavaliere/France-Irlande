@@ -91,7 +91,7 @@ function _processGPXFile(date,file){
     }
     // Écriture dans /tracks/{date}
     var trackData={coords:gpxData.coords,kmDay:gpxData.kmDay,elevGain:gpxData.elevGain,ts:Date.now()};
-    window._fbSet(window._fbRef(window._fbDb,'tracks/'+date),trackData)
+    Db.set('tracks/'+date,trackData)
       .then(function(){
         tracks=_nextTracksSnapshot(date,trackData);
         return _applyKmRecompute(tracks);
@@ -115,7 +115,7 @@ function _processGPXFile(date,file){
 // Supprime le tracé GPX d'une étape et recalcule les km.
 function deleteGPX(date){
   if(!isAdmin)return;
-  window._fbRemove(window._fbRef(window._fbDb,'tracks/'+date))
+  Db.remove('tracks/'+date)
     .then(function(){
       tracks=_nextTracksSnapshot(date,null);
       return _applyKmRecompute(tracks);
@@ -138,14 +138,14 @@ function _applyKmRecompute(tracksSnapshot){
   Object.keys(result.stageUpdates).forEach(function(d){
     var upd=result.stageUpdates[d];
       writes.push(
-        window._fbSet(window._fbRef(window._fbDb,'stages/'+d+'/kmDay'),upd.kmDay),
-        window._fbSet(window._fbRef(window._fbDb,'stages/'+d+'/kmTotal'),upd.kmTotal),
-        window._fbSet(window._fbRef(window._fbDb,'stages/'+d+'/elevGain'),upd.elevGain)
+        Db.set('stages/'+d+'/kmDay',upd.kmDay),
+        Db.set('stages/'+d+'/kmTotal',upd.kmTotal),
+        Db.set('stages/'+d+'/elevGain',upd.elevGain)
       );
   });
   if(current){
     writes.push(
-      window._fbSet(window._fbRef(window._fbDb,'current/kmTotal'),result.currentKmTotal)
+      Db.set('current/kmTotal',result.currentKmTotal)
     );
   }
   return Promise.all(writes);
@@ -189,7 +189,7 @@ function deleteStage(date){
       .then(function(storagePaths){
         _deleteStorageFiles(storagePaths);
         return Promise.all(STAGE_RTDB_NODES.map(function(node){
-          return window._fbRemove(window._fbRef(window._fbDb,node+'/'+date));
+          return Db.remove(node+'/'+date);
         }));
       })
       .then(function(){
@@ -209,8 +209,8 @@ var STAGE_RTDB_NODES=['stages','journals','tracks','photos','videos','comments',
 
 function _fetchStageStoragePaths(date){
   return Promise.all([
-    window._fbGet(window._fbRef(window._fbDb,'photos/'+date)),
-    window._fbGet(window._fbRef(window._fbDb,'videos/'+date))
+    Db.get('photos/'+date),
+    Db.get('videos/'+date)
   ]).then(function(snaps){
     var photosTree=snaps[0]&&snaps[0].exists()?snaps[0].val():null;
     var videosTree=snaps[1]&&snaps[1].exists()?snaps[1].val():null;
@@ -231,7 +231,7 @@ function _deleteStorageFiles(paths){
 function openJournalEntry(date){
   if(!isAdmin)return;
   if(stages[date]&&stages[date].journalDeleted){
-    window._fbRemove(window._fbRef(window._fbDb,'stages/'+date+'/journalDeleted'))
+    Db.remove('stages/'+date+'/journalDeleted')
       .catch(function(err){ console.error('[openJournalEntry]',err); });
   }
   switchTab('journal');
@@ -244,7 +244,7 @@ function openJournalEntry(date){
 function publishDay(date){
   if(!isAdmin)return;
   var pub=stages[date]&&stages[date].published;
-  window._fbSet(window._fbRef(window._fbDb,'stages/'+date+'/published'),!pub)
+  Db.set('stages/'+date+'/published',!pub)
     .catch(function(err){ console.error('[publishDay]',err); });
   // Optimistic UI
   if(stages[date])stages[date].published=!pub;
@@ -265,8 +265,8 @@ function deleteJournalEntry(date){
   }).then(function(ok){
     if(!ok)return;
     Promise.all([
-      window._fbRemove(window._fbRef(window._fbDb,'journals/'+date)),
-      window._fbSet(window._fbRef(window._fbDb,'stages/'+date+'/journalDeleted'),true)
+      Db.remove('journals/'+date),
+      Db.set('stages/'+date+'/journalDeleted',true)
     ]).then(function(){ Events.emit('state:journal-changed'); })
       .catch(function(err){ console.error('[deleteJournalEntry]',err); });
   });
@@ -310,7 +310,7 @@ function createManualStage(){
     errEl.classList.add('vis');
     return;
   }
-  window._fbSet(window._fbRef(window._fbDb,'stages/'+dateISO),result.stageData)
+  Db.set('stages/'+dateISO,result.stageData)
     .then(function(){
       stages=Object.assign({},stages,{[dateISO]:result.stageData});
       Events.emit('state:stages-changed');

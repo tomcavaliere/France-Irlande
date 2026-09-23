@@ -30,9 +30,9 @@ function resizeJournalTextarea(ta){
 function _persistPendingJournal(date){
   if(_journalSaveInflight[date])return _journalSaveInflight[date];
   if(!Object.prototype.hasOwnProperty.call(_journalPendingDrafts,date))return Promise.resolve();
-  if(!isOnline||!window._fbDb||!window._fbSet||!window._fbRef)return Promise.resolve();
+  if(!isOnline||!Db.ready())return Promise.resolve();
   var text=typeof _journalPendingDrafts[date]==='string'?_journalPendingDrafts[date]:'';
-  _journalSaveInflight[date]=window._fbSet(window._fbRef(window._fbDb,'journals/'+date),text)
+  _journalSaveInflight[date]=Db.set('journals/'+date,text)
     .catch(function(err){
       console.error('[persistJournal]',err);
       showToast('Journal non sauvé — nouvelle tentative au prochain retour réseau','error',6000);
@@ -53,14 +53,14 @@ function onJournalInput(date, _arg2, el){
   journals[date]=text;
   saveLocalCache();
   _journalPendingDrafts[date]=text;
-  if(!isOnline||!window._fbDb||!window._fbSet||!window._fbRef)return;
+  if(!isOnline||!Db.ready())return;
   _persistPendingJournal(date);
 }
 
 function flushJournals(){
   Object.keys(_journalPendingDrafts).forEach(function(date){
     var text=typeof _journalPendingDrafts[date]==='string'?_journalPendingDrafts[date]:(journals[date]||'');
-    if(!isOnline||!window._fbDb||_journalSaveInflight[date]){
+    if(!isOnline||!Db.ready()||_journalSaveInflight[date]){
       queueWrite('journals/'+date,text);
       return;
     }
@@ -191,12 +191,12 @@ function _mergePendingComments(date, incoming){
 }
 
 function _fetchStagesSnapshot(force){
-  if(!window._fbDb||!window._fbGet||!window._fbRef)return Promise.resolve(stages);
+  if(!Db.ready())return Promise.resolve(stages);
   if(_stagesFetchPromise)return _stagesFetchPromise;
   if(!force&&Object.keys(stages||{}).length&&_isFreshFetch(_stagesFetchedAt,COLLECTION_SNAPSHOT_TTL_MS)){
     return Promise.resolve(stages);
   }
-  _stagesFetchPromise=window._fbGet(window._fbRef(window._fbDb,'stages'))
+  _stagesFetchPromise=Db.get('stages')
     .then(function(snap){
       stages=snap.val()||{};
       _stagesFetchedAt=Date.now();
@@ -216,12 +216,12 @@ function _fetchStagesSnapshot(force){
 }
 
 function _fetchJournalsSnapshot(force){
-  if(!window._fbDb||!window._fbGet||!window._fbRef)return Promise.resolve(journals);
+  if(!Db.ready())return Promise.resolve(journals);
   if(_journalsFetchPromise)return _journalsFetchPromise;
   if(!force&&Object.keys(journals||{}).length&&_isFreshFetch(_journalsFetchedAt,COLLECTION_SNAPSHOT_TTL_MS)){
     return Promise.resolve(journals);
   }
-  _journalsFetchPromise=window._fbGet(window._fbRef(window._fbDb,'journals'))
+  _journalsFetchPromise=Db.get('journals')
     .then(function(snap){
       journals=_mergeRemoteJournalsWithPendingDrafts(snap.val());
       _journalsFetchedAt=Date.now();
@@ -242,9 +242,9 @@ function _fetchJournalsSnapshot(force){
 
 // ==== FIREBASE SUBSCRIPTIONS ====
 function initFirebase(){
-  if(!window._fbDb)return;
+  if(!Db.ready())return;
   if(_unsubCurrent)_unsubCurrent();
-  _unsubCurrent=window._fbOnValue(window._fbRef(window._fbDb,'current'),function(snap){
+  _unsubCurrent=Db.on('current',function(snap){
     current=snap.val();
     Events.emit('state:current-changed');
     saveLocalCache();
@@ -253,17 +253,17 @@ function initFirebase(){
   // Charger /tracks dès le bootstrap pour afficher les tracés GPX
   // sur la carte sans devoir ouvrir l'onglet Carnet.
   if(_unsubTracks)_unsubTracks();
-  _unsubTracks=window._fbOnValue(window._fbRef(window._fbDb,'tracks'),function(snap){
+  _unsubTracks=Db.on('tracks',function(snap){
     tracks=snap.val()||{};
     Events.emit('state:tracks-changed');
   });
 }
 
 function openCarnetTab(){
-  if(!window._fbDb)return;
+  if(!Db.ready())return;
   if(isAdmin){
     if(!_unsubStages){
-      _unsubStages=window._fbOnValue(window._fbRef(window._fbDb,'stages'),function(snap){
+      _unsubStages=Db.on('stages',function(snap){
         stages=snap.val()||{};
         _stagesFetchedAt=Date.now();
         saveLocalCache();
@@ -271,7 +271,7 @@ function openCarnetTab(){
       });
     }
     if(!_unsubJournals){
-      _unsubJournals=window._fbOnValue(window._fbRef(window._fbDb,'journals'),function(snap){
+      _unsubJournals=Db.on('journals',function(snap){
         journals=_mergeRemoteJournalsWithPendingDrafts(snap.val());
         _journalsFetchedAt=Date.now();
         saveLocalCache();
@@ -303,7 +303,7 @@ function getVisitorId(){
 
 function _saveVisitorProfile(vid){
   if(visitorWritesDisabled())return;
-  if(!window._fbDb||!window._fbSet||!window._fbRef)return;
+  if(!Db.ready())return;
   if(!vid)return;
   var name=getVisitorName();
   if(!name){
@@ -312,7 +312,7 @@ function _saveVisitorProfile(vid){
   }
   var payload={name:name,ts:Date.now()};
   visitorProfiles[vid]=payload;
-  window._fbSet(window._fbRef(window._fbDb,'visitorProfiles/'+vid),payload).catch(function(err){
+  Db.set('visitorProfiles/'+vid,payload).catch(function(err){
     console.error('[visitorProfiles/set]',err);
   });
 }
@@ -326,10 +326,10 @@ function _resolveVisitorNameById(visitorId){
   if(known&&typeof known.name==='string'&&known.name.trim()){
     return Promise.resolve(known.name.trim());
   }
-  if(!window._fbDb||!window._fbGet||!window._fbRef){
+  if(!Db.ready()){
     return Promise.resolve(_visitorIdFallbackLabel(visitorId));
   }
-  return window._fbGet(window._fbRef(window._fbDb,'visitorProfiles/'+visitorId))
+  return Db.get('visitorProfiles/'+visitorId)
     .then(function(snap){
       var data=snap&&snap.exists()?snap.val():null;
       var name=data&&typeof data.name==='string'?data.name.trim():'';
@@ -357,7 +357,7 @@ function addBravo(date){
   bravosByDate[date][vid]=true;
   _markStageContentFetched(date,'bravos');
   patchBravos(date,bravosByDate[date]);
-  window._fbSet(window._fbRef(window._fbDb,'bravos/'+date+'/'+vid),true).catch(function(err){
+  Db.set('bravos/'+date+'/'+vid,true).catch(function(err){
     console.error('[addBravo]',err);
     if(bravosByDate[date])delete bravosByDate[date][vid];
     patchBravos(date,bravosByDate[date]||{});
@@ -439,12 +439,12 @@ function _stageUnsubMap(key){
 }
 
 function _loadStageNode(date, key, path, errContext){
-  if(!window._fbDb)return;
+  if(!Db.ready())return;
   if(isAdmin){
     var unsubMap=_stageUnsubMap(key);
     if(unsubMap&&unsubMap[date])return;
     if(unsubMap){
-      unsubMap[date]=window._fbOnValue(window._fbRef(window._fbDb,path),function(snap){
+      unsubMap[date]=Db.on(path,function(snap){
         _applyStageContentSnapshot(date,key,snap);
       },function(err){
         console.error(errContext,err);
@@ -455,7 +455,7 @@ function _loadStageNode(date, key, path, errContext){
   if(_isStageContentFresh(date,key))return;
   var pending=_getStageContentPending(date,key);
   if(pending)return;
-  var promise=window._fbGet(window._fbRef(window._fbDb,path))
+  var promise=Db.get(path)
     .then(function(snap){
       _applyStageContentSnapshot(date,key,snap);
     })
@@ -469,7 +469,7 @@ function _loadStageNode(date, key, path, errContext){
 }
 
 function loadStageContent(date){
-  if(!window._fbDb)return;
+  if(!Db.ready())return;
   if(_isStageFullyHydrated(date)&&STAGE_CONTENT_KEYS.every(function(key){
     return _isStageContentFresh(date,key);
   })){

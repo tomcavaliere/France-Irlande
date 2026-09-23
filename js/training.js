@@ -181,8 +181,7 @@ function initTraining(){
   var dateEl=document.getElementById('trainingDate');
   if(dateEl&&!dateEl.value)dateEl.value=Utils.localISODate();
   if(_unsubTraining)_unsubTraining();
-  _unsubTraining=window._fbOnValue(
-    window._fbRef(window._fbDb,'training'),
+  _unsubTraining=Db.on('training',
     function(snap){
       training=snap.val()||{};
       renderTraining();

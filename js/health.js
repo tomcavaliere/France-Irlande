@@ -166,8 +166,7 @@ function initHealth(){
   var dateEl=document.getElementById('healthDate');
   if(dateEl&&!dateEl.value)dateEl.value=Utils.localISODate();
   if(_unsubHealth)_unsubHealth();
-  _unsubHealth=window._fbOnValue(
-    window._fbRef(window._fbDb,'health'),
+  _unsubHealth=Db.on('health',
     function(snap){
       health=snap.val()||{};
       renderHealth();

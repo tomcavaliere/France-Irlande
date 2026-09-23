@@ -136,7 +136,7 @@ function _processPhotoUploadQueue(date){
         window._fbGetDownloadURL(uploadTask.snapshot.ref)
           .then(function(url){
             var meta={url:url,path:storagePath,ts:Date.now()};
-            return window._fbSet(window._fbRef(window._fbDb,'photos/'+date+'/'+id),meta)
+            return Db.set('photos/'+date+'/'+id,meta)
               .then(function(){return meta;});
           })
           .then(function(meta){
@@ -195,7 +195,7 @@ function deletePhoto(i,id){
           showToast('Erreur lors de la suppression du fichier Storage. Le fichier peut rester orphelin.','error',4000);
         });
     }
-    window._fbRemove(window._fbRef(window._fbDb,'photos/'+i+'/'+id))
+    Db.remove('photos/'+i+'/'+id)
       .then(function(){refreshQuotaState();})
       .catch(function(err){console.error('[deletePhoto] remove failed',err);});
     if(photos[i])delete photos[i][id];

@@ -5,8 +5,8 @@
 var FALLBACK_ADMIN_UID='admin';
 
 function refreshQuotaState(callback){
-  if(!window._fbDb||!window._fbGet){if(callback)callback();return;}
-  window._fbGet(window._fbRef(window._fbDb,'photos'))
+  if(!Db.ready()){if(callback)callback();return;}
+  Db.get('photos')
     .then(function(snap){
       var photosTree=snap.exists()?snap.val():{};
       var r=Utils.computeQuotaBytes(photosTree);
@@ -153,8 +153,8 @@ function openProfileModal(){
   var published=Object.values(stages).filter(function(d){return d.published===true;}).length;
   document.getElementById('profileStatJournal').textContent=published;
   document.getElementById('profileStatComments').textContent='…';
-  if(window._fbDb&&window._fbGet){
-    window._fbGet(window._fbRef(window._fbDb,'comments'))
+  if(Db.ready()){
+    Db.get('comments')
       .then(function(snap){
         var count=0;
         if(snap.exists()){
@@ -349,10 +349,10 @@ function updatePosition(){
     current=currentData;
     stages=Object.assign({},stages,{[todayISO]:Object.assign({},stageData)});
 
-    window._fbSet(window._fbRef(window._fbDb,'current'),currentData)
+    Db.set('current',currentData)
       .catch(function(err){ console.error('[updatePosition/current]',err); });
 
-    window._fbSet(window._fbRef(window._fbDb,'stages/'+todayISO),stageData)
+    Db.set('stages/'+todayISO,stageData)
       .catch(function(err){ console.error('[updatePosition/stage]',err); });
 
     Events.emit('state:current-changed');

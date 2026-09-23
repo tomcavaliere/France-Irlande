@@ -60,13 +60,11 @@ function _extractVisitorPasswordHash(cfg){
 
 function _loadVisitorPasswordHash(force){
   if(!force&&_visitorPasswordHashLoaded)return Promise.resolve(_visitorPasswordHashCache);
-  if(!window._fbDb||!window._fbGet||!window._fbRef){
+  if(!Db.ready()){
     return Promise.resolve(_visitorPasswordHashCache||VISITOR_DEFAULT_PASSWORD_HASH);
   }
   var revision=++_visitorPasswordHashRevision;
-  return window._fbGet(
-    window._fbRef(window._fbDb,VISITOR_AUTH_CONFIG_PATH)
-  )
+  return Db.get(VISITOR_AUTH_CONFIG_PATH)
     .then(function(snap){
       if(revision!==_visitorPasswordHashRevision){
         return _visitorPasswordHashCache||VISITOR_DEFAULT_PASSWORD_HASH;
@@ -223,7 +221,7 @@ function updateVisitorPassword(){
     else{if(pwEl)pwEl.focus();}
     return;
   }
-  if(!window._fbDb||!window._fbSet||!window._fbRef){
+  if(!Db.ready()){
     if(errEl){
       errEl.textContent='Firebase non disponible.';
       errEl.classList.add('vis');
@@ -239,7 +237,7 @@ function updateVisitorPassword(){
       updatedAt:Date.now(),
       updatedBy:user&&user.email?user.email:''
     };
-    return window._fbSet(window._fbRef(window._fbDb,VISITOR_AUTH_CONFIG_PATH),payload).then(function(){
+    return Db.set(VISITOR_AUTH_CONFIG_PATH,payload).then(function(){
       _visitorPasswordHashRevision++;
       _visitorPasswordHashCache=hash;
       _visitorPasswordHashLoaded=true;
