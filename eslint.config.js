@@ -1,4 +1,32 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import globals from 'globals';
+
+/**
+ * Globales partagées entre les scripts classiques de js/ (chargés via <script>,
+ * sans modules) : fonctions et var de premier niveau, namespaces window.Xxx,
+ * const du tracé et données Campspace. Générées à chaque lint : une nouvelle
+ * fonction est reconnue d'office, une faute de frappe devient une erreur no-undef.
+ * @returns {Object<string, 'writable'>}
+ */
+function collectAppGlobals(){
+  const files = fs.readdirSync('js')
+    .filter((f) => f.endsWith('.js'))
+    .map((f) => path.join('js', f))
+    .concat(['campspace-data.js']);
+  const names = new Set(['L']); // Leaflet (vendor/leaflet/leaflet.js)
+  files.forEach((file) => {
+    const src = fs.readFileSync(file, 'utf8');
+    for (const m of src.matchAll(/^function\s+([A-Za-z_$][\w$]*)\s*\(/gm)) names.add(m[1]);
+    for (const m of src.matchAll(/^(?:var|let|const)\s+([^\n]*)/gm)) {
+      for (const d of m[1].matchAll(/(?:^|,\s*)([A-Za-z_$][\w$]*)\s*(?==|,|;|$)/g)) names.add(d[1]);
+    }
+    for (const m of src.matchAll(/window\.([A-Z][\w$]*)\s*=/g)) names.add(m[1]);
+  });
+  return Object.fromEntries([...names].map((n) => [n, 'writable']));
+}
+
+const appGlobals = collectAppGlobals();
 
 export default [
   {
@@ -30,12 +58,12 @@ export default [
     languageOptions: {
       ecmaVersion: 2020,
       sourceType: 'script',
-      globals: { ...globals.browser },
+      globals: { ...globals.browser, ...appGlobals },
     },
     rules: {
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       'no-unused-vars': ['error', { vars: 'local', argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
-      'no-undef': 'off',
+      'no-undef': 'error',
       'eqeqeq': 'error',
       'semi': ['error', 'always'],
     },
