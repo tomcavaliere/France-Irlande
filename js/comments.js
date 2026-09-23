@@ -264,8 +264,9 @@ function postComment(i){
   // Optimistic UI
   if(!comments[i])comments[i]={};
   comments[i][id]=Object.assign({},data,{_pending:true});
-  patchStageComments(i);
+  // Vider AVANT le re-rendu : patchStageComments reporte les brouillons.
   if(txtEl)txtEl.value='';
+  patchStageComments(i);
   _setLastCommentTs(i);
   tryWrite('set','comments/'+i+'/'+id,data).then(function(){
     if(sendBtn)sendBtn.disabled=false;
@@ -430,8 +431,8 @@ function postReplyThread(date,id){
   if(!target.replies||typeof target.replies!=='object')target.replies={};
   target.replies[replyId]=data;
   delete _replyThreadOpen[_replyKey(date,id)];
-  patchStageComments(date);
   if(txtEl)txtEl.value='';
+  patchStageComments(date);
   _setLastReplyTs(date,id);
   tryWrite('set','commentReplies/'+date+'/'+id+'/replies/'+replyId,data).catch(function(err){
     console.error('[postReplyThread]',err);
@@ -453,10 +454,39 @@ function deleteReplyThreadItem(date,id,replyId){
   });
 }
 
+// Le bloc commentaires est re-rendu en entier (arrivée des commentaires en
+// lazy load, listener temps réel admin…) : on reporte les brouillons en cours
+// de saisie et le focus, sinon le texte tapé est perdu sans avertissement.
+function _captureCommentDrafts(container){
+  var drafts={};
+  container.querySelectorAll('textarea[id]').forEach(function(ta){
+    if(ta.value)drafts[ta.id]=ta.value;
+  });
+  var active=document.activeElement;
+  return {
+    drafts:drafts,
+    focusId:active&&container.contains(active)&&active.id?active.id:''
+  };
+}
+
+function _restoreCommentDrafts(container,saved){
+  Object.keys(saved.drafts).forEach(function(id){
+    var ta=document.getElementById(id);
+    if(ta&&container.contains(ta))ta.value=saved.drafts[id];
+  });
+  if(saved.focusId){
+    var el=document.getElementById(saved.focusId);
+    if(el&&container.contains(el))el.focus();
+  }
+}
+
 function patchStageComments(i){
   var container=document.getElementById('scmts-'+i);
   if(!container)return;
+  var saved=_captureCommentDrafts(container);
   var tmp=document.createElement('div');
   tmp.innerHTML=renderStageCommentsHtml(i);
-  container.replaceWith(tmp.firstChild);
+  var next=tmp.firstChild;
+  container.replaceWith(next);
+  _restoreCommentDrafts(next,saved);
 }
