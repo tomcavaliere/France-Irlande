@@ -8,84 +8,15 @@ var TRAINING_EXERCISES=[
   {key:'runKm',label:'Course',goal:5,unit:' km'}
 ];
 
-function _toNumber(v){
-  var n=Number(v);
-  return Number.isFinite(n)&&n>0?n:0;
-}
-
-function _normalizeTrainingEntry(raw){
-  raw=raw&&typeof raw==='object'?raw:{};
-  var tsNum=Number(raw.ts);
-  return {
-    squats:Math.round(Math.max(0,_toNumber(raw.squats))),
-    pushups:Math.round(Math.max(0,_toNumber(raw.pushups))),
-    absMin:Math.max(0,_toNumber(raw.absMin)),
-    runKm:Math.max(0,_toNumber(raw.runKm)),
-    ts:(Number.isFinite(tsNum)&&tsNum>0)?tsNum:Date.now()
-  };
-}
-
-function _addDaysISO(iso,days){
-  var d=new Date(iso+'T12:00:00');
-  d.setDate(d.getDate()+days);
-  return Utils.localISODate(d);
-}
-
-function _weekStartISO(iso){
-  var d=new Date(iso+'T12:00:00');
-  var jsDay=d.getDay(); // 0 dimanche, 1 lundi...
-  var diff=(jsDay+6)%7; // lundi => 0
-  d.setDate(d.getDate()-diff);
-  return Utils.localISODate(d);
-}
-
-function _fmtTrainingValue(ex,val){
-  if(ex.key==='runKm')return val.toFixed(1);
-  if(ex.key==='absMin'){
-    var decimals=(val%1===0)?0:1;
-    return val.toFixed(decimals);
-  }
-  return String(Math.round(val));
-}
-
-function _linePath(points,maxY){
-  if(!points.length)return '';
-  if(points.length===1){
-    var ySolo=maxY<=0?62:Math.round(62-(points[0]/maxY)*54);
-    return 'M 4 '+ySolo+' L 96 '+ySolo;
-  }
-  var path='';
-  points.forEach(function(p,idx){
-    var x=Math.round((idx/(points.length-1))*92)+4;
-    var y=maxY<=0?62:Math.round(62-(p/maxY)*54);
-    path+=(idx===0?'M ':' L ')+x+' '+y;
-  });
-  return path;
-}
-
-function _aggregateDaily(ex){
-  var sums={};
-  Object.keys(training||{}).forEach(function(date){
-    var e=_normalizeTrainingEntry(training[date]);
-    sums[date]=(sums[date]||0)+e[ex.key];
-  });
-  return Object.keys(sums).sort().map(function(date){return {date:date,val:sums[date]};});
-}
-
-function _weekTotal(ex,weekStart){
-  var total=0;
-  for(var i=0;i<7;i++){
-    var d=_addDaysISO(weekStart,i);
-    if(!training[d])continue;
-    total+=_normalizeTrainingEntry(training[d])[ex.key];
-  }
-  return total;
-}
+// Normalisation, semaines, séries et tracé des courbes : js/dashboard-core.js.
+function _toNumber(v){ return DashboardCore.positiveNumber(v); }
+function _normalizeTrainingEntry(raw){ return DashboardCore.normalizeTrainingEntry(raw); }
+function _fmtTrainingValue(ex,val){ return DashboardCore.formatTrainingValue(ex.key,val); }
 
 function _renderWeeklyCards(weekStart){
   var html='<div class="training-week">';
   TRAINING_EXERCISES.forEach(function(ex){
-    var done=_weekTotal(ex,weekStart);
+    var done=DashboardCore.weekTotal(training,ex.key,weekStart);
     var pct=Math.min(100,(done/ex.goal)*100);
     var reached=done>=ex.goal;
     html+='<div class="training-card">'+
@@ -102,11 +33,11 @@ function _renderWeeklyCards(weekStart){
 function _renderGraphs(){
   var html='';
   TRAINING_EXERCISES.forEach(function(ex){
-    var daily=_aggregateDaily(ex);
-    var cum=0;
-    var cumVals=daily.map(function(d){cum+=d.val;return cum;});
+    var daily=DashboardCore.trainingSeries(training,ex.key);
+    var cumVals=DashboardCore.cumulative(daily.map(function(d){return d.val;}));
+    var cum=cumVals.length?cumVals[cumVals.length-1]:0;
     var maxY=cumVals.reduce(function(m,v){return Math.max(m,v);},0);
-    var path=_linePath(cumVals,maxY);
+    var path=DashboardCore.linePath(cumVals,0,maxY);
     var latest=daily.length?daily[daily.length-1]:null;
     var subtitle=daily.length
       ? 'Dernier jour : '+latest.date+' · +'+_fmtTrainingValue(ex,latest.val)+ex.unit
@@ -129,7 +60,7 @@ function _renderGraphs(){
 function renderTraining(){
   if(!isAdmin)return;
   var todayISO=Utils.localISODate();
-  _renderWeeklyCards(_weekStartISO(todayISO));
+  _renderWeeklyCards(DashboardCore.weekStartISO(todayISO));
   _renderGraphs();
 }
 

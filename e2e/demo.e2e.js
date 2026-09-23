@@ -90,6 +90,19 @@ test.describe('demo mode (service worker bloqué, réseau intercepté)', () => {
     await expect(page.locator('#activityList .activity-event').first()).toBeVisible();
   });
 
+  test('demo admin sees the health and training charts', async ({ page }) => {
+    await page.goto(DEMO_URL);
+    await page.locator('#demoAdminBtn').click();
+
+    await page.locator('#tabHealth').click();
+    await expect(page.locator('#healthGraphs svg path')).toHaveCount(9);
+    await expect(page.locator('#healthGraphs svg path').first()).toHaveAttribute('d', /^M \d+ \d+ L /);
+
+    await page.locator('#tabTraining').click();
+    await expect(page.locator('#trainingWeek .training-card')).toHaveCount(4);
+    await expect(page.locator('#trainingGraphs svg path').first()).toHaveAttribute('d', /^M \d+ \d+ L /);
+  });
+
   test('archive mode hides every visitor write control', async ({ page }) => {
     await page.goto(DEMO_URL);
     await openJournal(page);

@@ -13,59 +13,11 @@ var HEALTH_METRICS=[
   {key:'tempAvg',label:'Température moy',unit:' °C',min:-30,max:60,step:0.1}
 ];
 
-function _roundByStep(v,step){
-  if(!Number.isFinite(step)||step<=0)return Number(v)||0;
-  var rounded=Math.round(v/step)*step;
-  var decimals=(String(step).split('.')[1]||'').length;
-  return Number(rounded.toFixed(Math.min(6,decimals)));
-}
-
-function _clampMetric(def,v){
-  var n=Number(v);
-  if(!Number.isFinite(n))return 0;
-  if(n<def.min)return def.min;
-  if(n>def.max)return def.max;
-  return _roundByStep(n,def.step);
-}
-
-function _normalizeHealthEntry(raw){
-  raw=raw&&typeof raw==='object'?raw:{};
-  var tsNum=Number(raw.ts);
-  var out={ts:(Number.isFinite(tsNum)&&tsNum>0)?tsNum:Date.now()};
-  HEALTH_METRICS.forEach(function(def){
-    out[def.key]=_clampMetric(def,raw[def.key]);
-  });
-  return out;
-}
-
-function _fmtHealthValue(def,val){
-  if(def.step===1)return String(Math.round(val))+def.unit;
-  return val.toFixed(1)+def.unit;
-}
-
-function _linePathHealth(values,minY,maxY){
-  if(!values.length)return '';
-  var rawRange=maxY-minY;
-  var range=Math.abs(rawRange)<0.01?1:rawRange;
-  if(values.length===1){
-    var ySolo=Math.round(62-((values[0]-minY)/range)*54);
-    return 'M 4 '+ySolo+' L 96 '+ySolo;
-  }
-  var path='';
-  values.forEach(function(v,idx){
-    var x=Math.round((idx/(values.length-1))*92)+4;
-    var y=Math.round(62-((v-minY)/range)*54);
-    path+=(idx===0?'M ':' L ')+x+' '+y;
-  });
-  return path;
-}
-
-function _healthDailySeries(def){
-  return Object.keys(health||{}).sort().map(function(date){
-    var entry=_normalizeHealthEntry(health[date]);
-    return {date:date,val:entry[def.key]};
-  });
-}
+// Normalisation, séries et tracé des courbes : js/dashboard-core.js.
+function _normalizeHealthEntry(raw){ return DashboardCore.normalizeHealthEntry(raw,HEALTH_METRICS); }
+function _clampMetric(def,v){ return DashboardCore.clampMetric(def,v); }
+function _fmtHealthValue(def,val){ return DashboardCore.formatHealthValue(def,val); }
+function _healthDailySeries(def){ return DashboardCore.healthSeries(health,def,HEALTH_METRICS); }
 
 function _healthInputId(key){
   return 'health'+key.charAt(0).toUpperCase()+key.slice(1);
@@ -96,7 +48,7 @@ function _renderHealthGraphs(){
   HEALTH_METRICS.forEach(function(def){
     var series=_healthDailySeries(def);
     var vals=series.map(function(it){return it.val;});
-    var path=_linePathHealth(vals,def.min,def.max);
+    var path=DashboardCore.linePath(vals,def.min,def.max);
     var latest=series.length?series[series.length-1]:null;
     var subtitle=latest
       ? 'Dernier jour : '+latest.date+' · '+_fmtHealthValue(def,latest.val)
