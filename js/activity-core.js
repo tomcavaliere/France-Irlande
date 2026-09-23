@@ -66,7 +66,9 @@
     if (!entry || typeof entry !== 'object') return false;
     if (entry.type === 'admin_login') return true;
     if (entry.type !== 'visitor_login') return false;
-    var normalized = safeString(entry.name, NAME_MAX, '').toLowerCase();
+    // NFD + suppression des diacritiques : « Chloé » doit valoir « chloe ».
+    var normalized = safeString(entry.name, NAME_MAX, '')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     return normalized === 'tom' || normalized === 'chloe';
   }
 

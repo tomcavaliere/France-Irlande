@@ -51,6 +51,11 @@ describe('shouldIgnoreEntry', () => {
     expect(shouldIgnoreEntry({ type: 'visitor_login', name: 'Tom' })).toBe(true);
     expect(shouldIgnoreEntry({ type: 'visitor_login', name: ' chloe ' })).toBe(true);
   });
+  it('ignore les voyageurs quelle que soit la casse ou les accents', () => {
+    expect(shouldIgnoreEntry({ type: 'visitor_login', name: 'Chloé' })).toBe(true);
+    expect(shouldIgnoreEntry({ type: 'visitor_login', name: 'CHLOÉ' })).toBe(true);
+    expect(shouldIgnoreEntry({ type: 'visitor_login', name: 'TOM' })).toBe(true);
+  });
   it('garde les autres visiteurs et les alertes', () => {
     expect(shouldIgnoreEntry({ type: 'visitor_login', name: 'Marie' })).toBe(false);
     expect(shouldIgnoreEntry({ type: 'visitor_suspicious', name: 'Tom' })).toBe(false);
