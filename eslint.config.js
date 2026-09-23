@@ -71,6 +71,7 @@ export default [
   {
     files: [
       'js/gps-core.js',
+      'js/activity-core.js',
       'js/demo-core.js',
       'js/db.js',
       'js/offline-core.js',

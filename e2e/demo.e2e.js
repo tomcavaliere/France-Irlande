@@ -78,6 +78,18 @@ test.describe('demo mode (service worker bloqué, réseau intercepté)', () => {
     await expect(badge).toHaveText(/Publié/);
   });
 
+  test('demo admin sees the activity dashboard', async ({ page }) => {
+    await page.goto(DEMO_URL);
+    await page.locator('#demoAdminBtn').click();
+    await page.locator('#tabActivity').click();
+
+    const cards = page.locator('#activitySummary .activity-card');
+    await expect(cards).toHaveCount(4);
+    await expect(cards.first().locator('.activity-num')).not.toHaveText('0');
+    await expect(page.locator('#activityTimeline .activity-bar-item')).toHaveCount(7);
+    await expect(page.locator('#activityList .activity-event').first()).toBeVisible();
+  });
+
   test('archive mode hides every visitor write control', async ({ page }) => {
     await page.goto(DEMO_URL);
     await openJournal(page);

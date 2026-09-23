@@ -1,8 +1,7 @@
 // activity.js
 // Admin-only activity dashboard + connection event tracking.
 
-// Garder cette liste alignée avec firebase.rules.json (/activity/$id/type).
-var ACTIVITY_VALID_TYPES = ['admin_login','visitor_login','visitor_suspicious'];
+// Logique pure (normalisation, filtres, séries, classement) : js/activity-core.js.
 
 function _activityRandomToken(){
   if(window.crypto&&typeof window.crypto.randomUUID==='function')return window.crypto.randomUUID();
@@ -20,85 +19,6 @@ function _activitySafeISODate(dateStr){
     : Utils.localISODate();
 }
 
-function _activitySafeString(v,maxLen,fallback){
-  var s=typeof v==='string'?v.trim():'';
-  if(!s)s=fallback||'';
-  if(maxLen&&s.length>maxLen)s=s.slice(0,maxLen);
-  return s;
-}
-
-function _activityNormalizeType(type){
-  return ACTIVITY_VALID_TYPES.includes(type)?type:'other';
-}
-
-function _activityNormalizeEntry(raw){
-  raw=raw&&typeof raw==='object'?raw:{};
-  var tsNum=Number(raw.ts);
-  return {
-    type:_activityNormalizeType(raw.type),
-    name:_activitySafeString(raw.name,60,'Inconnu'),
-    ts:Number.isFinite(tsNum)&&tsNum>0?tsNum:0
-  };
-}
-
-function _activityTypeLabel(type){
-  if(type==='admin_login')return 'Connexion admin';
-  if(type==='visitor_login')return 'Connexion visiteur';
-  if(type==='visitor_suspicious')return 'Alerte suspecte';
-  return 'Événement';
-}
-
-function _activityDayISO(ts){
-  if(!Number.isFinite(ts)||ts<=0)return '';
-  return Utils.localISODate(ts);
-}
-
-function _activityLastDaysSeries(entries,nbDays){
-  var days=Math.max(1,Math.round(nbDays||7));
-  var base=new Date();
-  base.setHours(12,0,0,0);
-  var counts={};
-  entries.forEach(function(e){
-    var day=_activityDayISO(e.ts);
-    if(day)counts[day]=(counts[day]||0)+1;
-  });
-  var out=[];
-  for(var i=days-1;i>=0;i--){
-    var d=new Date(base);
-    d.setDate(base.getDate()-i);
-    var iso=Utils.localISODate(d);
-    out.push({date:iso,count:counts[iso]||0});
-  }
-  return out;
-}
-
-function _activityTopUsers(entries,maxUsers){
-  var counts={};
-  entries.forEach(function(e){
-    var key=_activitySafeString(e.name,60,'Inconnu');
-    counts[key]=(counts[key]||0)+1;
-  });
-  return Object.keys(counts)
-    .map(function(name){return {name:name,count:counts[name]};})
-    .sort(function(a,b){
-      if(b.count!==a.count)return b.count-a.count;
-      return a.name.localeCompare(b.name);
-    })
-    .slice(0,Math.max(1,Math.round(maxUsers||20)));
-}
-
-function _activityNormalizeVisitorName(name){
-  return _activitySafeString(name,60,'').toLowerCase();
-}
-
-function _activityShouldIgnoreEntry(entry){
-  if(!entry||typeof entry!=='object')return false;
-  if(entry.type==='admin_login')return true;
-  if(entry.type!=='visitor_login')return false;
-  var normalized=_activityNormalizeVisitorName(entry.name);
-  return normalized==='tom'||normalized==='chloe';
-}
-
 function showMoreActivityEntries(){
   activityVisibleCount+=ACTIVITY_INITIAL_EVENTS;
   renderActivity();
@@ -112,11 +32,7 @@ function renderActivity(){
   var listEl=document.getElementById('activityList');
   if(!summaryEl||!timelineEl||!usersEl||!listEl)return;
 
-  var entries=Object.keys(activity||{})
-    .map(function(id){return _activityNormalizeEntry(activity[id]);})
-    .filter(function(e){return e.ts>0;})
-    .sort(function(a,b){return b.ts-a.ts;});
-  entries=entries.filter(function(e){return !_activityShouldIgnoreEntry(e);});
+  var entries=ActivityCore.prepareEntries(activity);
 
   if(!entries.length){
     summaryEl.innerHTML='<div class="empty-state">Aucune activité enregistrée pour le moment.</div>';
@@ -126,22 +42,17 @@ function renderActivity(){
     return;
   }
 
-  var total=entries.length;
-  var visitors=entries.filter(function(e){return e.type==='visitor_login';}).length;
-  var suspicious=entries.filter(function(e){return e.type==='visitor_suspicious';}).length;
-  var uniqueUsers={};
-  entries.forEach(function(e){uniqueUsers[e.name]=true;});
-  var uniqueCount=Object.keys(uniqueUsers).length;
+  var stats=ActivityCore.summarize(entries);
 
   summaryEl.innerHTML=
     '<div class="activity-summary-grid">'+
-      '<div class="activity-card"><div class="activity-num">'+total+'</div><div class="activity-lbl">Connexions totales</div></div>'+
-      '<div class="activity-card"><div class="activity-num">'+visitors+'</div><div class="activity-lbl">Visiteurs</div></div>'+
-      '<div class="activity-card"><div class="activity-num">'+suspicious+'</div><div class="activity-lbl">Alertes suspectes</div></div>'+
-      '<div class="activity-card"><div class="activity-num">'+uniqueCount+'</div><div class="activity-lbl">Utilisateurs uniques</div></div>'+
+      '<div class="activity-card"><div class="activity-num">'+stats.total+'</div><div class="activity-lbl">Connexions totales</div></div>'+
+      '<div class="activity-card"><div class="activity-num">'+stats.visitors+'</div><div class="activity-lbl">Visiteurs</div></div>'+
+      '<div class="activity-card"><div class="activity-num">'+stats.suspicious+'</div><div class="activity-lbl">Alertes suspectes</div></div>'+
+      '<div class="activity-card"><div class="activity-num">'+stats.uniqueUsers+'</div><div class="activity-lbl">Utilisateurs uniques</div></div>'+
     '</div>';
 
-  var series=_activityLastDaysSeries(entries,7);
+  var series=ActivityCore.lastDaysSeries(entries,7,Utils.localISODate);
   var maxCount=series.reduce(function(m,it){return Math.max(m,it.count);},0);
   var bars=series.map(function(it){
     var iso=_activitySafeISODate(it.date);
@@ -161,7 +72,7 @@ function renderActivity(){
       '<div class="activity-bars">'+bars+'</div>'+
     '</div>';
 
-  var topUsers=_activityTopUsers(entries,30);
+  var topUsers=ActivityCore.topUsers(entries,30);
   usersEl.innerHTML=
     '<div class="activity-panel">'+
       '<div class="activity-panel-title">Noms d’utilisateurs</div>'+
@@ -181,7 +92,7 @@ function renderActivity(){
       '<div class="activity-event-list">'+
         recentEntries.map(function(e){
           return '<div class="activity-event">'+
-            '<div class="activity-event-top"><b>'+escHtml(e.name)+'</b><span>'+escHtml(_activityTypeLabel(e.type))+'</span></div>'+
+            '<div class="activity-event-top"><b>'+escHtml(e.name)+'</b><span>'+escHtml(ActivityCore.typeLabel(e.type))+'</span></div>'+
             '<div class="activity-event-meta">'+formatTime(e.ts)+'</div>'+
           '</div>';
         }).join('')+
@@ -210,13 +121,13 @@ function initActivity(){
 
 function trackActivityEvent(type,payload){
   if(!Db.ready())return;
-  var cleanType=_activityNormalizeType(type);
+  var cleanType=ActivityCore.normalizeType(type);
   if(cleanType==='other')return;
   // Carnet archivé : plus de suivi des connexions visiteurs (écriture refusée).
   if(cleanType!=='admin_login'&&visitorWritesDisabled())return;
   payload=payload&&typeof payload==='object'?payload:{};
   var fallback=cleanType==='admin_login'?'Admin':'Visiteur';
-  var name=_activitySafeString(payload.name,60,fallback);
+  var name=ActivityCore.safeString(payload.name,60,fallback);
   if(!name)return;
   var id='a_'+_activityRandomToken();
   var eventData={
