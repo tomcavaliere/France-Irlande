@@ -274,6 +274,44 @@ function initLightboxNavigation(){
   },{passive:true});
 }
 
+// ==== TEXTAREA DRAFTS ====
+// Les rendus par innerHTML recréent les champs : sans report, un texte en
+// cours de saisie (commentaire, réponse) disparaît sans avertissement.
+// Seuls les <textarea> avec un id sont suivis (id stable d'un rendu à l'autre).
+
+/**
+ * Relève les brouillons non vides et le champ focus d'un conteneur.
+ * @param {Element} container
+ * @returns {{drafts:Object<string,string>, focusId:string}}
+ */
+function captureTextareaDrafts(container){
+  var drafts={};
+  container.querySelectorAll('textarea[id]').forEach(function(ta){
+    if(ta.value)drafts[ta.id]=ta.value;
+  });
+  var active=document.activeElement;
+  return {
+    drafts:drafts,
+    focusId:active&&container.contains(active)&&active.id?active.id:''
+  };
+}
+
+/**
+ * Réinjecte les brouillons relevés par captureTextareaDrafts.
+ * @param {Element} container
+ * @param {{drafts:Object<string,string>, focusId:string}} saved
+ */
+function restoreTextareaDrafts(container,saved){
+  Object.keys(saved.drafts).forEach(function(id){
+    var ta=document.getElementById(id);
+    if(ta&&container.contains(ta))ta.value=saved.drafts[id];
+  });
+  if(saved.focusId){
+    var el=document.getElementById(saved.focusId);
+    if(el&&container.contains(el))el.focus();
+  }
+}
+
 // ==== SYNC DOT ====
 function setSyncDot(mode){
   // mode: 'online' | 'offline' | 'syncing' | 'queued'

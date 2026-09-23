@@ -513,7 +513,9 @@ function showMoreJournalEntries(){
 function renderJournal(){
   if(photoObserver)photoObserver.disconnect();
   _cleanupRemovedStageContent();
-  var c=document.getElementById('journalList');c.innerHTML='';
+  var c=document.getElementById('journalList');
+  var savedDrafts=captureTextareaDrafts(c);
+  c.innerHTML='';
   var dates=filterVisibleJournalDates(stages,isAdmin);
   var visibleCount=journalVisibleCount;
   var visibleDates=dates.slice(0,visibleCount);
@@ -591,5 +593,6 @@ function renderJournal(){
       c.appendChild(moreWrap);
     }
   }
+  restoreTextareaDrafts(c,savedDrafts);
   observeJournalEntries();
 }
