@@ -6,11 +6,7 @@
 // Key: "date/commentId", value: true
 var _replyOpen = {};
 var _replyThreadOpen = {};
-var DEFAULT_ADMIN_REPLY_AUTHOR = 'Tom';
-var ADMIN_NAME_MAPPINGS = [
-  {match:'chloe',label:'Chloé'},
-  {match:'tom',label:'Tom'}
-];
+var DEFAULT_ADMIN_REPLY_AUTHOR = CommentsCore.DEFAULT_ADMIN_REPLY_AUTHOR;
 
 function _makeCommentEntityId(prefix){
   return prefix+Date.now()+'_'+Math.random().toString(36).slice(2,6);
@@ -45,25 +41,7 @@ function _setLastReplyTs(date,id){
   localStorage.setItem(_replyCooldownKey(date,id),String(Date.now()));
 }
 
-function _normalizeAdminReplyAuthorName(value){
-  var raw=typeof value==='string'?value.trim():'';
-  if(!raw)return 'Admin';
-  var normalized=raw;
-  try{
-    normalized=raw.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  }catch(_err){}
-  var lowered=normalized.toLowerCase();
-  var mapped=ADMIN_NAME_MAPPINGS.find(function(entry){
-    return lowered.indexOf(entry.match)!==-1;
-  });
-  if(mapped)return mapped.label;
-  if(raw.indexOf('@')!==-1)raw=raw.split('@')[0];
-  raw=raw.replace(/[._-]+/g,' ').trim();
-  if(!raw)return 'Admin';
-  return raw.split(/\s+/).map(function(part){
-    return part.charAt(0).toUpperCase()+part.slice(1).toLowerCase();
-  }).join(' ');
-}
+function _normalizeAdminReplyAuthorName(value){ return CommentsCore.normalizeAdminReplyAuthorName(value); }
 
 /**
  * Résout le nom à afficher pour la réponse admin courante.
@@ -78,18 +56,7 @@ function _getCurrentAdminReplyAuthorName(){
   return _normalizeAdminReplyAuthorName(candidate);
 }
 
-function _normalizeCommentReply(raw){
-  if(!raw||typeof raw!=='object')return null;
-  var text=typeof raw.text==='string'?raw.text.trim():'';
-  if(!text)return null;
-  return {
-    text:text,
-    ts:typeof raw.ts==='number'?raw.ts:0,
-    authorName:_normalizeAdminReplyAuthorName(raw.authorName||DEFAULT_ADMIN_REPLY_AUTHOR),
-    likes:(raw.likes&&typeof raw.likes==='object')?raw.likes:{},
-    replies:(raw.replies&&typeof raw.replies==='object')?raw.replies:{}
-  };
-}
+function _normalizeCommentReply(raw){ return CommentsCore.normalizeCommentReply(raw); }
 
 function _ensureLocalCommentReply(date,id){
   var current=_normalizeCommentReply(commentReplies[date]&&commentReplies[date][id]);
