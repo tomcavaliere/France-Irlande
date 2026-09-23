@@ -175,6 +175,12 @@ if (!cspMetaTagMatch) {
   if (!/default-src\s/i.test(cspContent)) {
     failures.push('CSP incomplète: directive "default-src" absente.');
   }
+  if (!/^object-src\s+'none'$/i.test(getCspDirective(cspContent, 'object-src'))) {
+    failures.push('CSP incomplète: "object-src \'none\'" attendu (plugins interdits).');
+  }
+  if (!/^base-uri\s+'self'$/i.test(getCspDirective(cspContent, 'base-uri'))) {
+    failures.push('CSP incomplète: "base-uri \'self\'" attendu (anti détournement de <base>).');
+  }
   const scriptSrc = getCspDirective(cspContent, 'script-src');
   if (/(?:'|")?unsafe-eval(?:'|")?/.test(scriptSrc)) {
     failures.push('CSP trop permissive: "unsafe-eval" est interdit.');
