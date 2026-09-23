@@ -154,6 +154,22 @@
     return { count: count, bytes: bytes };
   }
 
+  // Nombre de photos d'un arbre photos/ RTDB, tous formats confondus :
+  // meta Storage {url, path, ts} ET anciennes chaînes base64.
+  // (computeQuotaBytes ne compte que les base64, seules à peser dans RTDB.)
+  function countPhotos(photosTree){
+    if (!photosTree || typeof photosTree !== 'object') return 0;
+    var count = 0;
+    Object.keys(photosTree).forEach(function(stage){
+      var stageObj = photosTree[stage];
+      if (!stageObj || typeof stageObj !== 'object') return;
+      Object.keys(stageObj).forEach(function(id){
+        if (getPhotoUrl(stageObj[id])) count++;
+      });
+    });
+    return count;
+  }
+
   // Formate un nombre d'octets en chaîne lisible (B, KB, MB, GB).
   function formatBytes(bytes){
     if (!isFinite(bytes) || bytes < 0) return '0 B';
@@ -399,6 +415,7 @@
     EXPENSE_PERSONS: EXPENSE_PERSONS,
     LIMITS: LIMITS,
     computeQuotaBytes: computeQuotaBytes,
+    countPhotos: countPhotos,
     formatBytes: formatBytes,
     quotaLevel: quotaLevel,
     RTDB_QUOTA_BYTES: RTDB_QUOTA_BYTES,

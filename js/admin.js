@@ -11,7 +11,7 @@ function refreshQuotaState(callback){
       var photosTree=snap.exists()?snap.val():{};
       var r=Utils.computeQuotaBytes(photosTree);
       var lvl=Utils.quotaLevel(r.bytes);
-      _quotaState={count:r.count,bytes:r.bytes,level:lvl};
+      _quotaState={count:r.count,bytes:r.bytes,level:lvl,photoCount:Utils.countPhotos(photosTree)};
       if(callback)callback();
     })
     .catch(function(err){
@@ -197,7 +197,7 @@ function refreshProfileQuota(){
     fill.style.width=Math.min(pct,100)+'%';
     fill.className='quota-progress-fill'+(r.level!=='ok'?' '+r.level:'');
     document.getElementById('profileQuotaText').innerHTML=
-      '<span>'+r.count+' photos · '+Utils.formatBytes(r.bytes)+'</span>'+
+      '<span>'+r.photoCount+' photo'+(r.photoCount>1?'s':'')+' · base64 RTDB '+Utils.formatBytes(r.bytes)+'</span>'+
       '<span>'+pctStr+'% / 1 Go</span>';
   });
 }

@@ -6,7 +6,7 @@ const {
   escAttr, escHtml, formatTime, localISODate, summarizeExpenses,
   validateComment, validateExpense, validateJournal,
   EXPENSE_CATEGORIES, EXPENSE_PERSONS, LIMITS,
-  computeQuotaBytes, formatBytes, quotaLevel, RTDB_QUOTA_BYTES,
+  computeQuotaBytes, countPhotos, formatBytes, quotaLevel, RTDB_QUOTA_BYTES,
   safeFetch, computeKmDay, filterTracksByStages, isOfflineable: _isOfflineable, actionLabel: _actionLabel, filterVisibleJournalDates: _filterVisibleJournalDates,
   COMMENT_COOLDOWN_MS, isCommentOnCooldown, commentCooldownRemaining,
   getPhotoUrl, getPhotoPath
@@ -374,6 +374,21 @@ describe('LIMITS et EXPENSE_CATEGORIES exportés', () => {
     expect(EXPENSE_CATEGORIES).toContain('Loisirs');
     expect(EXPENSE_CATEGORIES).toContain('Autre');
     expect(EXPENSE_CATEGORIES).toHaveLength(6);
+  });
+});
+
+describe('countPhotos', () => {
+  it('compte les meta Storage et les anciennes chaînes base64', () => {
+    const tree = {
+      '2026-05-01': { p1: { url: 'https://x/1.jpg', path: 'photos/2026-05-01/p1.jpg', ts: 1 }, p2: 'data:image/jpeg;base64,AAAA' },
+      '2026-05-02': { p3: { url: 'https://x/3.jpg', path: 'photos/2026-05-02/p3.jpg', ts: 3 } }
+    };
+    expect(countPhotos(tree)).toBe(3);
+  });
+
+  it('ignore les entrées invalides', () => {
+    expect(countPhotos({ d: { a: null, b: { path: 'x' }, c: '' }, e: 'x' })).toBe(0);
+    expect(countPhotos(null)).toBe(0);
   });
 });
 

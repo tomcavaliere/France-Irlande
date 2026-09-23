@@ -28,7 +28,7 @@ var INACTIVITY_WARN_BEFORE_MS = 45 * 1000; // avertissement 45s avant la déconn
 // ==== QUOTA RTDB ====
 // Dernière mesure connue du quota photos. Rafraîchie à chaque login admin,
 // après chaque upload réussi et après chaque suppression.
-var _quotaState = { count: 0, bytes: 0, level: 'ok' };
+var _quotaState = { count: 0, bytes: 0, level: 'ok', photoCount: 0 };
 
 var _lastActivity = Date.now();
 var _sessionCountdown = null;
