@@ -45,7 +45,7 @@
       "$date": {
         ".validate": "root.child('stages').child($date).exists()",
         "$id": {
-          ".write": "!data.exists() || auth != null",
+          ".write": "auth != null",
           ".validate": "newData.hasChildren(['text', 'name', 'ts'])",
           "text": {
             ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 500"
@@ -65,7 +65,7 @@
       "$date": {
         ".validate": "root.child('stages').child($date).exists()",
         "$visitorId": {
-          ".write": "!data.exists()",
+          ".write": "auth != null",
           ".validate": "newData.val() === true"
         }
       }
@@ -107,7 +107,7 @@
     "visitorProfiles": {
       ".read": "auth != null",
       "$visitorId": {
-        ".write": "!data.exists()",
+        ".write": "auth != null",
         ".validate": "newData.hasChildren(['name','ts'])",
         "name": {
           ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 30"
@@ -139,13 +139,13 @@
           },
           "likes": {
             "$visitorId": {
-              ".write": "(!data.exists() && newData.val() === true) || (data.exists() && !newData.exists())",
+              ".write": "auth != null",
               ".validate": "newData.val() === true"
             }
           },
           "replies": {
             "$replyId": {
-              ".write": "!data.exists() || auth != null",
+              ".write": "auth != null",
               ".validate": "!newData.exists() || (newData.hasChildren(['name','text','ts']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 30 && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 500 && newData.child('ts').isNumber() && newData.child('ts').val() > 0 && newData.child('ts').val() <= (now + 60000))"
             }
           },
@@ -156,7 +156,7 @@
     "activity": {
       ".read": "auth != null",
       "$id": {
-        ".write": "!data.exists()",
+        ".write": "auth != null",
         ".validate": "newData.hasChildren(['type','name','ts'])",
         "type": {
           ".validate": "newData.isString() && (newData.val() === 'visitor_login' || newData.val() === 'admin_login' || newData.val() === 'visitor_suspicious')"

@@ -126,6 +126,30 @@ const rootRules = rulesJson && rulesJson.rules ? rulesJson.rules : {};
   }
 });
 
+/**
+ * Collecte toutes les règles ".write" de l'arbre avec leur chemin.
+ * @param {object} node
+ * @param {string} nodePath
+ * @param {Array<{path:string, rule:unknown}>} acc
+ * @returns {Array<{path:string, rule:unknown}>}
+ */
+function collectWriteRules(node, nodePath, acc){
+  if (!node || typeof node !== 'object') return acc;
+  Object.keys(node).forEach(function(key){
+    if (key === '.write') acc.push({ path: nodePath || '/', rule: node[key] });
+    else if (!key.startsWith('.')) collectWriteRules(node[key], nodePath + '/' + key, acc);
+  });
+  return acc;
+}
+
+// Voyage archivé : aucune écriture anonyme (spam, remplissage du quota).
+collectWriteRules(rootRules, '', []).forEach(function(w){
+  if (w.rule === false) return;
+  if (!isAuthOnlyRule(w.rule)) {
+    failures.push(`Écriture anonyme autorisée sur "${w.path}" (.write doit être "auth != null" ou false) : ${JSON.stringify(w.rule)}`);
+  }
+});
+
 // 2) Vérifier la présence d'une CSP dans index.html.
 const indexPath = path.join(REPO_ROOT, 'index.html');
 let indexHtml = '';
@@ -200,7 +224,7 @@ if (failures.length) {
 }
 
 console.log('✅ Contrôles cybersécurité OK');
-console.log('- Règles Firebase sensibles verrouillées');
+console.log('- Règles Firebase sensibles verrouillées, aucune écriture anonyme');
 console.log('- CSP détectée');
 console.log('- Aucun pattern JS dangereux détecté');
 console.log('- Aucun fetch() direct détecté');
