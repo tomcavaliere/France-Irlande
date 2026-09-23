@@ -49,9 +49,9 @@ function compressImage(file,cb){
 
 function uploadPhoto(date){
   if(!isAdmin)return;
-  if(!isOnline){alert('Upload impossible hors-ligne. Les photos ne sont pas mises en cache (taille). Réessaie au retour du réseau.');return;}
+  if(!isOnline){showToast('Upload impossible hors-ligne. Réessaie au retour du réseau.','warn',6000);return;}
   if(_quotaState.level==='block'){
-    alert('Quota Firebase atteint (≥ 90%). Upload bloqué. Supprime d\'anciennes photos avant d\'en ajouter.');
+    showToast('Quota Firebase atteint (≥ 90%). Upload bloqué. Supprime d\'anciennes photos avant d\'en ajouter.','error',8000);
     return;
   }
   var input=_ensurePhotoUploadInput();

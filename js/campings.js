@@ -72,7 +72,7 @@ function loadCampingsOverpass(bbox,aheadPts){
     })
     .catch(function(e){
       console.warn('[Campings] Overpass failed:',e);
-      alert('Campings indisponibles (hors-ligne ?)');
+      showToast('Campings indisponibles (hors-ligne ?)','warn');
     });
 }
 
