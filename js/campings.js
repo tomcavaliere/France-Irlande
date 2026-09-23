@@ -127,7 +127,42 @@ function toggleCampspace(){
   loadCampspace();
 }
 
+// campspace-data.js (~520 KB) ne sert qu'à l'admin : chargé à la première
+// activation du calque plutôt qu'au démarrage pour tous les visiteurs.
+var _campspaceDataPromise=null;
+
+function _ensureCampspaceData(){
+  if(typeof CAMPSPACE_DATA!=='undefined')return Promise.resolve();
+  if(_campspaceDataPromise)return _campspaceDataPromise;
+  _campspaceDataPromise=new Promise(function(resolve,reject){
+    var script=document.createElement('script');
+    script.src='campspace-data.js';
+    script.onload=function(){resolve();};
+    script.onerror=function(){
+      _campspaceDataPromise=null;
+      script.remove();
+      reject(new Error('campspace-data.js non chargé'));
+    };
+    document.head.appendChild(script);
+  });
+  return _campspaceDataPromise;
+}
+
 function loadCampspace(){
+  var btn=document.getElementById('campspaceToggle');
+  if(typeof CAMPSPACE_DATA==='undefined')btn.textContent='🏡 Chargement…';
+  _ensureCampspaceData()
+    .then(function(){
+      if(campspaceVisible)_renderCampspace();
+    })
+    .catch(function(err){
+      console.error('[campspace]',err);
+      showToast('Données Campspace indisponibles (hors-ligne ?)','warn');
+      btn.textContent='🏡 Campspace';
+    });
+}
+
+function _renderCampspace(){
   if(typeof CAMPSPACE_DATA==='undefined'||!CAMPSPACE_DATA.length)return;
   var pos=getCurrentPos();
   var rangeKm=parseInt(document.getElementById('campRange').value)||150;

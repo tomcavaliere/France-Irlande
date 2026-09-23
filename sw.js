@@ -1,4 +1,4 @@
-const CACHE = 'ev1-v40';
+const CACHE = 'ev1-v41';
 // Chemins RELATIFS au scope du SW : le site est servi sous /France-Irlande/
 // (GitHub Pages). Un chemin absolu ('/index.html') viserait la racine du
 // domaine → 404 → cache.addAll rejette → le SW ne s'installe jamais.
@@ -10,7 +10,6 @@ const PRECACHE = [
   './vendor/leaflet/leaflet.css',
   './vendor/leaflet/leaflet.js',
   './manifest.json',
-  './campspace-data.js',
   './js/firebase-init.js',
   './js/demo-core.js',
   './js/demo-flag.js',

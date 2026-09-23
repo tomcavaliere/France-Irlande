@@ -32,8 +32,11 @@ test.describe('demo mode (service worker bloqué, réseau intercepté)', () => {
 
   test('boots with the demo banner and the map, without any backend request', async ({ page }) => {
     const backendRequests = [];
+    const lazyAssets = [];
     page.on('request', (req) => {
-      if (BACKEND_HOSTS.test(new URL(req.url()).hostname)) backendRequests.push(req.url());
+      const url = new URL(req.url());
+      if (BACKEND_HOSTS.test(url.hostname)) backendRequests.push(req.url());
+      if (url.pathname.endsWith('/campspace-data.js')) lazyAssets.push(req.url());
     });
 
     await page.goto(DEMO_URL);
@@ -45,6 +48,7 @@ test.describe('demo mode (service worker bloqué, réseau intercepté)', () => {
     await expect(page.locator('#journalList .journal-entry')).not.toHaveCount(0);
 
     expect(backendRequests).toEqual([]);
+    expect(lazyAssets).toEqual([]);
   });
 
   test('lets a visitor post a comment', async ({ page }) => {
@@ -88,6 +92,17 @@ test.describe('demo mode (service worker bloqué, réseau intercepté)', () => {
 
     await expect(page.locator('#page-map')).toHaveClass(/\bactive\b/);
     await expect(page.locator('.tab.tab-admin-only:visible')).toHaveCount(0);
+  });
+
+  test('demo admin loads Campspace data on first toggle', async ({ page }) => {
+    await page.goto(DEMO_URL);
+    await page.locator('#demoAdminBtn').click();
+
+    const dataRequest = page.waitForRequest((req) => req.url().endsWith('/campspace-data.js'));
+    await page.locator('#campspaceToggle').click();
+    await dataRequest;
+
+    await expect(page.locator('#campspaceToggle')).toHaveText(/\d+ campspace/);
   });
 
   test('demo admin sees the activity dashboard', async ({ page }) => {
