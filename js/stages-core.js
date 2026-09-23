@@ -78,12 +78,38 @@
       }
     };
   }
+  /**
+   * Liste les chemins Firebase Storage rattachés à une étape (photos + vidéos),
+   * pour les supprimer avec l'étape.
+   * Photos : meta {url, path, ts} → path ; entrées legacy base64 ignorées (rien dans Storage).
+   * Vidéos : stockées sous videos/{date}/{id} (même id que dans RTDB).
+   * @param {string} dateISO
+   * @param {Object<string, *>|null} photosTree  contenu de photos/{date}
+   * @param {Object<string, *>|null} videosTree  contenu de videos/{date}
+   * @returns {string[]}
+   */
+  function collectStageStoragePaths(dateISO,photosTree,videosTree){
+    var paths=[];
+    if(photosTree&&typeof photosTree==='object'){
+      Object.keys(photosTree).forEach(function(id){
+        var photo=photosTree[id];
+        if(photo&&typeof photo==='object'&&typeof photo.path==='string'&&photo.path)paths.push(photo.path);
+      });
+    }
+    if(videosTree&&typeof videosTree==='object'){
+      Object.keys(videosTree).forEach(function(id){
+        paths.push('videos/'+dateISO+'/'+id);
+      });
+    }
+    return paths;
+  }
   var api={
     countryFlag:countryFlag,
     formatStageDateLabel:formatStageDateLabel,
     computeRecapTotals:computeRecapTotals,
     isValidStageDate:isValidStageDate,
-    buildManualStage:buildManualStage
+    buildManualStage:buildManualStage,
+    collectStageStoragePaths:collectStageStoragePaths
   };
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   if(typeof window!=='undefined')window.StagesCore=api;

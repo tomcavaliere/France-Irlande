@@ -183,20 +183,49 @@ function deleteStage(date){
     okLabel:'Supprimer'
   }).then(function(ok){
     if(!ok)return;
-    Promise.all([
-      window._fbRemove(window._fbRef(window._fbDb,'stages/'+date)),
-      window._fbRemove(window._fbRef(window._fbDb,'journals/'+date)),
-      window._fbRemove(window._fbRef(window._fbDb,'tracks/'+date)),
-      window._fbRemove(window._fbRef(window._fbDb,'photos/'+date)),
-      window._fbRemove(window._fbRef(window._fbDb,'comments/'+date)),
-      window._fbRemove(window._fbRef(window._fbDb,'bravos/'+date))
-    ])
+    // Lire les meta médias AVANT de supprimer les nœuds RTDB : elles portent
+    // les paths des fichiers Storage, sinon orphelins définitivement.
+    _fetchStageStoragePaths(date)
+      .then(function(storagePaths){
+        _deleteStorageFiles(storagePaths);
+        return Promise.all(STAGE_RTDB_NODES.map(function(node){
+          return window._fbRemove(window._fbRef(window._fbDb,node+'/'+date));
+        }));
+      })
       .then(function(){
         Events.emit('state:stages-changed');
         Events.emit('state:journal-changed');
         Events.emit('state:current-changed');
       })
-      .catch(function(err){console.error('[deleteStage]',err);});
+      .catch(function(err){
+        console.error('[deleteStage]',err);
+        showToast('Erreur lors de la suppression de l\'étape.','error');
+      });
+  });
+}
+
+// Nœuds RTDB indexés par date à supprimer avec une étape.
+var STAGE_RTDB_NODES=['stages','journals','tracks','photos','videos','comments','bravos','commentLikes','commentReplies'];
+
+function _fetchStageStoragePaths(date){
+  return Promise.all([
+    window._fbGet(window._fbRef(window._fbDb,'photos/'+date)),
+    window._fbGet(window._fbRef(window._fbDb,'videos/'+date))
+  ]).then(function(snaps){
+    var photosTree=snaps[0]&&snaps[0].exists()?snaps[0].val():null;
+    var videosTree=snaps[1]&&snaps[1].exists()?snaps[1].val():null;
+    return StagesCore.collectStageStoragePaths(date,photosTree,videosTree);
+  });
+}
+
+// Best effort : un échec Storage ne bloque pas la suppression RTDB.
+function _deleteStorageFiles(paths){
+  paths.forEach(function(p){
+    window._fbDeleteObject(window._fbStorageRef(window._fbStorage,p))
+      .catch(function(err){
+        console.error('[deleteStage] storage delete failed '+p,err);
+        showToast('Un fichier média n\'a pas pu être supprimé du stockage.','warn');
+      });
   });
 }
 function openJournalEntry(date){

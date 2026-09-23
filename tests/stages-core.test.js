@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import StagesCore from '../js/stages-core.js';
 
-const { countryFlag, formatStageDateLabel, computeRecapTotals, isValidStageDate, buildManualStage } = StagesCore;
+const {
+  countryFlag, formatStageDateLabel, computeRecapTotals, isValidStageDate, buildManualStage,
+  collectStageStoragePaths
+} = StagesCore;
 
 describe('countryFlag', () => {
   it('retourne 🇫🇷 si idx = 0 (bien en deçà de la frontière)', () => {
@@ -98,5 +101,34 @@ describe('buildManualStage', () => {
   it('bloque la création d’une étape dans le futur', () => {
     const result = buildManualStage('2026-04-22', {}, null, Date.UTC(2026, 3, 21));
     expect(result).toEqual({ ok: false, error: 'Impossible de créer une étape dans le futur.' });
+  });
+});
+
+describe('collectStageStoragePaths', () => {
+  it('retourne les paths Storage des photos et vidéos', () => {
+    const photos = {
+      p1: { url: 'https://x/1.jpg', path: 'photos/2026-05-02/p1.jpg', ts: 1 },
+      p2: { url: 'https://x/2.jpg', path: 'photos/2026-05-02/p2.jpg', ts: 2 }
+    };
+    const videos = { v1: 'https://firebasestorage.googleapis.com/v1' };
+    expect(collectStageStoragePaths('2026-05-02', photos, videos)).toEqual([
+      'photos/2026-05-02/p1.jpg',
+      'photos/2026-05-02/p2.jpg',
+      'videos/2026-05-02/v1'
+    ]);
+  });
+
+  it('ignore les photos legacy base64 et les meta sans path', () => {
+    const photos = {
+      legacy: 'data:image/jpeg;base64,AAAA',
+      noPath: { url: 'https://x/3.jpg', ts: 3 },
+      emptyPath: { url: 'https://x/4.jpg', path: '', ts: 4 }
+    };
+    expect(collectStageStoragePaths('2026-05-02', photos, null)).toEqual([]);
+  });
+
+  it('tolère des arbres absents ou invalides', () => {
+    expect(collectStageStoragePaths('2026-05-02', null, undefined)).toEqual([]);
+    expect(collectStageStoragePaths('2026-05-02', 'x', 42)).toEqual([]);
   });
 });
