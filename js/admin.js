@@ -253,6 +253,7 @@ if(document.readyState==='loading'){
 function initAuth(){
   if(!window._fbOnAuth||!window._fbAuth)return;
   window._fbOnAuth(window._fbAuth,function(user){
+    var wasAdmin=isAdmin;
     isAdmin=!!user;
     setAdminUI(isAdmin);
     if(isAdmin){
@@ -278,7 +279,9 @@ function initAuth(){
       _adminActivitySessionUid='';
       _adminActivityTracked=false;
     }
-    Events.emit('admin:toggled');
+    // Le premier callback d'un visiteur (null → false) ne change rien :
+    // pas de re-rendu complet carte + étapes + journal au démarrage.
+    if(isAdmin!==wasAdmin)Events.emit('admin:toggled');
   });
 }
 
