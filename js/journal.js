@@ -87,14 +87,7 @@ function _isFreshFetch(lastTs, ttlMs){
 }
 
 function _mergeRemoteJournalsWithPendingDrafts(remoteData){
-  var source=(remoteData&&typeof remoteData==='object')?remoteData:{};
-  var merged=Object.assign({},source);
-  Object.keys(_journalPendingDrafts||{}).forEach(function(date){
-    merged[date]=typeof _journalPendingDrafts[date]==='string'
-      ?_journalPendingDrafts[date]
-      :(typeof journals[date]==='string'?journals[date]:'');
-  });
-  return merged;
+  return JournalCore.mergeRemoteWithDrafts(remoteData,_journalPendingDrafts,journals);
 }
 
 function _ensureStageContentMeta(date){

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import JournalCore from '../js/journal-core.js';
 
-const { countBravos, hasVoted, buildKmInfoLabel, formatJournalDateLabel } = JournalCore;
+const { countBravos, hasVoted, buildKmInfoLabel, formatJournalDateLabel, mergeRemoteWithDrafts } = JournalCore;
 
 describe('countBravos', () => {
   it('retourne 0 pour null/undefined/objet vide', () => {
@@ -53,5 +53,42 @@ describe('formatJournalDateLabel', () => {
     const label = formatJournalDateLabel('2026-04-20');
     expect(label).toContain('lundi');
     expect(label).toContain('avril');
+  });
+});
+
+describe('mergeRemoteWithDrafts', () => {
+  it('retourne le snapshot distant tel quel sans brouillon', () => {
+    const remote = { '2026-05-01': 'jour 1', '2026-05-02': 'jour 2' };
+    expect(mergeRemoteWithDrafts(remote, {}, {})).toEqual(remote);
+  });
+
+  it('un brouillon en attente gagne sur la valeur distante', () => {
+    const remote = { '2026-05-02': 'ancienne version' };
+    const drafts = { '2026-05-02': 'version en cours de frappe' };
+    expect(mergeRemoteWithDrafts(remote, drafts, {})).toEqual({ '2026-05-02': 'version en cours de frappe' });
+  });
+
+  it('conserve un brouillon pour une date absente du distant', () => {
+    expect(mergeRemoteWithDrafts({ a: 'x' }, { b: 'nouveau' }, {})).toEqual({ a: 'x', b: 'nouveau' });
+  });
+
+  it('garde un brouillon vide (effacement volontaire)', () => {
+    expect(mergeRemoteWithDrafts({ d: 'texte' }, { d: '' }, {})).toEqual({ d: '' });
+  });
+
+  it('brouillon non-string : repli sur la valeur locale, sinon chaîne vide', () => {
+    expect(mergeRemoteWithDrafts({ d: 'distant' }, { d: undefined }, { d: 'local' })).toEqual({ d: 'local' });
+    expect(mergeRemoteWithDrafts({ d: 'distant' }, { d: null }, {})).toEqual({ d: '' });
+  });
+
+  it('tolère un snapshot distant null (nœud vide)', () => {
+    expect(mergeRemoteWithDrafts(null, { d: 'brouillon' }, null)).toEqual({ d: 'brouillon' });
+    expect(mergeRemoteWithDrafts(null, null, null)).toEqual({});
+  });
+
+  it('ne mute pas le snapshot distant', () => {
+    const remote = { d: 'distant' };
+    mergeRemoteWithDrafts(remote, { d: 'brouillon' }, {});
+    expect(remote).toEqual({ d: 'distant' });
   });
 });
