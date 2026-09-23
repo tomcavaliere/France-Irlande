@@ -5,10 +5,13 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint js/ tests/",
-    "security:test": "node tests/security-check.js"
+    "test:e2e": "playwright test",
+    "lint": "eslint js/ tests/ e2e/ scripts/serve.mjs playwright.config.js",
+    "security:test": "node tests/security-check.js",
+    "serve": "node scripts/serve.mjs"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "eslint": "^9.39.4",
     "globals": "^15.15.0",
     "vitest": "^4.1.4"

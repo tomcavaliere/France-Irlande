@@ -66,6 +66,22 @@ export default [
     },
   },
   {
+    files: ['e2e/**/*.js', 'scripts/serve.mjs', 'playwright.config.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      // e2e : les callbacks de page.evaluate() s'exécutent dans le navigateur.
+      globals: { ...globals.node, ...globals.browser },
+    },
+    rules: {
+      'no-console': 'off',
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
+      'no-undef': 'error',
+      'eqeqeq': 'error',
+      'semi': ['error', 'always'],
+    },
+  },
+  {
     files: ['tests/**/*.js'],
     languageOptions: {
       ecmaVersion: 2020,
