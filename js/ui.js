@@ -112,9 +112,15 @@ function activeTab(){
   return p?p.id.replace('page-',''):'';
 }
 
+// Les onglets réservés à l'admin sont déclarés une seule fois dans le HTML
+// (classe .tab-admin-only sur le bouton d'onglet).
+function isAdminOnlyPage(page){
+  return !!document.querySelector('.tab.tab-admin-only[data-page="'+page+'"]');
+}
+
 function switchTab(t){
   var prev=activeTab();
-  if((t==='training'||t==='health'||t==='activity')&&!isAdmin){
+  if(!isAdmin&&isAdminOnlyPage(t)){
     showToast('Accès admin requis.','warn');
     t='map';
   }

@@ -23,18 +23,9 @@ function refreshQuotaState(callback){
 function setAdminUI(on){
   document.getElementById('adminBtn').classList.toggle('on',on);
   document.getElementById('adminBtn').textContent=on?'🔓 Admin':'🔒 Admin';
-  var tabDep=document.getElementById('tabDepenses');
-  if(tabDep)tabDep.classList.toggle('vis',on);
-  var tabStages=document.getElementById('tabStages');
-  if(tabStages)tabStages.classList.toggle('vis',on);
-  var tabInfo=document.getElementById('tabInfo');
-  if(tabInfo)tabInfo.classList.toggle('vis',on);
-  var tabTraining=document.getElementById('tabTraining');
-  if(tabTraining)tabTraining.classList.toggle('vis',on);
-  var tabHealth=document.getElementById('tabHealth');
-  if(tabHealth)tabHealth.classList.toggle('vis',on);
-  var tabActivity=document.getElementById('tabActivity');
-  if(tabActivity)tabActivity.classList.toggle('vis',on);
+  document.querySelectorAll('.tab.tab-admin-only').forEach(function(tab){
+    tab.classList.toggle('vis',on);
+  });
   var adminBar=document.getElementById('mapAdminBar');
   if(adminBar)adminBar.classList.toggle('hidden',!on);
   var posBar=document.getElementById('posAdminBar');
@@ -54,7 +45,7 @@ function setAdminUI(on){
     if(campingsVisible)toggleCampings();
     if(campspaceVisible)toggleCampspace();
     if(waterVisible)toggleWater();
-    if(activeTab()==='depenses'||activeTab()==='stages'||activeTab()==='info'||activeTab()==='training'||activeTab()==='health'||activeTab()==='activity')switchTab('map');
+    if(isAdminOnlyPage(activeTab()))switchTab('map');
   }
 }
 function exportJournal(fmt){

@@ -78,6 +78,18 @@ test.describe('demo mode (service worker bloqué, réseau intercepté)', () => {
     await expect(badge).toHaveText(/Publié/);
   });
 
+  test('leaving demo admin from an admin tab returns to the map', async ({ page }) => {
+    await page.goto(DEMO_URL);
+    await page.locator('#demoAdminBtn').click();
+    await page.locator('#tabStages').click();
+    await expect(page.locator('#page-stages')).toHaveClass(/\bactive\b/);
+
+    await page.locator('#demoAdminBtn').click();
+
+    await expect(page.locator('#page-map')).toHaveClass(/\bactive\b/);
+    await expect(page.locator('.tab.tab-admin-only:visible')).toHaveCount(0);
+  });
+
   test('demo admin sees the activity dashboard', async ({ page }) => {
     await page.goto(DEMO_URL);
     await page.locator('#demoAdminBtn').click();
