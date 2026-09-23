@@ -131,7 +131,7 @@ function renderExpenses(){
 }
 
 function initExpenses(){
-  var today=new Date().toISOString().slice(0,10);
+  var today=Utils.localISODate();
   var dateEl=document.getElementById('depDate');if(dateEl)dateEl.value=today;
   // Générer le select depuis la source de vérité Utils.EXPENSE_CATEGORIES
   var selectEl=document.getElementById('depCat');

@@ -20,6 +20,18 @@
       .replace(/"/g, '&quot;');
   }
 
+  // Date calendaire LOCALE au format YYYY-MM-DD.
+  // toISOString() donne la date UTC : en France (UTC+1/+2) elle est fausse
+  // entre minuit et 1-2 h du matin. Accepte une Date ou un timestamp (défaut : maintenant).
+  // Retourne '' si la date est invalide.
+  function localISODate(d){
+    var date = (d === null || d === undefined) ? new Date() : new Date(d);
+    if (!isFinite(date.getTime())) return '';
+    var m = date.getMonth() + 1;
+    var day = date.getDate();
+    return date.getFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day;
+  }
+
   // Formate un timestamp en "12 mars à 14:30" (locale fr-FR).
   function formatTime(ts){
     var d = new Date(ts);
@@ -378,6 +390,7 @@
     escAttr: escAttr,
     escHtml: escHtml,
     formatTime: formatTime,
+    localISODate: localISODate,
     summarizeExpenses: summarizeExpenses,
     validateComment: validateComment,
     validateExpense: validateExpense,

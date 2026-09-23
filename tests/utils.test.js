@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import utils from '../js/utils.js';
 
 const {
-  escAttr, escHtml, formatTime, summarizeExpenses,
+  escAttr, escHtml, formatTime, localISODate, summarizeExpenses,
   validateComment, validateExpense, validateJournal,
   EXPENSE_CATEGORIES, EXPENSE_PERSONS, LIMITS,
   computeQuotaBytes, formatBytes, quotaLevel, RTDB_QUOTA_BYTES,
@@ -44,6 +44,33 @@ describe('escHtml', () => {
 
   it('laisse passer le texte ordinaire intact', () => {
     expect(escHtml('Bonjour Cork !')).toBe('Bonjour Cork !');
+  });
+});
+
+describe('localISODate', () => {
+  it('utilise la date calendaire locale, pas la date UTC', () => {
+    // 00:30 heure locale : toISOString() donnerait la veille dans un fuseau UTC+x.
+    expect(localISODate(new Date(2026, 4, 2, 0, 30))).toBe('2026-05-02');
+    expect(localISODate(new Date(2026, 11, 31, 23, 59))).toBe('2026-12-31');
+  });
+
+  it('complète mois et jour sur deux chiffres', () => {
+    expect(localISODate(new Date(2026, 0, 5, 12))).toBe('2026-01-05');
+  });
+
+  it('accepte un timestamp', () => {
+    expect(localISODate(new Date(2026, 6, 14, 8).getTime())).toBe('2026-07-14');
+  });
+
+  it('prend maintenant par défaut', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 3, 20, 1, 15));
+    expect(localISODate()).toBe('2026-04-20');
+    vi.useRealTimers();
+  });
+
+  it('retourne une chaîne vide pour une date invalide', () => {
+    expect(localISODate('pas une date')).toBe('');
   });
 });
 

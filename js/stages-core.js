@@ -11,6 +11,13 @@
     var avgKmPerDay=nbDays>0?Math.round(kmDone/nbDays):0;
     return {pct:pct,avgKmPerDay:avgKmPerDay};
   }
+  // Date calendaire locale YYYY-MM-DD (même règle que Utils.localISODate ;
+  // dupliquée ici pour garder ce module pur autonome).
+  function localISODate(ts){
+    var d=new Date(ts);
+    var m=d.getMonth()+1,day=d.getDate();
+    return d.getFullYear()+'-'+(m<10?'0':'')+m+'-'+(day<10?'0':'')+day;
+  }
   function isValidStageDate(dateISO){
     if(typeof dateISO!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(dateISO))return false;
     var parts=dateISO.split('-').map(function(v){return Number(v);});
@@ -60,7 +67,7 @@
     stages=stages||{};
     if(stages[dateISO])return {ok:false,error:'Une étape existe déjà pour cette date.'};
     var refNow=(typeof nowTs==='number'&&isFinite(nowTs)&&nowTs>0)?nowTs:Date.now();
-    var todayISO=new Date(refNow).toISOString().slice(0,10);
+    var todayISO=localISODate(refNow);
     if(dateISO>todayISO)return {ok:false,error:'Impossible de créer une étape dans le futur.'};
     var anchor=findStageAnchor(dateISO,stages)||normalizeStageSource(current);
     if(!anchor)return {ok:false,error:'Aucune position de référence disponible pour créer cette étape.'};

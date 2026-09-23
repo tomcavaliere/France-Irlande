@@ -276,7 +276,7 @@ function openManualStageModal(){
   if(!isAdmin)return;
   var body=document.getElementById('modalBody');
   var nowTs=Date.now();
-  var todayISO=new Date(nowTs).toISOString().slice(0,10);
+  var todayISO=Utils.localISODate(nowTs);
   body.innerHTML=
     '<div class="m-title">Créer une étape</div>'+
     '<div class="m-sub">Ajoute une étape manquante en choisissant sa date. Si une entrée existe déjà, la création est annulée.</div>'+

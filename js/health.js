@@ -164,7 +164,7 @@ function addHealthEntry(){
 
 function initHealth(){
   var dateEl=document.getElementById('healthDate');
-  if(dateEl&&!dateEl.value)dateEl.value=new Date().toISOString().slice(0,10);
+  if(dateEl&&!dateEl.value)dateEl.value=Utils.localISODate();
   if(_unsubHealth)_unsubHealth();
   _unsubHealth=window._fbOnValue(
     window._fbRef(window._fbDb,'health'),

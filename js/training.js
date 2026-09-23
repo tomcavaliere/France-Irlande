@@ -28,7 +28,7 @@ function _normalizeTrainingEntry(raw){
 function _addDaysISO(iso,days){
   var d=new Date(iso+'T12:00:00');
   d.setDate(d.getDate()+days);
-  return d.toISOString().slice(0,10);
+  return Utils.localISODate(d);
 }
 
 function _weekStartISO(iso){
@@ -36,7 +36,7 @@ function _weekStartISO(iso){
   var jsDay=d.getDay(); // 0 dimanche, 1 lundi...
   var diff=(jsDay+6)%7; // lundi => 0
   d.setDate(d.getDate()-diff);
-  return d.toISOString().slice(0,10);
+  return Utils.localISODate(d);
 }
 
 function _fmtTrainingValue(ex,val){
@@ -128,7 +128,7 @@ function _renderGraphs(){
 
 function renderTraining(){
   if(!isAdmin)return;
-  var todayISO=new Date().toISOString().slice(0,10);
+  var todayISO=Utils.localISODate();
   _renderWeeklyCards(_weekStartISO(todayISO));
   _renderGraphs();
 }
@@ -179,7 +179,7 @@ function addTrainingEntry(){
 
 function initTraining(){
   var dateEl=document.getElementById('trainingDate');
-  if(dateEl&&!dateEl.value)dateEl.value=new Date().toISOString().slice(0,10);
+  if(dateEl&&!dateEl.value)dateEl.value=Utils.localISODate();
   if(_unsubTraining)_unsubTraining();
   _unsubTraining=window._fbOnValue(
     window._fbRef(window._fbDb,'training'),

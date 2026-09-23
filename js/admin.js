@@ -59,7 +59,7 @@ function setAdminUI(on){
 }
 function exportJournal(fmt){
   try{
-    var stamp=new Date().toISOString().slice(0,10);
+    var stamp=Utils.localISODate();
     var blob,filename;
     if(fmt==='json'){
       var payload={exportedAt:new Date().toISOString(),stages:stages,journals:journals,comments:comments,expenses:expenses};
@@ -321,7 +321,7 @@ function updatePosition(){
   navigator.geolocation.getCurrentPosition(function(pos){
     var lat=pos.coords.latitude,lon=pos.coords.longitude;
     var accuracy=Math.round(pos.coords.accuracy);
-    var todayISO=new Date().toISOString().slice(0,10);
+    var todayISO=Utils.localISODate();
     var snapped=snapToRoute(lat,lon);
     var kmTotal=Math.round(snapped.kmTotal);
     var kmDay=computeKmDay(kmTotal,stages,todayISO);

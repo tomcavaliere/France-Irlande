@@ -63,14 +63,14 @@ describe('buildManualStage', () => {
   it('annule la création si une étape existe déjà', () => {
     const result = buildManualStage('2026-04-20', {
       '2026-04-20': { lat: 1, lon: 2, kmTotal: 30 }
-    }, null, Date.UTC(2026, 3, 21));
+    }, null, new Date(2026, 3, 21, 12).getTime());
     expect(result).toEqual({ ok: false, error: 'Une étape existe déjà pour cette date.' });
   });
 
   it('reprend la dernière étape précédente comme base', () => {
     const result = buildManualStage('2026-04-21', {
       '2026-04-20': { lat: 48.1, lon: -1.7, kmTotal: 120.4 }
-    }, { lat: 49, lon: -2, kmTotal: 130 }, Date.UTC(2026, 3, 21));
+    }, { lat: 49, lon: -2, kmTotal: 130 }, new Date(2026, 3, 21, 12).getTime());
     expect(result.ok).toBe(true);
     expect(result.stageData).toMatchObject({
       lat: 48.1,
@@ -88,7 +88,7 @@ describe('buildManualStage', () => {
       lat: 47.2,
       lon: -1.55,
       kmTotal: 12
-    }, Date.UTC(2026, 3, 20));
+    }, new Date(2026, 3, 20, 12).getTime());
     expect(result.ok).toBe(true);
     expect(result.stageData).toMatchObject({
       lat: 47.2,
@@ -99,7 +99,7 @@ describe('buildManualStage', () => {
   });
 
   it('bloque la création d’une étape dans le futur', () => {
-    const result = buildManualStage('2026-04-22', {}, null, Date.UTC(2026, 3, 21));
+    const result = buildManualStage('2026-04-22', {}, null, new Date(2026, 3, 21, 12).getTime());
     expect(result).toEqual({ ok: false, error: 'Impossible de créer une étape dans le futur.' });
   });
 });

@@ -17,7 +17,7 @@ function _activityRandomToken(){
 function _activitySafeISODate(dateStr){
   return /^\d{4}-\d{2}-\d{2}$/.test(dateStr)
     ? dateStr
-    : new Date().toISOString().slice(0,10);
+    : Utils.localISODate();
 }
 
 function _activitySafeString(v,maxLen,fallback){
@@ -50,7 +50,7 @@ function _activityTypeLabel(type){
 
 function _activityDayISO(ts){
   if(!Number.isFinite(ts)||ts<=0)return '';
-  return new Date(ts).toISOString().slice(0,10);
+  return Utils.localISODate(ts);
 }
 
 function _activityLastDaysSeries(entries,nbDays){
@@ -66,7 +66,7 @@ function _activityLastDaysSeries(entries,nbDays){
   for(var i=days-1;i>=0;i--){
     var d=new Date(base);
     d.setDate(base.getDate()-i);
-    var iso=d.toISOString().slice(0,10);
+    var iso=Utils.localISODate(d);
     out.push({date:iso,count:counts[iso]||0});
   }
   return out;
