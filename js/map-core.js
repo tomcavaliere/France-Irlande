@@ -3,7 +3,21 @@
 // GPS wrapper functions delegating to gps-core.js.
 
 // Fonctions GPS pures déléguées à js/gps-core.js (testé via Vitest).
-function snapToRoute(lat,lon){ return GPSCore.snapToRoute(lat,lon,ALL_ROUTE_PTS,CUM_KM); }
+
+// Le tracé est statique : un snap (parcours des ~5 000 points) ne dépend que de
+// lat/lon. Mémoïsé car appelé à chaque rendu d'étape et, via getCurrentPos(),
+// pour chaque marqueur camping/eau affiché. Cache borné, vidé s'il déborde.
+var SNAP_CACHE_MAX=500;
+var _snapCache=new Map();
+function snapToRoute(lat,lon){
+  var key=lat+','+lon;
+  var hit=_snapCache.get(key);
+  if(hit)return hit;
+  var snapped=GPSCore.snapToRoute(lat,lon,ALL_ROUTE_PTS,CUM_KM);
+  if(_snapCache.size>=SNAP_CACHE_MAX)_snapCache.clear();
+  _snapCache.set(key,snapped);
+  return snapped;
+}
 function routePointsAhead(fromIdx,distKm){ return GPSCore.routePointsAhead(fromIdx,distKm,ALL_ROUTE_PTS,CUM_KM); }
 function ptsBbox(pts,margin){ return GPSCore.ptsBbox(pts,margin); }
 

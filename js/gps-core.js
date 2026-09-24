@@ -18,7 +18,8 @@
     var best = -1, bestD = Infinity;
     for (var i = 0; i < routePts.length; i++){
       var p = routePts[i];
-      var d = Math.pow(p[0]-lat, 2) + Math.pow(p[1]-lon, 2);
+      var dLat = p[0] - lat, dLon = p[1] - lon;
+      var d = dLat * dLat + dLon * dLon;
       if (d < bestD){ bestD = d; best = i; }
     }
     if(best < 0 || !routePts[best]){
