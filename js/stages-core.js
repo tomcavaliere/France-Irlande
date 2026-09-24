@@ -110,7 +110,23 @@
     }
     return paths;
   }
+  /**
+   * Nombre de jours de voyage affiché (compteur « J »).
+   * Les visiteurs ne chargent /stages qu'à l'ouverture du carnet, alors que
+   * /tracks est chargé au démarrage : tant que les étapes sont inconnues, on
+   * compte les jours ayant un tracé GPX (cohérent avec les km parcourus,
+   * calculés sur ces mêmes tracés) plutôt que d'afficher J0.
+   * @param {Object<string,*>|null} stages
+   * @param {Object<string,*>|null} tracks
+   * @returns {number}
+   */
+  function dayCount(stages,tracks){
+    var nbStages=Object.keys(stages||{}).length;
+    if(nbStages)return nbStages;
+    return Object.keys(tracks||{}).length;
+  }
   var api={
+    dayCount:dayCount,
     countryFlag:countryFlag,
     formatStageDateLabel:formatStageDateLabel,
     computeRecapTotals:computeRecapTotals,

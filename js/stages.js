@@ -172,7 +172,7 @@ function updateRecap(){
   document.getElementById('rDays').textContent=nbDays;
   document.getElementById('rAvg').textContent=totals.avgKmPerDay||'—';
   document.getElementById('rBar').style.width=totals.pct+'%';
-  document.getElementById('mapDays').textContent='J'+nbDays;
+  document.getElementById('mapDays').textContent='J'+StagesCore.dayCount(stages,getEffectiveTracks());
 }
 
 function deleteStage(date){

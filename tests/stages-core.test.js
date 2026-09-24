@@ -3,7 +3,7 @@ import StagesCore from '../js/stages-core.js';
 
 const {
   countryFlag, formatStageDateLabel, computeRecapTotals, isValidStageDate, buildManualStage,
-  collectStageStoragePaths
+  collectStageStoragePaths, dayCount
 } = StagesCore;
 
 describe('countryFlag', () => {
@@ -130,5 +130,18 @@ describe('collectStageStoragePaths', () => {
   it('tolère des arbres absents ou invalides', () => {
     expect(collectStageStoragePaths('2026-05-02', null, undefined)).toEqual([]);
     expect(collectStageStoragePaths('2026-05-02', 'x', 42)).toEqual([]);
+  });
+});
+
+describe('dayCount', () => {
+  it('compte les étapes quand elles sont chargées', () => {
+    expect(dayCount({ a: {}, b: {}, c: {} }, { a: {} })).toBe(3);
+  });
+  it('repli sur les jours avec tracé GPX tant que les étapes sont inconnues', () => {
+    expect(dayCount({}, { a: {}, b: {} })).toBe(2);
+    expect(dayCount(null, { a: {} })).toBe(1);
+  });
+  it('0 sans étape ni tracé', () => {
+    expect(dayCount(null, null)).toBe(0);
   });
 });

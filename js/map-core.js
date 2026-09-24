@@ -161,8 +161,7 @@ function updateMap(){
   // Stats header carte
   document.getElementById('mapKmD').textContent=Math.round(kmD);
   document.getElementById('mapKmL').textContent=Math.round(kmL);
-  var nbDays=Object.keys(stages).length;
-  document.getElementById('mapDays').textContent='J'+nbDays;
+  document.getElementById('mapDays').textContent='J'+StagesCore.dayCount(stages,effectiveTracks);
 }
 
 // Châteaux de la Loire — marqueurs touristiques
@@ -235,9 +234,8 @@ function getCurrentPos(){
 }
 
 function updatePositionBadge(){
-  var nbDays=Object.keys(stages).length;
   var el=document.getElementById('mapDays');
-  if(el)el.textContent='J'+nbDays;
+  if(el)el.textContent='J'+StagesCore.dayCount(stages,getEffectiveTracks());
 }
 
 // Construit le HTML du popup affiché lors d'un clic sur un tracé GPX.

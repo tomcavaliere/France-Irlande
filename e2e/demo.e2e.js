@@ -44,6 +44,9 @@ test.describe('demo mode (service worker bloqué, réseau intercepté)', () => {
     await expect(page.locator('#demoBanner')).toBeVisible();
     await expect(page.locator('#visitorGate')).not.toHaveClass(/\bvis\b/);
     await expect(page.locator('#map.leaflet-container')).toBeVisible();
+    // Avant l'ouverture du carnet (étapes non chargées), le compteur de jours
+    // s'appuie sur les tracés GPX chargés au démarrage : jamais « J0 ».
+    await expect(page.locator('#mapDays')).toHaveText(/^J[1-9]/);
     await openJournal(page);
     await expect(page.locator('#journalList .journal-entry')).not.toHaveCount(0);
 
