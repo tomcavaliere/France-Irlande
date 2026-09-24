@@ -108,7 +108,7 @@ littéraux collés ensuite.
 | `comments`, `commentLikes`, `commentReplies` | Fils fictifs avec likes/réponses |
 | `bravos/{date}/{vid}` | Quelques `true` |
 | `expenses/{id}` | ~10 entrées sur les catégories `EXPENSE_CATEGORIES` |
-| `training`, `health`, `activity` | Quelques entrées conformes aux règles RTDB |
+| `activity` | Quelques entrées conformes aux règles RTDB |
 | `visitorAuth` | Absent (gate jamais affiché en démo) |
 
 ## Tests

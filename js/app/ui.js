@@ -34,8 +34,6 @@ var ACTIONS={
   onCampRangeChange:function(dataArg,dataArg2,dataArg3,el,e){onCampRangeChange(dataArg,dataArg2,dataArg3,el,e);},
   updatePosition:function(){updatePosition();},
   addExpense:function(){addExpense();},
-  addTrainingEntry:function(){addTrainingEntry();},
-  addHealthEntry:function(){addHealthEntry();},
   switchTab:function(a){switchTab(a);},
   closeLightbox:function(){closeLightbox();},
   closeModal:function(){closeModal();},
@@ -167,8 +165,6 @@ function switchTab(t){
   }
   else if(t==='journal'&&journalDirty){renderJournal();journalDirty=false;}
   if(t==='depenses')renderExpenses();
-  if(t==='training')renderTraining();
-  if(t==='health')renderHealth();
   if(t==='activity')renderActivity();
   if(t==='stages')fetchWeather();
 }

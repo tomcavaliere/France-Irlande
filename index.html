@@ -32,7 +32,6 @@
 <script defer src="js/core/stages-core.js"></script>
 <script defer src="js/core/visitor-auth-core.js"></script>
 <script defer src="js/core/activity-core.js"></script>
-<script defer src="js/core/dashboard-core.js"></script>
 <script defer src="js/core/comments-core.js"></script>
 <script defer src="js/data/route-data.js"></script>
 <script defer src="js/app/state.js"></script>
@@ -50,8 +49,6 @@
 <script defer src="js/features/videos.js"></script>
 <script defer src="js/features/comments.js"></script>
 <script defer src="js/features/expenses.js"></script>
-<script defer src="js/features/training.js"></script>
-<script defer src="js/features/health.js"></script>
 <script defer src="js/features/activity.js"></script>
 <script defer src="js/features/weather.js"></script>
 <script defer src="js/features/journal.js"></script>
@@ -263,61 +260,6 @@
     <div class="spacer"></div>
   </div>
 
-  <div class="page" id="page-training" tabindex="0" role="region" aria-label="Training">
-    <div class="sec-title">Training</div>
-    <div class="training-note">Objectifs hebdo : 100 squats · 100 pompes · 10 min abdos · 5 km course.</div>
-    <div id="trainingWeek"></div>
-    <div class="training-form">
-      <div class="training-row">
-        <input type="date" id="trainingDate" aria-label="Date de la séance">
-        <button class="btn btn-p" data-action="addTrainingEntry">+ Ajouter séance</button>
-      </div>
-      <div class="training-row">
-        <input type="number" id="trainingSquats" min="0" step="1" placeholder="Squats">
-        <input type="number" id="trainingPushups" min="0" step="1" placeholder="Pompes">
-      </div>
-      <div class="training-row">
-        <input type="number" id="trainingAbsMin" min="0" step="0.1" placeholder="Abdos (minutes)">
-        <input type="number" id="trainingRunKm" min="0" step="0.1" placeholder="Course (km)">
-      </div>
-    </div>
-    <div id="trainingGraphs"></div>
-    <div class="spacer"></div>
-  </div>
-
-  <div class="page" id="page-health" tabindex="0" role="region" aria-label="Santé">
-    <div class="sec-title">Santé</div>
-    <div class="health-note">Scores 0 à 10 : sommeil, forme, repas, courbatures. + FC vélo et températures.</div>
-    <div class="health-form">
-      <div class="health-row">
-        <input type="date" id="healthDate" aria-label="Date du relevé santé">
-        <button class="btn btn-p" data-action="addHealthEntry">+ Enregistrer</button>
-      </div>
-      <div class="health-row">
-        <input type="number" id="healthSleep" min="0" max="10" step="0.1" placeholder="Sommeil (0-10)">
-        <input type="number" id="healthForm" min="0" max="10" step="0.1" placeholder="Forme (0-10)">
-      </div>
-      <div class="health-row">
-        <input type="number" id="healthMeals" min="0" max="10" step="0.1" placeholder="Repas (0-10)">
-        <input type="number" id="healthSoreness" min="0" max="10" step="0.1" placeholder="Courbatures (0-10)">
-      </div>
-      <div class="health-row">
-        <input type="number" id="healthHrAvg" min="0" max="250" step="1" placeholder="FC moy vélo">
-        <input type="number" id="healthHrMax" min="0" max="250" step="1" placeholder="FC max vélo">
-      </div>
-      <div class="health-row">
-        <input type="number" id="healthTempMin" min="-30" max="60" step="0.1" placeholder="Temp min (°C)">
-        <input type="number" id="healthTempMax" min="-30" max="60" step="0.1" placeholder="Temp max (°C)">
-      </div>
-      <div class="health-row">
-        <input type="number" id="healthTempAvg" min="-30" max="60" step="0.1" placeholder="Temp moy (°C)">
-      </div>
-    </div>
-    <div id="healthSummary"></div>
-    <div id="healthGraphs"></div>
-    <div class="spacer"></div>
-  </div>
-
   <div class="page" id="page-activity" tabindex="0" role="region" aria-label="Activité">
     <div class="sec-title">Activité</div>
     <div id="activitySummary"></div>
@@ -334,8 +276,6 @@
   <button class="tab" data-page="journal" data-action="switchTab" data-arg="journal"><span class="tab-icon">&#x1f4d3;</span><span>Journal</span></button>
   <button class="tab tab-admin-only" data-page="depenses" id="tabDepenses" data-action="switchTab" data-arg="depenses"><span class="tab-icon">&#x1f4b6;</span><span>Dépenses</span></button>
   <button class="tab tab-admin-only" data-page="info" id="tabInfo" data-action="switchTab" data-arg="info"><span class="tab-icon">&#x2139;&#xfe0f;</span><span>Infos</span></button>
-  <button class="tab tab-admin-only" data-page="training" id="tabTraining" data-action="switchTab" data-arg="training"><span class="tab-icon">&#x1f3cb;&#xfe0f;</span><span>Training</span></button>
-  <button class="tab tab-admin-only" data-page="health" id="tabHealth" data-action="switchTab" data-arg="health"><span class="tab-icon">&#x2764;&#xfe0f;</span><span>Santé</span></button>
   <button class="tab tab-admin-only" data-page="activity" id="tabActivity" data-action="switchTab" data-arg="activity"><span class="tab-icon">&#x1f4ca;</span><span>Activité</span></button>
 </div>
 

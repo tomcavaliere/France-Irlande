@@ -49,7 +49,7 @@ test('visitor views have no WCAG A/AA violations', async ({ page }) => {
 
 test('admin views have no WCAG A/AA violations', async ({ page }) => {
   await enterDemoAdmin(page);
-  for (const tab of ['stages', 'journal', 'depenses', 'info', 'training', 'health', 'activity']) {
+  for (const tab of ['stages', 'journal', 'depenses', 'info', 'activity']) {
     await page.locator(`.tab[data-page="${tab}"]`).click();
     await expect(page.locator(`#page-${tab}`)).toHaveClass(/\bactive\b/);
     if (tab === 'journal') {

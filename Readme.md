@@ -28,7 +28,7 @@ kilomètres, carnet de voyage (récit, photos, vidéos), commentaires et « brav
 - rédaction du journal avec brouillon/publication
 - upload de photos compressées et de vidéos (Firebase Storage)
 - réponses aux commentaires, dépenses partagées avec calcul de l'équilibre
-- suivi santé et entraînement (graphes SVG), campings et points d'eau le long du tracé, météo à la position
+- campings et points d'eau le long du tracé, météo à la position
 - tableau de bord des connexions
 
 **Hors-ligne** : app shell servi par un service worker, dernier état en cache local.
@@ -80,8 +80,8 @@ flowchart LR
 
 | | |
 |---|---|
-| Tests unitaires | **373** tests Vitest (16 fichiers) sur les modules purs, sans DOM ni réseau |
-| Tests E2E | **13** tests Playwright (Chromium, viewport mobile) sur la démo : parcours visiteur et admin, mode archive, installation du service worker sous `/France-Irlande/` puis rechargement hors-ligne |
+| Tests unitaires | **356** tests Vitest (15 fichiers) sur les modules purs, sans DOM ni réseau |
+| Tests E2E | **12** tests Playwright (Chromium, viewport mobile) sur la démo : parcours visiteur et admin, mode archive, installation du service worker sous `/France-Irlande/` puis rechargement hors-ligne |
 | Accessibilité | Audit axe-core **WCAG 2 A/AA** sur toutes les vues, navigation clavier, zoom autorisé |
 | Sécurité | `npm run security:test` : règles Firebase, CSP, motifs JS interdits |
 | CI | GitHub Actions : un job lint + tests + contrôle sécurité, un job E2E en parallèle |

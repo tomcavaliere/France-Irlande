@@ -28,7 +28,7 @@ vit dans un module pur de `js/core/` à **double export** :
 Les modules DOM/I/O n'y délèguent que par des wrappers d'une ligne
 (`function escAttr(s){ return Utils.escAttr(s); }`) : aucune copie de logique.
 
-## Fichiers Vitest (373 tests)
+## Fichiers Vitest (356 tests)
 
 | Fichier | Tests | Couvre |
 |---|---|---|
@@ -37,7 +37,6 @@ Les modules DOM/I/O n'y délèguent que par des wrappers d'une ligne
 | `unit/demo-core.test.js` | 25 | arbre en mémoire du mode démo, snapshots, détection `#demo` |
 | `unit/stages-core.test.js` | 19 | drapeau pays, labels, totaux, étape manuelle, paths Storage, compteur de jours |
 | `unit/journal-core.test.js` | 18 | bravos, labels, fusion brouillons admin / temps réel |
-| `unit/dashboard-core.test.js` | 17 | courbes SVG, semaines (UTC), normalisation santé/training |
 | `unit/activity-core.test.js` | 14 | normalisation, filtre voyageurs (accents), séries 7 jours, classement |
 | `unit/visitor-auth-core.test.js` | 14 | hash, config, changement de mot de passe |
 | `unit/offline-core.test.js` | 11 | file hors-ligne bornée, index des caches |
@@ -54,7 +53,7 @@ Les tests de dates construisent leurs horloges en heure **locale**
 (vérifié avec `TZ` = America/Los_Angeles, UTC, Europe/Paris, Pacific/Auckland,
 Pacific/Kiritimati).
 
-## E2E (13 tests)
+## E2E (12 tests)
 
 `playwright.config.js` démarre `scripts/serve.mjs`, qui sert le dépôt sous
 `/France-Irlande/` comme GitHub Pages : le service worker tourne avec les chemins de prod.
@@ -63,7 +62,7 @@ interceptées.
 
 - `e2e/demo.e2e.js` : démarrage sans aucune requête vers Firebase/Google, compteur de
   jours, commentaire visiteur, admin démo (publier/dépublier, onglets, sortie), Campspace
-  chargé à la demande, tableaux de bord, rendu lecture seule du mode archive, SW activé
+  chargé à la demande, tableau de bord d'activité, rendu lecture seule du mode archive, SW activé
   + installabilité + rechargement **hors-ligne**.
 - `e2e/a11y.e2e.js` : audit axe WCAG 2 A/AA de toutes les vues visiteur et admin et
   des dialogues, ouverture d'une photo au clavier, Échap.

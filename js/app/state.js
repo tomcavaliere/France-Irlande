@@ -43,7 +43,7 @@ var journalVisibleCount = JOURNAL_INITIAL_DAYS;
 var fbInitialized = false;
 var lastCompletedCount = 0;
 var journalDirty = false;
-var _unsubCurrent = null, _unsubStages = null, _unsubJournals = null, _unsubExpenses = null, _unsubTraining = null, _unsubHealth = null;
+var _unsubCurrent = null, _unsubStages = null, _unsubJournals = null, _unsubExpenses = null;
 var _unsubActivity = null;
 
 // ==== MAP ====
@@ -79,12 +79,6 @@ var commentRepliesUnsub = {};
 
 // ==== DÉPENSES ====
 var expenses = {};
-
-// ==== TRAINING ====
-var training = {};
-
-// ==== SANTÉ ====
-var health = {};
 
 // ==== ACTIVITÉ ====
 var activity = {};

@@ -8,9 +8,9 @@ Tracé complet : France (Annecy → Roscoff) + Irlande (Cork → Sligo).
 
 - **Frontend** : HTML/CSS/JS vanilla — `index.html` (~350 lignes, shell + bootstrap) + `css/styles.css` (~690 lignes) + ~35 scripts dans `js/`, rangés par couche. Zéro build, zéro framework, chargés via `<script>` dans l'ordre.
 - **Carte** : Leaflet 1.9.4 **auto-hébergé** dans `vendor/leaflet/` (hash identique à la release officielle ; plus aucun CDN tiers hors Firebase).
-- **Backend** : Firebase RTDB `france-irlande-bike`, région `europe-west1`. Lecture publique sauf `expenses`, `training`, `health`, `activity`, `visitorProfiles` (auth uniquement). Écriture : auth uniquement partout (mode archive).
+- **Backend** : Firebase RTDB `france-irlande-bike`, région `europe-west1`. Lecture publique sauf `expenses`, `activity`, `visitorProfiles` (auth uniquement). Écriture : auth uniquement partout (mode archive).
 - **Deploy** : GitHub Pages → `https://tomcavaliere.github.io/France-Irlande/` (site servi sous le sous-chemin `/France-Irlande/`).
-- **PWA** : service worker `sw.js` (cache `ev1-v43`), `manifest.json`, icônes PNG dans `icons/`.
+- **PWA** : service worker `sw.js` (cache `ev1-v44`), `manifest.json`, icônes PNG dans `icons/`.
 - **Mode démo** : lien CV public (`…/#demo` ou bouton du gate) — backend Firebase remplacé par des stubs en mémoire, données 100 % fictives (voir section « Mode démo »).
 - **Tests** : Vitest (`npm test`) pour la logique pure — Node pur, aucun jsdom. Playwright (`npm run test:e2e`) pour les parcours de la démo + audit d'accessibilité axe-core.
 - **Lint/CI** : ESLint 9 flat config + GitHub Actions (`.github/workflows/ci.yml`) : job `test` (`lint`, `test`, `security:test`) et job `e2e` (Playwright Chromium) sur chaque push/PR.
@@ -34,7 +34,6 @@ js/
     stages-core.js          — flag pays, dates, totaux recap, étape manuelle, compteur de jours
     visitor-auth-core.js    — normalisation hash, extraction config, validation mot de passe
     activity-core.js        — stats du tableau de bord d'activité
-    dashboard-core.js       — normalisation/séries/semaines/courbes SVG santé + training
     comments-core.js        — nom d'auteur et normalisation des réponses admin
     campings-core.js        — filtres POI
     weather-core.js         — parsing réponse open-meteo
@@ -55,8 +54,6 @@ js/
     videos.js               — upload Firebase Storage, progress, cancel
     comments.js             — post, suppression, cache local
     expenses.js             — CRUD dépenses + synthèse
-    health.js               — journal santé quotidien + graphes par métrique (admin)
-    training.js             — suivi entraînement hebdo + graphes cumulés (admin)
     activity.js             — tableau de bord des connexions + tracking (admin)
     campings.js             — requêtes OpenCampingMap/Overpass campings/eau, Campspace (lazy)
     weather.js              — fetch open-meteo + rendu widget
@@ -95,7 +92,7 @@ playwright.config.js        — config E2E (Chromium, viewport Pixel 7, serveur 
 package.json                — scripts npm : test, test:e2e, lint, security:test, serve
 ```
 
-Total : 373 tests Vitest (16 fichiers) + 13 tests E2E Playwright (2 fichiers).
+Total : 356 tests Vitest (15 fichiers) + 12 tests E2E Playwright (2 fichiers).
 
 ## Architecture JS — séparation stricte des responsabilités
 
@@ -221,10 +218,6 @@ Mini event-bus : `Events.on(name, fn)`, `Events.off(name, fn)`, `Events.emit(nam
 
 `normalizeEntry`, `shouldIgnoreEntry` (connexions admin et de Tom/Chloé, sans accents ni casse), `prepareEntries(tree)`, `summarize(entries)`, `lastDaysSeries(entries, n, toDayISO, nowTs?)` (fonction de jour injectée : `Utils.localISODate`), `topUsers(entries, max)`, `typeLabel`. `VALID_TYPES` doit rester aligné avec `firebase/database.rules.json`.
 
-### `js/core/dashboard-core.js` → `window.DashboardCore`
-
-Tableaux de bord Santé et Training : `linePath(values, minY, maxY)` (courbe SVG 100×68 partagée), `cumulative`, `addDaysISO` / `weekStartISO` (arithmétique UTC sur dates ISO, indépendante du fuseau), `clampMetric` / `roundByStep`, `normalizeHealthEntry(raw, metrics, nowTs?)`, `healthSeries`, `normalizeTrainingEntry`, `trainingSeries`, `weekTotal`, `formatHealthValue` / `formatTrainingValue`.
-
 ### `js/core/comments-core.js` → `window.CommentsCore`
 
 `normalizeAdminReplyAuthorName(value)` (displayName/email → « Tom », « Chloé » ou nom lisible) et `normalizeCommentReply(raw)`.
@@ -236,7 +229,7 @@ Tableaux de bord Santé et Training : `linePath(values, minY, maxY)` (courbe SVG
 - **Brouillons de saisie** : tout re-rendu `innerHTML` d'une zone contenant des `<textarea>` (carnet, commentaires) doit passer par `captureTextareaDrafts` / `restoreTextareaDrafts` (`ui.js`), sinon le texte en cours est effacé (arrivée lazy des commentaires, callback d'auth au démarrage). Vider le champ **avant** le re-rendu après un envoi.
 - **Publication journal** : champ `published: boolean` dans `stages[date]`. Absence du champ = brouillon, invisible pour les visiteurs. `renderJournal()` filtre via `filterVisibleJournalDates(stages, isAdmin)`.
 - **Boot visiteur** : charge `/current` et `/tracks`. `/stages` chargé à l'ouverture de l'onglet Carnet (d'où `StagesCore.dayCount`). Photos, commentaires, bravos et journal chargés lazy par date via `IntersectionObserver` (`loadStageContent`) : les squelettes restent sur les entrées hors écran.
-- **Hors-ligne** : state dans `localStorage` + `offlineQueue`. `tryWrite` met en file commentaires, likes/réponses, dépenses, santé, training ; le journal passe par `queueWrite`. Position (`updatePosition`), étapes et GPX écrivent directement (file mémoire du SDK seulement). Photos/vidéos indisponibles hors-ligne.
+- **Hors-ligne** : state dans `localStorage` + `offlineQueue`. `tryWrite` met en file commentaires, likes/réponses, dépenses ; le journal passe par `queueWrite`. Position (`updatePosition`), étapes et GPX écrivent directement (file mémoire du SDK seulement). Photos/vidéos indisponibles hors-ligne.
 - **Service worker** : chemins PRECACHE **relatifs** (`'./js/…'`) — le site est sous `/France-Irlande/`, un chemin absolu vise la racine du domaine (404) et `cache.addAll` échoue : le SW ne s'installe plus (bug corrigé, gardé par `tests/static/sw-precache.test.js`). App shell (HTML, JS) → network-first ; CSS, images, vendor → cache-first. Firebase / open-meteo / Overpass → jamais mis en cache. **Bumper `CACHE`** à chaque changement d'asset précaché ; tout script ajouté à `index.html` doit être ajouté à `PRECACHE`.
 - **Admin** : déconnexion auto après 3 min d'inactivité.
 - **`TOTAL_KM` fixture ≠ prod** : la fixture de test (~2337 km) est sous-échantillonnée, la prod fait ~2978 km. Ne pas confondre dans les assertions.
@@ -277,8 +270,6 @@ Version publique pour lien CV : mêmes fonctionnalités, données 100 % fictives
 | `visitorProfiles/$visitorId` | auth uniquement | auth (archive) — `{name, ts}` |
 | `activity/$id` | auth uniquement | auth (archive) — `{type, name, ts}`, type ∈ `ACTIVITY_VALID_TYPES` |
 | `expenses` | auth uniquement | auth uniquement |
-| `training/$date` | auth uniquement | auth + validate `squats/pushups/absMin/runKm/ts` |
-| `health/$date` | auth uniquement | auth + validate 9 métriques bornées + `ts` |
 
 Quota gratuit : **1 Go**. Surveillé via `computeQuotaBytes` + `quotaLevel` dans `utils.js`.
 `firebase/database.rules.json` est la **source de vérité** — toujours le mettre à jour avant de déployer de nouvelles règles sur la console Firebase. Les vidéos sont hébergées sur Firebase Storage (règles dans `firebase/storage.rules`, taille max 200 MB).

@@ -90,12 +90,8 @@ function logoutAdmin(){
   if(_unsubJournals){_unsubJournals();_unsubJournals=null;}
   if(typeof teardownStageContentSubscriptions==='function')teardownStageContentSubscriptions();
   if(_unsubExpenses){_unsubExpenses();_unsubExpenses=null;}
-  if(_unsubTraining){_unsubTraining();_unsubTraining=null;}
-  if(_unsubHealth){_unsubHealth();_unsubHealth=null;}
   if(_unsubActivity){_unsubActivity();_unsubActivity=null;}
   expenses={};
-  training={};
-  health={};
   activity={};
   _adminActivitySessionUid='';
   _adminActivityTracked=false;
@@ -250,8 +246,6 @@ function initAuth(){
     if(isAdmin){
       resetInactivity();
       initExpenses();
-      initTraining();
-      initHealth();
       initActivity();
       var adminSessionId=user&&typeof user.uid==='string'?user.uid:FALLBACK_ADMIN_UID;
       if(!_adminActivityTracked||_adminActivitySessionUid!==adminSessionId){

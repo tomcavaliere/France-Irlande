@@ -119,7 +119,7 @@ if (rulesRaw) {
   }
 }
 const rootRules = rulesJson && rulesJson.rules ? rulesJson.rules : {};
-['expenses', 'training', 'health'].forEach(function(node){
+['expenses'].forEach(function(node){
   const n = rootRules[node];
   if (!n || !isAuthOnlyRule(n['.read']) || !isAuthOnlyRule(n['.write'])) {
     failures.push(`Règles Firebase trop permissives pour "${node}" (read/write doivent être "auth != null").`);
