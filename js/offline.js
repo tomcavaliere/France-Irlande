@@ -25,6 +25,19 @@ function saveLocalCache(){
   catch(e){console.warn('[cache] journals non sauvegardé',e);}
 }
 
+// Saisie continue (journal) : une sérialisation complète (current + stages +
+// journals) par frappe est inutile. flushState() appelle saveLocalCache()
+// directement à la sortie de page, donc aucune frappe n'est perdue.
+var LOCAL_CACHE_DEBOUNCE_MS=500;
+var _localCacheTimer=null;
+function scheduleLocalCacheSave(){
+  if(_localCacheTimer)clearTimeout(_localCacheTimer);
+  _localCacheTimer=setTimeout(function(){
+    _localCacheTimer=null;
+    saveLocalCache();
+  },LOCAL_CACHE_DEBOUNCE_MS);
+}
+
 function loadLocalCache(){
   if(window.DEMO_MODE)return;
   try{var c=localStorage.getItem('ev1-current-cache');if(c)current=JSON.parse(c);}catch(e){console.warn('[cache] current illisible',e);}

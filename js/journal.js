@@ -51,7 +51,7 @@ function onJournalInput(date, _arg2, el){
   resizeJournalTextarea(el);
   var text=el&&typeof el.value==='string'?el.value:'';
   journals[date]=text;
-  saveLocalCache();
+  scheduleLocalCacheSave();
   _journalPendingDrafts[date]=text;
   if(!isOnline||!Db.ready())return;
   _persistPendingJournal(date);
