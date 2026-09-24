@@ -84,7 +84,7 @@ flowchart LR
 | Tests E2E | **13** tests Playwright (Chromium, viewport mobile) sur la démo : parcours visiteur et admin, mode archive, installation du service worker sous `/France-Irlande/` puis rechargement hors-ligne |
 | Accessibilité | Audit axe-core **WCAG 2 A/AA** sur toutes les vues, navigation clavier, zoom autorisé |
 | Sécurité | `npm run security:test` : règles Firebase, CSP, motifs JS interdits |
-| CI | GitHub Actions : lint + tests + contrôle sécurité, puis job E2E séparé |
+| CI | GitHub Actions : un job lint + tests + contrôle sécurité, un job E2E en parallèle |
 
 ## Lancer en local
 
