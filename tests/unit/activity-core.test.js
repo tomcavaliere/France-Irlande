@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import ActivityCore from '../js/core/activity-core.js';
-import Utils from '../js/core/utils.js';
+import ActivityCore from '../../js/core/activity-core.js';
+import Utils from '../../js/core/utils.js';
 
 const {
   safeString, normalizeType, normalizeEntry, typeLabel, shouldIgnoreEntry,

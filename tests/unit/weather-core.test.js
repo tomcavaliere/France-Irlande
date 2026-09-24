@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import weatherCore from '../js/core/weather-core.js';
+import weatherCore from '../../js/core/weather-core.js';
 
 const { weatherDayLabel, buildWeatherDays } = weatherCore;
 

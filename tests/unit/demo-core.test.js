@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import DemoCore from '../js/core/demo-core.js';
+import DemoCore from '../../js/core/demo-core.js';
 
 const { pathGet, pathSet, pathRemove, makeSnapshot, isDemoRequested } = DemoCore;
 

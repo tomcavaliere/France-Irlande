@@ -1,6 +1,6 @@
 // Tests unitaires pour js/core/utils.js
 import { describe, it, expect, vi } from 'vitest';
-import utils from '../js/core/utils.js';
+import utils from '../../js/core/utils.js';
 
 const {
   escAttr, escHtml, formatTime, localISODate, summarizeExpenses,

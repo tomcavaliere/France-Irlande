@@ -82,7 +82,7 @@ export default [
     },
   },
   {
-    files: ['e2e/**/*.js', 'scripts/serve.mjs', 'playwright.config.js'],
+    files: ['tests/e2e/**/*.js', 'scripts/serve.mjs', 'playwright.config.js'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
@@ -99,6 +99,7 @@ export default [
   },
   {
     files: ['tests/**/*.js'],
+    ignores: ['tests/e2e/**'],
     languageOptions: {
       ecmaVersion: 2020,
       sourceType: 'module',

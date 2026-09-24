@@ -5,8 +5,8 @@
 // (25 points en France + 25 en Irlande) pour rester déterministe et rapide.
 
 import { describe, it, expect } from 'vitest';
-import gpsCore from '../js/core/gps-core.js';
-import fixture from './fixtures/route-sample.js';
+import gpsCore from '../../js/core/gps-core.js';
+import fixture from '../fixtures/route-sample.js';
 
 const { snapToRoute, routePointsAhead, ptsBbox, computeStageInfo, campingDist,
         haversineKm, sumTrackKm, parseGPX, recomputeAllKm } = gpsCore;

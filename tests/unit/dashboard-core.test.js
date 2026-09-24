@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import DashboardCore from '../js/core/dashboard-core.js';
+import DashboardCore from '../../js/core/dashboard-core.js';
 
 const {
   linePath, cumulative, addDaysISO, weekStartISO, roundByStep, clampMetric,

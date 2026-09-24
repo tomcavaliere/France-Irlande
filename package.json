@@ -6,8 +6,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "lint": "eslint js/ tests/ e2e/ scripts/serve.mjs playwright.config.js",
-    "security:test": "node tests/security-check.js",
+    "lint": "eslint js/ tests/ scripts/serve.mjs playwright.config.js",
+    "security:test": "node tests/static/security-check.js",
     "serve": "node scripts/serve.mjs"
   },
   "devDependencies": {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import offlineCore from '../js/core/offline-core.js';
+import offlineCore from '../../js/core/offline-core.js';
 
 const { upsertBoundedIndex, trimQueue, hydrateComments } = offlineCore;
 

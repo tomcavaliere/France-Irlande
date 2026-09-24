@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import JournalCore from '../js/core/journal-core.js';
+import JournalCore from '../../js/core/journal-core.js';
 
 const { countBravos, hasVoted, buildKmInfoLabel, formatJournalDateLabel, mergeRemoteWithDrafts } = JournalCore;
 
