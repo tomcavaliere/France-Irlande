@@ -74,8 +74,10 @@ document.addEventListener('DOMContentLoaded',function(){
   if(!isVisitorAuthenticated()){
     showVisitorGate({hardLock:true});
   }
+  // Météo : widget admin (onglet Étapes), chargé à l'ouverture de l'onglet —
+  // pas d'appel open-meteo (IP + position) pour les visiteurs.
   setTimeout(function(){
-    initAuth();initFirebase();fetchWeather();
+    initAuth();initFirebase();
     if(isOnline)flushQueue();
     trackReturningVisitor();
   },800);

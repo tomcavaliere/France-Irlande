@@ -54,6 +54,25 @@ test.describe('demo mode (service worker bloqué, réseau intercepté)', () => {
     expect(lazyAssets).toEqual([]);
   });
 
+  test('only the admin weather widget contacts open-meteo', async ({ page }) => {
+    const weatherRequests = [];
+    page.on('request', (req) => {
+      if (/api\.open-meteo\.com/.test(req.url())) weatherRequests.push(req.url());
+    });
+
+    await page.goto(DEMO_URL);
+    // Le compteur de jours dépend des tracés chargés par initFirebase(), lancé
+    // dans le même timer de démarrage que l'ancien appel météo.
+    await expect(page.locator('#mapDays')).toHaveText(/^J[1-9]/);
+    await openJournal(page);
+    expect(weatherRequests).toEqual([]);
+
+    await page.locator('#demoAdminBtn').click();
+    const weather = page.waitForRequest(/api\.open-meteo\.com/);
+    await page.locator('#tabStages').click();
+    await weather;
+  });
+
   test('lets a visitor post a comment', async ({ page }) => {
     await page.goto(DEMO_URL);
     await openJournal(page);
