@@ -123,8 +123,9 @@ function trackActivityEvent(type,payload){
   if(!Db.ready())return;
   var cleanType=ActivityCore.normalizeType(type);
   if(cleanType==='other')return;
-  // Carnet archivé : plus de suivi des connexions visiteurs (écriture refusée).
-  if(cleanType!=='admin_login'&&visitorWritesDisabled())return;
+  // Carnet archivé : la finalité du suivi (voir qui suit le voyage) a pris
+  // fin — plus aucune connexion enregistrée, admin compris (RGPD, conservation).
+  if(ARCHIVED)return;
   payload=payload&&typeof payload==='object'?payload:{};
   var fallback=cleanType==='admin_login'?'Admin':'Visiteur';
   var name=ActivityCore.safeString(payload.name,60,fallback);
