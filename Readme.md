@@ -1,77 +1,117 @@
-# biketrip — France → Irlande
+# biketrip — Annecy → Sligo à vélo
 
-PWA de suivi de voyage bikepacking en temps réel (Tom + proches), déployée sur GitHub Pages.
+[![CI](https://github.com/tomcavaliere/France-Irlande/actions/workflows/ci.yml/badge.svg)](https://github.com/tomcavaliere/France-Irlande/actions/workflows/ci.yml)
 
-## Stack
+PWA de carnet de voyage que j'ai conçue et développée pour un voyage à vélo de ~2 980 km
+(Annecy → Roscoff, ferry, Cork → Sligo) au printemps 2026. Pendant le voyage, je publiais
+chaque soir position, étape, récit et photos ; nos proches suivaient en direct et
+commentaient. Le voyage est terminé : la vraie version est archivée en lecture seule.
 
-- Frontend: HTML/CSS/JS vanilla (sans bundler)
-- Carte: Leaflet 1.9.4
-- Backend: Firebase Realtime Database + Firebase Auth + Firebase Storage (vidéos)
-- Tests: Vitest
-- Lint: ESLint 9 (flat config)
-- CI: GitHub Actions (`lint` + `test`)
+### 👉 [Essayer la démo](https://tomcavaliere.github.io/France-Irlande/#demo)
 
-## Arborescence principale
+Données 100 % fictives (6 étapes irlandaises sur le vrai tracé), aucune connexion au
+backend. Le bouton **« Tester le mode admin »** ouvre tout l'espace d'administration sans
+mot de passe. Les modifications sont conservées jusqu'au rechargement de la page. La démo
+fonctionne aussi hors-ligne une fois chargée.
 
-- `/index.html` : shell applicatif + structure UI
-- `/styles.css` : styles globaux
-- `/sw.js` : service worker PWA
-- `/manifest.json` : manifeste PWA
-- `/js/` : modules applicatifs (bootstrap, UI, map, journal, offline, etc.)
-- `/tests/` : tests unitaires Vitest sur la logique pure
-- `/firebase.rules.json` : règles de sécurité RTDB (source de vérité)
+| Carte | Carnet | Dépenses (admin) | Activité (admin) |
+|---|---|---|---|
+| ![Carte du tracé avec progression](docs/media/demo-carte.jpg) | ![Carnet de voyage avec photos et commentaires](docs/media/demo-carnet.jpg) | ![Suivi des dépenses partagées](docs/media/demo-admin-depenses.jpg) | ![Tableau de bord des connexions](docs/media/demo-admin-activite.jpg) |
 
-## Démarrage local
+## Fonctionnalités
+
+**Visiteurs** : carte Leaflet du tracé complet avec les traces GPX réelles, progression en
+kilomètres, carnet de voyage (récit, photos, vidéos), commentaires et « bravos ».
+
+**Admin** (Firebase Auth, déconnexion automatique après 3 min d'inactivité) :
+- mise à jour de la position GPS, création d'étapes, import de traces GPX
+- rédaction du journal avec brouillon/publication
+- upload de photos compressées et de vidéos (Firebase Storage)
+- réponses aux commentaires, dépenses partagées avec calcul de l'équilibre
+- suivi santé et entraînement (graphes SVG), campings et points d'eau le long du tracé, météo à la position
+- tableau de bord des connexions
+
+**Hors-ligne** : app shell servi par un service worker, dernier état en cache local.
+Les écritures du journal, des commentaires et des dépenses sont mises en file
+(localStorage) et synchronisées au retour du réseau.
+
+## Architecture
+
+HTML/CSS/JavaScript vanilla, **sans framework ni build** : une trentaine de scripts
+chargés dans l'ordre, servis tels quels par GitHub Pages.
+
+```mermaid
+flowchart LR
+  subgraph Navigateur
+    UI["Rendu DOM<br/>render*() · patch*()"] --> CORE["État & logique métier<br/>state.js · *-core.js (purs, testés)"]
+    CORE --> IO["I/O<br/>db.js · offline.js · safeFetch"]
+    SW["Service worker<br/>cache app shell"] -.-> UI
+  end
+  IO -- "window._fb*" --> FB[("Firebase<br/>RTDB · Auth · Storage")]
+  IO -. "mode démo : mêmes window._fb*" .-> DEMO[("Stubs en mémoire<br/>demo-mode.js")]
+```
+
+- **Trois couches strictes.** Le rendu ne touche jamais Firebase, la logique ne touche
+  jamais le DOM. Toute la logique non triviale vit dans des modules `*-core.js` purs (GPS,
+  validation, statistiques, fusion des brouillons…), chargés tels quels par le navigateur
+  et par les tests. La production exécute donc exactement le code testé.
+- **Une seule façade I/O.** `db.js` expose `Db.get/set/remove/on` au-dessus des globales
+  `window._fb*`. En mode démo, `demo-mode.js` remplace ces globales par des stubs en
+  mémoire : aucun site d'appel ne change et aucune requête ne part vers Firebase, ce que
+  vérifient les tests E2E.
+- **Bus d'événements.** Les mutations d'état émettent des événements, et `init.js`
+  centralise la politique de re-rendu.
+- **Sécurité.**
+  - CSP stricte, sans script inline ; Leaflet est auto-hébergé.
+  - Échappement systématique des contenus utilisateur.
+  - Règles Firebase versionnées (`firebase.rules.json`) et vérifiées en CI : lecture seule
+    publique, aucune écriture anonyme depuis l'archivage.
+  - Un script de contrôle interdit `eval`, `document.write` et tout `fetch()` direct.
+
+### Choix et compromis
+
+| Choix | Pourquoi | Contrepartie |
+|---|---|---|
+| Pas de bundler | Zéro build à maintenir pendant le voyage ; déploiement = `git push` | Globales partagées entre scripts : ESLint génère la liste des globales à chaque lint et `no-undef` attrape les fautes de frappe |
+| Firebase RTDB (plan gratuit) | Temps réel natif, écritures hors-ligne, pas de serveur | Quotas surveillés dans l'app ; photos migrées vers Storage |
+| Gate visiteur par mot de passe partagé | Simple pour la famille, sans compte à créer | Protection **cosmétique** : les données restent lisibles via l'API RTDB (acceptable pour un carnet de voyage partagé) |
+
+## Qualité
+
+| | |
+|---|---|
+| Tests unitaires | **373** tests Vitest (16 fichiers) sur les modules purs, sans DOM ni réseau |
+| Tests E2E | **13** tests Playwright (Chromium, viewport mobile) sur la démo : parcours visiteur et admin, mode archive, installation du service worker sous `/France-Irlande/` puis rechargement hors-ligne |
+| Accessibilité | Audit axe-core **WCAG 2 A/AA** sur toutes les vues, navigation clavier, zoom autorisé |
+| Sécurité | `npm run security:test` : règles Firebase, CSP, motifs JS interdits |
+| CI | GitHub Actions : lint + tests + contrôle sécurité, puis job E2E séparé |
+
+## Lancer en local
 
 ```bash
 npm ci
+npm run serve            # http://localhost:4173/France-Irlande/#demo
+npm test                 # tests unitaires
+npx playwright install chromium && npm run test:e2e
 npm run lint
-npm test
-```
-
-Le projet n’a pas de build step: les fichiers sont servis tels quels.
-
-## Runbook qualité
-
-Avant toute PR:
-
-1. `npm ci`
-2. `npm run lint`
-3. `npm test`
-4. Vérifier absence de logs de debug et code mort dans le diff
-
-## Test cybersécurité
-
-```bash
 npm run security:test
 ```
 
-Le script vérifie automatiquement:
-- l'absence de patterns JS dangereux (`eval`, `new Function`, `document.write`)
-- l'absence de `fetch()` direct dans l'app (obligation d'utiliser `Utils.safeFetch`)
-- la présence d'une CSP dans `index.html`
-- le verrouillage admin-only de `expenses`, `training`, `health` dans `firebase.rules.json`
+`scripts/serve.mjs` sert le dépôt sous `/France-Irlande/`, comme GitHub Pages, pour que le
+service worker fonctionne avec les chemins de production.
 
-## Conventions
+## Structure
 
-- Architecture en séparation stricte:
-  - rendu DOM
-  - logique métier/état
-  - I/O (Firebase, réseau, offline queue)
-- Les modules `*-core.js` restent purs (pas de DOM, pas d’I/O)
-- Toute requête réseau applicative passe par `Utils.safeFetch` (pas de `fetch()` direct)
-- Commits atomiques + Conventional Commits (`feat:`, `fix:`, `refactor:`, `chore:`, `docs:`)
-
-## Sécurité
-
-- CSP active dans `index.html` (scripts inline désactivés)
-- Échappement HTML/attribut via `Utils.escHtml` / `Utils.escAttr`
-- Règles Firebase strictes et versionnées dans `firebase.rules.json`
-
-## Déploiement
-
-- Déploiement GitHub Pages: `https://tomcavaliere.github.io/France-Irlande/`
+```
+index.html · styles.css · sw.js · manifest.json
+js/            scripts de l'app (rendu, *-core.js purs, db.js, mode démo)
+tests/         tests unitaires Vitest + contrôle sécurité
+e2e/           tests Playwright + audit d'accessibilité
+vendor/        Leaflet 1.9.4 auto-hébergé
+docs/          specs et plans de chaque fonctionnalité, captures
+firebase.rules.json · storage.rules   règles de sécurité versionnées
+```
 
 ## Licence
 
-Ce projet est **propriétaire**. Voir le fichier [`LICENSE`](./LICENSE).
+Projet **propriétaire**, voir [`LICENSE`](./LICENSE).
