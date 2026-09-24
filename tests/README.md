@@ -4,17 +4,17 @@ Deux niveaux, tous deux hors réseau applicatif :
 
 | Niveau | Outil | Commande | Cible |
 |---|---|---|---|
-| Unitaire | [Vitest](https://vitest.dev), Node pur (ni jsdom ni bundler) | `npm test` / `npm run test:watch` | modules purs `js/*-core.js`, `utils.js`, façade `db.js`, garde-fous statiques |
+| Unitaire | [Vitest](https://vitest.dev), Node pur (ni jsdom ni bundler) | `npm test` / `npm run test:watch` | `unit/` : modules purs de `js/core/` et façade `js/services/db.js` ; `static/` : garde-fous sur les fichiers livrés |
 | E2E | [Playwright](https://playwright.dev) (Chromium, viewport Pixel 7) + [axe-core](https://github.com/dequelabs/axe-core) | `npm run test:e2e` | parcours du **mode démo** dans un vrai navigateur, accessibilité |
 
-Plus `npm run security:test` (`tests/security-check.js`) : règles Firebase (aucune
+Plus `npm run security:test` (`static/security-check.js`) : règles Firebase (aucune
 écriture anonyme), CSP, motifs JS interdits (`eval`, `document.write`, `fetch()` direct).
 
 ## Principe : la prod exécute le code testé
 
 Les scripts de `js/` ne sont pas des modules ES : ils sont chargés par `<script>` dans
 `index.html`. Toute logique non triviale (calcul, validation, normalisation, formatage)
-vit dans un module pur à **double export** :
+vit dans un module pur de `js/core/` à **double export** :
 
 ```js
 (function(){
@@ -28,26 +28,26 @@ vit dans un module pur à **double export** :
 Les modules DOM/I/O n'y délèguent que par des wrappers d'une ligne
 (`function escAttr(s){ return Utils.escAttr(s); }`) : aucune copie de logique.
 
-## Fichiers unitaires (373 tests)
+## Fichiers Vitest (373 tests)
 
 | Fichier | Tests | Couvre |
 |---|---|---|
-| `utils.test.js` | 156 | escaping (sécurité), dates locales, validations, dépenses, quota, `safeFetch` (retries/timeout), filtres carnet |
-| `gps-core.test.js` | 46 | snap au tracé, points devant, bbox, simulation de 3 étapes FR→IE, distance POI, parsing GPX, recalcul des km |
-| `demo-core.test.js` | 25 | arbre en mémoire du mode démo, snapshots, détection `#demo` |
-| `stages-core.test.js` | 19 | drapeau pays, labels, totaux, étape manuelle, paths Storage, compteur de jours |
-| `journal-core.test.js` | 18 | bravos, labels, fusion brouillons admin / temps réel |
-| `dashboard-core.test.js` | 17 | courbes SVG, semaines (UTC), normalisation santé/training |
-| `activity-core.test.js` | 14 | normalisation, filtre voyageurs (accents), séries 7 jours, classement |
-| `visitor-auth-core.test.js` | 14 | hash, config, changement de mot de passe |
-| `offline-core.test.js` | 11 | file hors-ligne bornée, index des caches |
-| `events-core.test.js` | 10 | bus d'événements |
-| `db.test.js` | 9 | façade RTDB avec `window._fb*` simulés, Firebase absent → rejet propre |
-| `campings-core.test.js` | 8 | mapping des POI, proximité du tracé |
-| `comments-core.test.js` | 7 | nom d'auteur admin, normalisation des réponses |
-| `weather-core.test.js` | 6 | parsing open-meteo |
-| `sw-precache.test.js` | 5 | `PRECACHE` couvre les assets d'`index.html`, chemins relatifs, fichiers existants |
-| `index-html.test.js` | 5 | viewport zoomable, manifest et dimensions des icônes |
+| `unit/utils.test.js` | 156 | escaping (sécurité), dates locales, validations, dépenses, quota, `safeFetch` (retries/timeout), filtres carnet |
+| `unit/gps-core.test.js` | 46 | snap au tracé, points devant, bbox, simulation de 3 étapes FR→IE, distance POI, parsing GPX, recalcul des km |
+| `unit/demo-core.test.js` | 25 | arbre en mémoire du mode démo, snapshots, détection `#demo` |
+| `unit/stages-core.test.js` | 19 | drapeau pays, labels, totaux, étape manuelle, paths Storage, compteur de jours |
+| `unit/journal-core.test.js` | 18 | bravos, labels, fusion brouillons admin / temps réel |
+| `unit/dashboard-core.test.js` | 17 | courbes SVG, semaines (UTC), normalisation santé/training |
+| `unit/activity-core.test.js` | 14 | normalisation, filtre voyageurs (accents), séries 7 jours, classement |
+| `unit/visitor-auth-core.test.js` | 14 | hash, config, changement de mot de passe |
+| `unit/offline-core.test.js` | 11 | file hors-ligne bornée, index des caches |
+| `unit/events-core.test.js` | 10 | bus d'événements |
+| `unit/db.test.js` | 9 | façade RTDB avec `window._fb*` simulés, Firebase absent → rejet propre |
+| `unit/campings-core.test.js` | 8 | mapping des POI, proximité du tracé |
+| `unit/comments-core.test.js` | 7 | nom d'auteur admin, normalisation des réponses |
+| `unit/weather-core.test.js` | 6 | parsing open-meteo |
+| `static/sw-precache.test.js` | 5 | `PRECACHE` couvre les assets d'`index.html`, chemins relatifs, fichiers existants |
+| `static/index-html.test.js` | 5 | viewport zoomable, manifest et dimensions des icônes |
 
 Les tests de dates construisent leurs horloges en heure **locale**
 (`new Date(2026, 4, 20, 12)`) : la suite passe quel que soit `TZ`
@@ -80,9 +80,9 @@ Première exécution locale : `npx playwright install chromium`.
 
 ## Ajouter un test
 
-1. Logique pure → dans le `*-core.js` concerné (ou un nouveau, sur le patron ci-dessus :
-   à ajouter aussi dans `index.html`, `PRECACHE` de `sw.js` et la liste « double export »
-   d'`eslint.config.js`), puis test dans `tests/<module>.test.js`.
+1. Logique pure → dans le module concerné de `js/core/` (ou un nouveau, sur le patron
+   ci-dessus : à ajouter aussi dans `index.html` et dans `PRECACHE` de `sw.js` ; ESLint le
+   reconnaît par son dossier), puis test dans `unit/<module>.test.js`.
 2. Logique mêlée au DOM ou à Firebase → extraire la partie pure, garder un wrapper.
 3. Nouveau parcours ou nouvelle vue de la démo → test dans `e2e/`, qui doit passer l'audit axe.
 4. `npm run test:watch` pendant le développement.
@@ -97,7 +97,7 @@ Si le tracé change significativement, régénérer la fixture :
 
 ```python
 import re, json, math
-src = open('js/route-data.js').read()
+src = open('js/data/route-data.js').read()
 fr  = json.loads(re.search(r'const FULL_ROUTE_FR=(\[\[.*?\]\]);', src, re.S).group(1))
 ire = json.loads(re.search(r'const FULL_ROUTE_IRE=(\[\[.*?\]\]);', src, re.S).group(1))
 def hav(a,b):

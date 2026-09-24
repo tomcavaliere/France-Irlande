@@ -43,8 +43,8 @@ chargés dans l'ordre, servis tels quels par GitHub Pages.
 ```mermaid
 flowchart LR
   subgraph Navigateur
-    UI["Rendu DOM<br/>render*() · patch*()"] --> CORE["État & logique métier<br/>state.js · *-core.js (purs, testés)"]
-    CORE --> IO["I/O<br/>db.js · offline.js · safeFetch"]
+    UI["Rendu DOM · js/features/<br/>render*() · patch*()"] --> CORE["État & logique métier<br/>js/app/state.js · js/core/ (purs, testés)"]
+    CORE --> IO["I/O · js/services/<br/>db.js · offline.js · safeFetch"]
     SW["Service worker<br/>cache app shell"] -.-> UI
   end
   IO -- "window._fb*" --> FB[("Firebase<br/>RTDB · Auth · Storage")]
@@ -52,19 +52,19 @@ flowchart LR
 ```
 
 - **Trois couches strictes.** Le rendu ne touche jamais Firebase, la logique ne touche
-  jamais le DOM. Toute la logique non triviale vit dans des modules `*-core.js` purs (GPS,
+  jamais le DOM. Toute la logique non triviale vit dans des modules purs rangés dans `js/core/` (GPS,
   validation, statistiques, fusion des brouillons…), chargés tels quels par le navigateur
   et par les tests. La production exécute donc exactement le code testé.
-- **Une seule façade I/O.** `db.js` expose `Db.get/set/remove/on` au-dessus des globales
-  `window._fb*`. En mode démo, `demo-mode.js` remplace ces globales par des stubs en
+- **Une seule façade I/O.** `js/services/db.js` expose `Db.get/set/remove/on` au-dessus des globales
+  `window._fb*`. En mode démo, `js/demo/demo-mode.js` remplace ces globales par des stubs en
   mémoire : aucun site d'appel ne change et aucune requête ne part vers Firebase, ce que
   vérifient les tests E2E.
-- **Bus d'événements.** Les mutations d'état émettent des événements, et `init.js`
+- **Bus d'événements.** Les mutations d'état émettent des événements, et `js/app/init.js`
   centralise la politique de re-rendu.
 - **Sécurité.**
   - CSP stricte, sans script inline ; Leaflet est auto-hébergé.
   - Échappement systématique des contenus utilisateur.
-  - Règles Firebase versionnées (`firebase.rules.json`) et vérifiées en CI : lecture seule
+  - Règles Firebase versionnées (`firebase/`) et vérifiées en CI : lecture seule
     publique, aucune écriture anonyme depuis l'archivage.
   - Un script de contrôle interdit `eval`, `document.write` et tout `fetch()` direct.
 
@@ -103,14 +103,23 @@ service worker fonctionne avec les chemins de production.
 ## Structure
 
 ```
-index.html · styles.css · sw.js · manifest.json
-js/            scripts de l'app (rendu, *-core.js purs, db.js, mode démo)
-tests/         tests unitaires Vitest + contrôle sécurité
-e2e/           tests Playwright + audit d'accessibilité
-vendor/        Leaflet 1.9.4 auto-hébergé
-docs/          specs et plans de chaque fonctionnalité, captures
-firebase.rules.json · storage.rules   règles de sécurité versionnées
+index.html · sw.js · manifest.json   points d'entrée (racine imposée par GitHub Pages et le service worker)
+css/ · icons/ · vendor/              styles, icônes PWA, Leaflet 1.9.4 auto-hébergé
+js/core/        logique pure et testée : GPS, validation, statistiques, fusion des brouillons…
+js/services/    I/O : initialisation Firebase, façade Db, file hors-ligne
+js/app/         état partagé, composants UI communs, amorçage
+js/features/    une fonctionnalité par fichier : carte, carnet, étapes, photos, dépenses…
+js/demo/        bascule vers le mode démo (stubs en mémoire, données fictives)
+js/data/        tracé GPS complet, données Campspace
+tests/          unit/ (Vitest) · static/ (garde-fous, sécurité) · e2e/ (Playwright + axe)
+firebase/       règles de sécurité RTDB et Storage versionnées
+gpx/            traces GPX sources du tracé
+scripts/        serveur local, migration de données
+docs/           specs et plans de chaque fonctionnalité, captures
 ```
+
+Les dossiers de `js/` correspondent aux couches de l'architecture ; l'ordre de chargement
+reste fixé par `index.html`.
 
 ## Licence
 
