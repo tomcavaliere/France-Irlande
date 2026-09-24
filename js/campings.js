@@ -190,7 +190,7 @@ function _renderCampspace(){
     var price=d[3]||'';
     var href=d[4]?'https://campspace.com/fr/s/'+d[4]:'';
     var popup='<div class="camp-popup"><b class="camp-popup-title-orange">'+escHtml(title)+'</b>'+
-      (price?'<span class="camp-popup-muted">'+price+'</span><br>':'')+
+      (price?'<span class="camp-popup-muted">'+escHtml(price)+'</span><br>':'')+
       campingDistHtml(lat,lng)+
       (href?'<a href="'+escAttr(href)+'" target="_blank" class="camp-link camp-link-orange">Voir sur Campspace</a>':'')+
       '</div>';
