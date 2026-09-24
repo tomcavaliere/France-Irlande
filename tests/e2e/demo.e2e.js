@@ -67,6 +67,21 @@ test.describe('demo mode (service worker bloqué, réseau intercepté)', () => {
     await expect(entry.locator('textarea[id^="ctxt-"]')).toHaveValue('');
   });
 
+  test('a demo bravo never stores a visitor identifier on the device', async ({ page }) => {
+    await page.goto(DEMO_URL);
+    await openJournal(page);
+
+    const date = await page.locator('#journalList .journal-entry')
+      .filter({ has: page.locator('.j-bravo-btn:not([disabled])') })
+      .first().getAttribute('data-date');
+    const btn = page.locator(`#journalList .journal-entry[data-date="${date}"] .j-bravo-btn`);
+    await btn.click();
+    await expect(btn).toBeDisabled();
+
+    const keys = await page.evaluate(() => Object.keys(localStorage));
+    expect(keys).not.toContain('ev1_visitor_id');
+  });
+
   test('demo admin can publish and unpublish a journal day', async ({ page }) => {
     await page.goto(DEMO_URL);
     await page.locator('#demoAdminBtn').click();

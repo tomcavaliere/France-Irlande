@@ -105,7 +105,7 @@ function renderStageCommentsHtml(i){
   var stageLikes=commentLikes[i]||{};
   var stageReplies=commentReplies[i]||{};
   var visitorName=!isAdmin?getVisitorName():'';
-  var visitorId=(!isAdmin&&visitorName)?getVisitorId():'';
+  var visitorId=(!isAdmin&&visitorName)?peekVisitorId():'';
   var visitorCanWrite=!isAdmin&&!visitorWritesDisabled();
   var ids=Object.keys(stageCmts).sort(function(a,b){return (stageCmts[a].ts||0)-(stageCmts[b].ts||0);});
   var ei=escAttr(i);

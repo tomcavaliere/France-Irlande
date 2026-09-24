@@ -284,14 +284,42 @@ function openCarnetTab(){
 }
 
 // ==== BRAVOS ====
+// Identifiant visiteur (bravos, likes) : posé sur l'appareil uniquement quand
+// le visiteur écrit, jamais au simple affichage (RGPD / art. 82 loi I&L).
+var VISITOR_ID_KEY='ev1_visitor_id';
+// Démo : identifiant en mémoire, jamais persisté (isolation du localStorage réel).
+var DEMO_VISITOR_ID='v_demo_visitor';
+
+/**
+ * Identifiant visiteur existant, sans en créer (rendu : bravo déjà donné, like).
+ * @returns {string} '' si le visiteur n'a jamais écrit.
+ */
+function peekVisitorId(){
+  if(window.DEMO_MODE)return DEMO_VISITOR_ID;
+  return localStorage.getItem(VISITOR_ID_KEY)||'';
+}
+
+/**
+ * Identifiant visiteur, créé au premier bravo / like / réponse.
+ * @returns {string}
+ */
 function getVisitorId(){
-  var k='ev1_visitor_id';
-  var id=localStorage.getItem(k);
+  var id=peekVisitorId();
   if(!id){
     id=crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2);
-    localStorage.setItem(k,id);
+    localStorage.setItem(VISITOR_ID_KEY,id);
   }
   return id;
+}
+
+/**
+ * Carnet archivé : plus aucune écriture visiteur, l'identifiant n'a plus
+ * d'usage — on le retire des appareils qui l'avaient reçu pendant le voyage.
+ */
+function purgeArchivedVisitorId(){
+  if(!ARCHIVED)return;
+  try{localStorage.removeItem(VISITOR_ID_KEY);}
+  catch(e){console.error('[purgeArchivedVisitorId]',e);}
 }
 
 function _saveVisitorProfile(vid){
@@ -378,7 +406,7 @@ function patchBravos(date, bravosData){
   if(!entry)return;
   bravosByDate[date]=bravosData||{};
   var count=JournalCore.countBravos(bravosData);
-  var voted=JournalCore.hasVoted(bravosData,getVisitorId());
+  var voted=JournalCore.hasVoted(bravosData,peekVisitorId());
   var countEl=entry.querySelector('.j-bravo-count');
   var btn=entry.querySelector('.j-bravo-btn');
   var adminBtn=entry.querySelector('.j-bravo-admin-btn');

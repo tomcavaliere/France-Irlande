@@ -62,6 +62,7 @@ document.addEventListener('DOMContentLoaded',function(){
   }
   initEventDelegation();
   _subscribeEvents();
+  purgeArchivedVisitorId();
   loadLocalCache();
   loadExpensesCache();
   loadAllCommentsCache();
