@@ -73,12 +73,15 @@ test.describe('demo mode (service worker bloqué, réseau intercepté)', () => {
     await weather;
   });
 
-  test('links to the privacy page from the map and the journal', async ({ page }) => {
+  test('links to the privacy page from the map and a strip shown on every tab', async ({ page }) => {
     await page.goto(DEMO_URL);
     await expect(page.locator('.leaflet-control-attribution a[href="confidentialite.html"]')).toBeVisible();
+    const strip = page.locator('.legal-strip a');
+    await expect(strip).toBeVisible();
 
     await openJournal(page);
-    await page.locator('#page-journal .legal-link a').click();
+    await expect(strip).toBeVisible();
+    await strip.click();
     await expect(page).toHaveURL(/\/confidentialite\.html$/);
     await expect(page.getByRole('heading', { level: 1, name: 'Confidentialité et mentions légales' })).toBeVisible();
 

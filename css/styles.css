@@ -5,7 +5,7 @@
   --orange-text:#b85a17; /* orange lisible : 4.65:1 sur blanc (WCAG AA), pour texte et fonds sous texte blanc */
   --bg:#f5f2eb; --card:#fff; --text:#1a1a1a; --text-light:#666;
   --shadow:0 2px 12px rgba(0,0,0,0.08); --radius:14px;
-  --tab-height:70px; --header-height:56px;
+  --tab-height:70px; --legal-height:22px; --header-height:56px;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif;
@@ -18,16 +18,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 .header h1{font-size:17px;font-weight:600}
 .header-sub{font-size:11px;opacity:.8;margin-top:1px}
 .header-c{text-align:center}
-.tab-bar{position:fixed;bottom:0;left:0;right:0;height:var(--tab-height);
-  padding-bottom:env(safe-area-inset-bottom,8px);background:#fff;display:flex;
+.tab-bar{position:fixed;bottom:calc(var(--legal-height) + env(safe-area-inset-bottom,0px));left:0;right:0;height:var(--tab-height);
+  padding-bottom:8px;background:#fff;display:flex;
   border-top:1px solid #e0e0e0;z-index:1000}
 .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:3px;font-size:10px;color:var(--text-light);border:none;background:none;cursor:pointer}
 .tab.active{color:var(--green);font-weight:600}
 .tab-icon{font-size:24px;line-height:1}
+.legal-strip{position:fixed;bottom:0;left:0;right:0;z-index:1000;background:#fff;
+  height:calc(var(--legal-height) + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);
+  display:flex;align-items:center;justify-content:center;font-size:11px}
+.legal-strip a{color:var(--text-light)}
 .tab-admin-only{display:none}
 .tab-admin-only.vis{display:flex}
-.content{position:fixed;top:calc(var(--header-height) + env(safe-area-inset-top,0px));bottom:var(--tab-height);left:0;right:0;overflow:hidden}
+.content{position:fixed;top:calc(var(--header-height) + env(safe-area-inset-top,0px));bottom:calc(var(--tab-height) + var(--legal-height) + env(safe-area-inset-bottom,0px));left:0;right:0;overflow:hidden}
 .page{position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;
   -webkit-overflow-scrolling:touch;display:none;padding:16px}
 .page.active{display:block}
@@ -594,6 +598,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-s
 body.visitor-lock .header,
 body.visitor-lock .content,
 body.visitor-lock .tab-bar,
+body.visitor-lock .legal-strip,
 body.visitor-lock .admin-btn,
 body.visitor-lock #adminDropdown,
 body.visitor-lock #pwModal,

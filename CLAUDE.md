@@ -10,7 +10,7 @@ Tracé complet : France (Annecy → Roscoff) + Irlande (Cork → Sligo).
 - **Carte** : Leaflet 1.9.4 **auto-hébergé** dans `vendor/leaflet/` (hash identique à la release officielle ; plus aucun CDN tiers hors Firebase).
 - **Backend** : Firebase RTDB `france-irlande-bike`, région `europe-west1`. Lecture publique sauf `expenses`, `activity`, `visitorProfiles` (auth uniquement). Écriture : auth uniquement partout (mode archive).
 - **Deploy** : GitHub Pages → `https://tomcavaliere.github.io/France-Irlande/` (site servi sous le sous-chemin `/France-Irlande/`).
-- **PWA** : service worker `sw.js` (cache `ev1-v45`), `manifest.json`, icônes PNG dans `icons/`.
+- **PWA** : service worker `sw.js` (cache `ev1-v46`), `manifest.json`, icônes PNG dans `icons/`.
 - **Mode démo** : lien CV public (`…/#demo` ou bouton du gate) — backend Firebase remplacé par des stubs en mémoire, données 100 % fictives (voir section « Mode démo »).
 - **Tests** : Vitest (`npm test`) pour la logique pure — Node pur, aucun jsdom. Playwright (`npm run test:e2e`) pour les parcours de la démo + audit d'accessibilité axe-core.
 - **Lint/CI** : ESLint 9 flat config + GitHub Actions (`.github/workflows/ci.yml`) : job `test` (`lint`, `test`, `security:test`) et job `e2e` (Playwright Chromium) sur chaque push/PR.
