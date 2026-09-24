@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1a5e1f">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<title>Confidentialité et mentions légales — biketrip</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="legal-page">
+
+<header class="legal-header">
+  <h1>Confidentialité et mentions légales</h1>
+</header>
+
+<main class="legal-main">
+  <nav class="legal-back" aria-label="Retour à l'application">
+    <a href="./">← Carnet de voyage</a> · <a href="./#demo">Version démo</a>
+  </nav>
+
+  <section class="info-card" aria-labelledby="editeur">
+    <h2 id="editeur">Éditeur et responsable du traitement</h2>
+    <p>Ce site est un carnet de voyage personnel et non commercial, édité par
+      <strong>Tom Cavaliere</strong>, qui est aussi directeur de la publication et
+      responsable du traitement des données personnelles.</p>
+    <p>Contact : <a href="mailto:tomcavaliere66@gmail.com">tomcavaliere66@gmail.com</a></p>
+    <p>Hébergement : GitHub, Inc. (GitHub Pages), 88 Colin P. Kelly Jr. Street,
+      San Francisco, CA 94107, États-Unis.</p>
+  </section>
+
+  <section class="info-card" aria-labelledby="versions">
+    <h2 id="versions">Deux versions du site</h2>
+    <ul>
+      <li><strong>La version démo</strong> (lien « démo ») ne contient que des données
+        fictives. Rien de ce que vous y faites n'est envoyé à un serveur : tout reste
+        dans votre navigateur et disparaît au rechargement de la page.</li>
+      <li><strong>Le carnet archivé</strong> est le vrai carnet du voyage à vélo de Tom
+        et Chloé (2026), accessible avec un mot de passe partagé entre proches. Depuis la
+        fin du voyage, il est en lecture seule : on ne peut plus y commenter ni y
+        laisser de « bravo ».</li>
+    </ul>
+  </section>
+
+  <section class="info-card" aria-labelledby="traitements">
+    <h2 id="traitements">Données traitées</h2>
+
+    <h3>Commentaires et réponses</h3>
+    <ul>
+      <li><strong>Données :</strong> le nom ou prénom saisi, le texte et la date, publiés
+        par les proches pendant le voyage.</li>
+      <li><strong>Finalité :</strong> échanger avec les voyageurs autour de chaque étape.</li>
+      <li><strong>Base légale :</strong> votre consentement, donné en publiant le
+        commentaire.</li>
+      <li><strong>Visibilité :</strong> les commentaires sont affichés dans le carnet et
+        restent <strong>techniquement lisibles par toute personne</strong> qui interroge
+        directement la base de données : le mot de passe du carnet ne protège pas cet
+        accès.</li>
+      <li><strong>Conservation :</strong> tant que le carnet reste en ligne, ou jusqu'à
+        votre demande de suppression.</li>
+    </ul>
+
+    <h3>« Bravos » et mentions « j'aime »</h3>
+    <ul>
+      <li><strong>Données :</strong> un identifiant aléatoire créé sur votre appareil au
+        premier « bravo », sans nom associé.</li>
+      <li><strong>Finalité :</strong> compter les encouragements et éviter les doublons.</li>
+      <li><strong>Conservation :</strong> avec le carnet archivé.</li>
+    </ul>
+
+    <h3>Journal de connexions</h3>
+    <p>Pendant le voyage, le prénom saisi à l'entrée du carnet et la date de chaque
+      connexion étaient enregistrés, pour que les voyageurs sachent qui les suivait
+      (intérêt légitime). Ce journal et les profils associés ont été supprimés à
+      l'archivage du carnet, et plus aucune connexion n'est enregistrée.</p>
+
+    <h3>Contenus du voyage</h3>
+    <p>Positions, traces GPS, récits, photos et vidéos de Tom et Chloé, publiés par
+      eux. Le point de départ du tracé est masqué dans un rayon de 1,5 km. Si vous
+      apparaissez sur une photo et souhaitez qu'elle soit retirée, écrivez-nous.</p>
+  </section>
+
+  <section class="info-card" aria-labelledby="stockage">
+    <h2 id="stockage">Stockage sur votre appareil</h2>
+    <p>Le site n'utilise <strong>aucun cookie</strong>, aucune mesure d'audience et
+      aucune publicité. Il enregistre dans le stockage local de votre navigateur
+      (localStorage) uniquement ce qui est nécessaire à son fonctionnement :</p>
+    <ul>
+      <li><code>ev1-visitor-auth</code> : mémorise que vous avez saisi le mot de passe du
+        carnet ;</li>
+      <li><code>ev1-current-cache</code>, <code>ev1-stages-cache</code>,
+        <code>ev1-journals-cache</code>, <code>ev1-cmts-*</code> : copie du carnet pour la
+        lecture hors-ligne ;</li>
+      <li><code>ev1-demo</code> : mémorise que vous consultez la version démo ;</li>
+      <li><code>ev1-*-last-*</code> : délai anti-spam entre deux commentaires (version
+        démo) ;</li>
+      <li>espace d'administration uniquement : <code>offlineQueue</code> et
+        <code>ev1-expenses-cache</code>.</li>
+    </ul>
+    <p>Les fichiers de l'application sont aussi gardés en cache (service worker) pour
+      fonctionner hors-ligne. Ces traceurs sont strictement nécessaires au service et
+      exemptés de consentement (délibération CNIL n° 2020-091). Vous pouvez les
+      effacer à tout moment depuis les réglages de votre navigateur.</p>
+  </section>
+
+  <section class="info-card" aria-labelledby="destinataires">
+    <h2 id="destinataires">Destinataires et transferts</h2>
+    <p>Les données ne sont ni vendues ni partagées à des fins commerciales. Les
+      prestataires techniques suivants y ont accès pour faire fonctionner le site :</p>
+    <ul>
+      <li><strong>Google Firebase</strong> (carnet archivé) : base de données hébergée en
+        Belgique, authentification et stockage des photos et vidéos. Google peut traiter
+        des données aux États-Unis ; Google LLC adhère au cadre de protection des données
+        UE–États-Unis (Data Privacy Framework).</li>
+      <li><strong>GitHub</strong> : hébergement du site. Votre adresse IP figure dans ses
+        journaux techniques. GitHub, Inc. (États-Unis) adhère au Data Privacy
+        Framework.</li>
+      <li><strong>OpenStreetMap</strong> : fonds de carte. Votre navigateur télécharge les
+        tuiles depuis les serveurs de la fondation OpenStreetMap (Royaume-Uni, pays
+        couvert par une décision d'adéquation de la Commission européenne), qui reçoivent
+        votre adresse IP.</li>
+      <li>Espace d'administration uniquement : Open-Meteo (météo), Overpass API et
+        OpenCampingMap (campings et points d'eau).</li>
+    </ul>
+  </section>
+
+  <section class="info-card" aria-labelledby="droits">
+    <h2 id="droits">Vos droits</h2>
+    <p>Vous pouvez demander l'accès à vos données, leur rectification, leur effacement
+      (par exemple la suppression d'un commentaire), leur portabilité ou la limitation
+      de leur traitement, vous opposer à un traitement et retirer votre consentement à
+      tout moment. Écrivez à
+      <a href="mailto:tomcavaliere66@gmail.com">tomcavaliere66@gmail.com</a> : une
+      réponse vous sera apportée dans un délai d'un mois.</p>
+    <p>Si vous estimez que vos droits ne sont pas respectés, vous pouvez adresser une
+      réclamation à la CNIL (3 place de Fontenoy, TSA 80715, 75334 Paris Cedex 07 —
+      <a href="https://www.cnil.fr">www.cnil.fr</a>).</p>
+  </section>
+
+  <p class="legal-updated">Dernière mise à jour : 24 septembre 2026</p>
+</main>
+
+</body>
+</html>

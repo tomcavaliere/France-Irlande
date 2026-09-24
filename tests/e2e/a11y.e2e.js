@@ -56,6 +56,12 @@ test('archive visitor gate has no WCAG A/AA violations', async ({ page }) => {
   await expectNoViolations(page, 'gate visiteur (archive)');
 });
 
+test('privacy page has no WCAG A/AA violations', async ({ page }) => {
+  await page.goto('./confidentialite.html');
+  await expect(page.getByRole('heading', { level: 1, name: 'Confidentialité et mentions légales' })).toBeVisible();
+  await expectNoViolations(page, 'confidentialité');
+});
+
 test('admin views have no WCAG A/AA violations', async ({ page }) => {
   await enterDemoAdmin(page);
   for (const tab of ['stages', 'journal', 'depenses', 'info', 'activity']) {

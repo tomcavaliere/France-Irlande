@@ -73,6 +73,19 @@ test.describe('demo mode (service worker bloqué, réseau intercepté)', () => {
     await weather;
   });
 
+  test('links to the privacy page from the map and the journal', async ({ page }) => {
+    await page.goto(DEMO_URL);
+    await expect(page.locator('.leaflet-control-attribution a[href="confidentialite.html"]')).toBeVisible();
+
+    await openJournal(page);
+    await page.locator('#page-journal .legal-link a').click();
+    await expect(page).toHaveURL(/\/confidentialite\.html$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Confidentialité et mentions légales' })).toBeVisible();
+
+    await page.getByRole('link', { name: 'Version démo' }).click();
+    await expect(page.locator('#demoBanner')).toBeVisible();
+  });
+
   test('lets a visitor post a comment', async ({ page }) => {
     await page.goto(DEMO_URL);
     await openJournal(page);
@@ -208,5 +221,9 @@ test.describe('PWA', () => {
     await expect(page.locator('#demoBanner')).toBeVisible();
     await expect(page.locator('#map.leaflet-container')).toBeVisible();
     await openJournal(page);
+
+    // La page de confidentialité est précachée : lisible hors-ligne.
+    await page.goto('./confidentialite.html');
+    await expect(page.getByRole('heading', { level: 1, name: 'Confidentialité et mentions légales' })).toBeVisible();
   });
 });

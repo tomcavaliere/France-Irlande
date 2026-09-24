@@ -43,6 +43,7 @@ function initMap(){
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
     attribution:'&copy; OpenStreetMap',maxZoom:18
   }).addTo(map);
+  map.attributionControl.addAttribution('<a href="confidentialite.html">Confidentialité</a>');
 
   // Deux traces : France (vert) + Irlande (vert)
   L.polyline(FULL_ROUTE_FR,{color:'#999',weight:3,opacity:.4}).addTo(map);

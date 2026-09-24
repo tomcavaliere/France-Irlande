@@ -59,6 +59,15 @@ describe('sw.js PRECACHE', () => {
     expect(absent).toEqual([]);
   });
 
+  it('precaches the local pages linked from index.html (readable offline)', () => {
+    const pages = [...indexHtml.matchAll(/<a[^>]*\shref="([^"#]+\.html)"/g)].map((m) => m[1]);
+    expect(pages).toContain('confidentialite.html');
+    const missing = pages
+      .map((ref) => './' + ref.replace(/^\.\//, ''))
+      .filter((ref) => !precache.includes(ref));
+    expect(missing).toEqual([]);
+  });
+
   it('has no duplicate entries', () => {
     expect(new Set(precache).size).toBe(precache.length);
   });

@@ -649,3 +649,22 @@ body.demo-mode .content{top:calc(var(--header-height) + env(safe-area-inset-top,
 
 /* Lien d'attribution Leaflet : souligné pour être distinguable sans la couleur. */
 .leaflet-control-attribution a{text-decoration:underline}
+
+/* ==== CONFIDENTIALITÉ (confidentialite.html, page statique) ==== */
+body.legal-page{position:static;overflow:auto;height:auto}
+.legal-header{background:var(--green);color:#fff;text-align:center;
+  padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px))}
+.legal-header h1{font-size:18px;font-weight:700}
+.legal-main{max-width:720px;margin:0 auto;padding:16px}
+.legal-main .info-card h2{font-size:16px;font-weight:700;margin-bottom:8px}
+.legal-main .info-card h3{margin-top:12px}
+.legal-main .info-card p+p{margin-top:6px}
+.legal-main .info-card ul{padding-left:18px;margin:6px 0}
+.legal-main .info-card li{font-size:13px;color:var(--text-light);line-height:1.6}
+.legal-main strong{color:var(--text)}
+.legal-main a{color:var(--green)}
+.legal-back{font-size:13px;margin-bottom:14px}
+.legal-updated{font-size:12px;color:var(--text-light);text-align:center;margin:8px 0 24px}
+/* Lien vers la page depuis l'app (gate visiteur, carnet) */
+.legal-link{text-align:center;font-size:12px;margin-top:14px}
+.legal-link a{color:var(--text-light)}
