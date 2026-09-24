@@ -231,11 +231,11 @@ function updateVisitorPassword(){
 
   if(saveBtn)saveBtn.disabled=true;
   _hashPassword(password).then(function(hash){
-    var user=window._fbAuth&&window._fbAuth.currentUser;
+    // visitorAuth est en lecture publique : n'y écrire aucune donnée
+    // personnelle (l'email de l'admin y était exposé via updatedBy).
     var payload={
       passwordHash:hash,
-      updatedAt:Date.now(),
-      updatedBy:user&&user.email?user.email:''
+      updatedAt:Date.now()
     };
     return Db.set(VISITOR_AUTH_CONFIG_PATH,payload).then(function(){
       _visitorPasswordHashRevision++;

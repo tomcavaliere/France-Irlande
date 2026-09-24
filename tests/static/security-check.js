@@ -150,6 +150,34 @@ collectWriteRules(rootRules, '', []).forEach(function(w){
   }
 });
 
+/**
+ * Collecte les clés de l'arbre (hors règles ".read", ".validate"…) avec leur chemin.
+ * @param {object} node
+ * @param {string} nodePath
+ * @param {Array<{path:string, key:string}>} acc
+ * @returns {Array<{path:string, key:string}>}
+ */
+function collectKeys(node, nodePath, acc){
+  if (!node || typeof node !== 'object') return acc;
+  Object.keys(node).forEach(function(key){
+    if (key.startsWith('.')) return;
+    acc.push({ path: nodePath + '/' + key, key: key });
+    collectKeys(node[key], nodePath + '/' + key, acc);
+  });
+  return acc;
+}
+
+// RGPD : aucun email / auteur dans un nœud lisible par tous (API RTDB publique).
+Object.keys(rootRules).forEach(function(node){
+  if (rootRules[node] && rootRules[node]['.read'] === true) {
+    collectKeys(rootRules[node], '/' + node, []).forEach(function(k){
+      if (/mail|updatedBy/i.test(k.key)) {
+        failures.push(`Donnée personnelle autorisée dans un nœud public "${k.path}" (lecture publique) : retirer ce champ.`);
+      }
+    });
+  }
+});
+
 // 2) Vérifier la présence d'une CSP dans index.html.
 const indexPath = path.join(REPO_ROOT, 'index.html');
 let indexHtml = '';
@@ -231,6 +259,7 @@ if (failures.length) {
 
 console.log('✅ Contrôles cybersécurité OK');
 console.log('- Règles Firebase sensibles verrouillées, aucune écriture anonyme');
+console.log('- Aucun email ni auteur dans un nœud en lecture publique');
 console.log('- CSP détectée');
 console.log('- Aucun pattern JS dangereux détecté');
 console.log('- Aucun fetch() direct détecté');
