@@ -4,7 +4,7 @@
 // Pas de DOM, pas d'I/O. Double export navigateur/CommonJS pour les tests.
 
 (function(){
-  // Garder cette liste alignée avec firebase.rules.json (/activity/$id/type).
+  // Garder cette liste alignée avec firebase/database.rules.json (/activity/$id/type).
   var VALID_TYPES = ['admin_login', 'visitor_login', 'visitor_suspicious'];
   var NAME_MAX = 60;
 

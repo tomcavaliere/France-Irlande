@@ -103,19 +103,19 @@ function getCspDirective(cspContent, name){
 const failures = [];
 
 // 1) Vérifier les règles Firebase sensibles.
-const rulesPath = path.join(REPO_ROOT, 'firebase.rules.json');
+const rulesPath = path.join(REPO_ROOT, 'firebase', 'database.rules.json');
 let rulesRaw = '';
 try {
   rulesRaw = fs.readFileSync(rulesPath, 'utf8');
 } catch (err) {
-  failures.push(`Impossible de lire firebase.rules.json: ${err && err.message ? err.message : err}`);
+  failures.push(`Impossible de lire firebase/database.rules.json: ${err && err.message ? err.message : err}`);
 }
 let rulesJson = null;
 if (rulesRaw) {
   try {
     rulesJson = JSON.parse(rulesRaw);
   } catch (err) {
-    failures.push(`JSON invalide dans firebase.rules.json: ${err && err.message ? err.message : err}`);
+    failures.push(`JSON invalide dans firebase/database.rules.json: ${err && err.message ? err.message : err}`);
   }
 }
 const rootRules = rulesJson && rulesJson.rules ? rulesJson.rules : {};

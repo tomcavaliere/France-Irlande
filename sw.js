@@ -6,7 +6,7 @@ const CACHE = 'ev1-v43';
 const PRECACHE = [
   './',
   './index.html',
-  './styles.css',
+  './css/styles.css',
   './vendor/leaflet/leaflet.css',
   './vendor/leaflet/leaflet.js',
   './manifest.json',
