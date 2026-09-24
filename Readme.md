@@ -21,7 +21,9 @@ fonctionne aussi hors-ligne une fois chargée.
 ## Fonctionnalités
 
 **Visiteurs** : carte Leaflet du tracé complet avec les traces GPX réelles, progression en
-kilomètres, carnet de voyage (récit, photos, vidéos), commentaires et « bravos ».
+kilomètres, carnet de voyage (récit, photos, vidéos), commentaires et « bravos ». Depuis
+l'archivage, la vraie version est en lecture seule : plus de formulaire de commentaire, les
+bravos restent affichés en compteur (la démo garde toutes les interactions).
 
 **Admin** (Firebase Auth, déconnexion automatique après 3 min d'inactivité) :
 - mise à jour de la position GPS, création d'étapes, import de traces GPX
@@ -68,9 +70,10 @@ flowchart LR
     publique, aucune écriture anonyme depuis l'archivage.
   - Un script de contrôle interdit `eval`, `document.write` et tout `fetch()` direct.
 - **Confidentialité (RGPD).** Page [Confidentialité et mentions légales](https://tomcavaliere.github.io/France-Irlande/confidentialite.html),
-  aucun cookie ni mesure d'audience, collecte minimale (plus aucun suivi depuis
-  l'archivage, point de départ du tracé masqué). Registre des traitements et audit dans
-  [`docs/rgpd.md`](docs/rgpd.md).
+  accessible depuis chaque onglet. Aucun cookie ni mesure d'audience, collecte minimale :
+  plus aucun suivi depuis l'archivage, identifiant visiteur créé seulement lors d'une
+  écriture, aucun appel tiers superflu (la météo n'est chargée que pour l'admin), point de
+  départ du tracé masqué. Registre des traitements et audit dans [`docs/rgpd.md`](docs/rgpd.md).
 
 ### Choix et compromis
 
