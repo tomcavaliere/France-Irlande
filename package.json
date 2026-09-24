@@ -11,6 +11,7 @@
     "serve": "node scripts/serve.mjs"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.63.0",
     "eslint": "^9.39.4",
     "globals": "^15.15.0",
