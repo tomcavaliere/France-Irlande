@@ -203,12 +203,14 @@ test.describe('PWA', () => {
     await page.goto(DEMO_URL);
     await expect(page.locator('#demoBanner')).toBeVisible();
 
-    const swState = await page.evaluate(async () => {
+    // `ready` se résout dès que le worker passe « activating », avant la fin de
+    // son handler `activate` : sur une machine lente (CI), attendre « activated ».
+    await expect.poll(() => page.evaluate(async () => {
       const reg = await navigator.serviceWorker.ready;
-      return { state: reg.active && reg.active.state, scope: reg.scope };
-    });
-    expect(swState.state).toBe('activated');
-    expect(new URL(swState.scope).pathname).toBe('/France-Irlande/');
+      return reg.active && reg.active.state;
+    })).toBe('activated');
+    const scope = await page.evaluate(async () => (await navigator.serviceWorker.ready).scope);
+    expect(new URL(scope).pathname).toBe('/France-Irlande/');
 
     // Critères d'installation évalués par Chromium lui-même (manifest, icônes, SW).
     const cdp = await context.newCDPSession(page);
