@@ -1,14 +1,13 @@
-# Audit fixes — Batch B (Quick wins + fiabilité)
+# Batch B — CI, doc et fiabilité
 
 ## Contexte
 
-Traitement du scope **B** issu de l'audit [`analyse-les-faiblesses-de-curried-gem.md`](/Users/tomcavaliere/.claude/plans/analyse-les-faiblesses-de-curried-gem.md) :
-items 1, 2, 3, 6, 7 de la table de priorisation. L'objectif est de poser des garde-fous CI,
-recaler la doc sur la réalité du code modularisé, et combler les trous de fiabilité
-visibles par l'utilisateur (sauvegardes silencieuses, absence de feedback lazy-load).
+Deuxième lot d'améliorations de la roadmap : poser des garde-fous CI, aligner la doc
+sur le code modularisé, et mieux informer l'utilisateur (échec d'écriture signalé,
+feedback pendant le lazy-load).
 
-Périmètre volontairement resserré : on ne touche pas à la couverture de tests
-(item 4), ni au throttle serveur Firebase (item 8), ni aux plans en cours (item 5).
+Périmètre volontairement resserré : la couverture de tests et les plans en cours sont
+traités séparément.
 
 ---
 
@@ -256,10 +255,8 @@ Après chaque commit, `npm test` doit passer. À la fin, `npm run lint` doit pas
 
 ## Hors scope (reporté)
 
-- Item 4 (couverture tests +30 % via extraction `*-core`) — trop lourd pour ce batch
-- Item 5 (finalisation d'un plan actif) — décision produit
-- Item 8 (throttle serveur commentaires) — requiert revue sécurité Firebase Rules
-- Items 9, 10, 11, 12 (fuites mémoire, cache Leaflet, validation visiteur, role=status toasts) — issues ponctuelles à traiter séparément
+- Couverture tests via extraction `*-core` — lot dédié
+- Finalisation d'un plan actif — décision produit
 
 ---
 

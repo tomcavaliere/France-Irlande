@@ -21,9 +21,8 @@ fonctionne aussi hors-ligne une fois chargée.
 ## Fonctionnalités
 
 **Visiteurs** : carte Leaflet du tracé complet avec les traces GPX réelles, progression en
-kilomètres, carnet de voyage (récit, photos, vidéos), commentaires et « bravos ». Depuis
-l'archivage, la vraie version est en lecture seule : plus de formulaire de commentaire, les
-bravos restent affichés en compteur (la démo garde toutes les interactions).
+kilomètres, carnet de voyage (récit, photos, vidéos), commentaires et « bravos ». La vraie
+version est archivée en lecture seule ; la démo garde toutes les interactions.
 
 **Admin** (Firebase Auth, déconnexion automatique après 3 min d'inactivité) :
 - mise à jour de la position GPS, création d'étapes, import de traces GPX
@@ -67,13 +66,11 @@ flowchart LR
   - CSP stricte, sans script inline ; Leaflet est auto-hébergé.
   - Échappement systématique des contenus utilisateur.
   - Règles Firebase versionnées (`firebase/`) et vérifiées en CI : lecture seule
-    publique, aucune écriture anonyme depuis l'archivage.
+    publique, aucune écriture anonyme.
   - Un script de contrôle interdit `eval`, `document.write` et tout `fetch()` direct.
 - **Confidentialité (RGPD).** Page [Confidentialité et mentions légales](https://tomcavaliere.github.io/France-Irlande/confidentialite.html),
-  accessible depuis chaque onglet. Aucun cookie ni mesure d'audience, collecte minimale :
-  plus aucun suivi depuis l'archivage, identifiant visiteur créé seulement lors d'une
-  écriture, aucun appel tiers superflu (la météo n'est chargée que pour l'admin), point de
-  départ du tracé masqué. Registre des traitements et audit dans [`docs/rgpd.md`](docs/rgpd.md).
+  accessible depuis chaque onglet. Aucun cookie ni mesure d'audience, collecte minimale,
+  point de départ du tracé masqué.
 
 ### Choix et compromis
 
@@ -123,7 +120,7 @@ tests/          unit/ (Vitest) · static/ (garde-fous, sécurité) · e2e/ (Play
 firebase/       règles de sécurité RTDB et Storage versionnées
 gpx/            traces GPX sources du tracé
 scripts/        serveur local, migration de données
-docs/           specs et plans de chaque fonctionnalité, captures, registre RGPD
+docs/           specs et plans de chaque fonctionnalité, captures
 ```
 
 Les dossiers de `js/` correspondent aux couches de l'architecture ; l'ordre de chargement

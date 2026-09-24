@@ -7,7 +7,7 @@ Tracé complet : France (Annecy → Roscoff) + Irlande (Cork → Sligo).
 ## Stack
 
 - **Frontend** : HTML/CSS/JS vanilla — `index.html` (~350 lignes, shell + bootstrap) + `css/styles.css` (~690 lignes) + ~35 scripts dans `js/`, rangés par couche. Zéro build, zéro framework, chargés via `<script>` dans l'ordre.
-- **Carte** : Leaflet 1.9.4 **auto-hébergé** dans `vendor/leaflet/` (hash identique à la release officielle ; plus aucun CDN tiers hors Firebase).
+- **Carte** : Leaflet 1.9.4 **auto-hébergé** dans `vendor/leaflet/` (hash identique à la release officielle ; aucun CDN tiers hors Firebase).
 - **Backend** : Firebase RTDB `france-irlande-bike`, région `europe-west1`. Lecture publique sauf `expenses`, `activity`, `visitorProfiles` (auth uniquement). Écriture : auth uniquement partout (mode archive).
 - **Deploy** : GitHub Pages → `https://tomcavaliere.github.io/France-Irlande/` (site servi sous le sous-chemin `/France-Irlande/`).
 - **PWA** : service worker `sw.js` (cache `ev1-v46`), `manifest.json`, icônes PNG dans `icons/`.
@@ -87,7 +87,7 @@ docs/
   superpowers/specs/        — design technique détaillé de chaque feature (source de vérité)
   superpowers/plans/        — plans d'implémentation step-by-step (checkbox) pour agents
   media/                    — captures d'écran du README
-  rgpd.md                   — registre des traitements RGPD, audit, actions manuelles
+  rgpd.md                   — registre des traitements RGPD
 eslint.config.js            — ESLint 9 flat config (globales de l'app générées au lint)
 playwright.config.js        — config E2E (Chromium, viewport Pixel 7, serveur scripts/serve.mjs)
 .github/workflows/ci.yml    — CI : job test (lint + unit + sécurité) + job e2e
@@ -232,14 +232,14 @@ Mini event-bus : `Events.on(name, fn)`, `Events.off(name, fn)`, `Events.emit(nam
 - **Publication journal** : champ `published: boolean` dans `stages[date]`. Absence du champ = brouillon, invisible pour les visiteurs. `renderJournal()` filtre via `filterVisibleJournalDates(stages, isAdmin)`.
 - **Boot visiteur** : charge `/current` et `/tracks`. `/stages` chargé à l'ouverture de l'onglet Carnet (d'où `StagesCore.dayCount`). Photos, commentaires, bravos et journal chargés lazy par date via `IntersectionObserver` (`loadStageContent`) : les squelettes restent sur les entrées hors écran.
 - **Hors-ligne** : state dans `localStorage` + `offlineQueue`. `tryWrite` met en file commentaires, likes/réponses, dépenses ; le journal passe par `queueWrite`. Position (`updatePosition`), étapes et GPX écrivent directement (file mémoire du SDK seulement). Photos/vidéos indisponibles hors-ligne.
-- **Service worker** : chemins PRECACHE **relatifs** (`'./js/…'`) — le site est sous `/France-Irlande/`, un chemin absolu vise la racine du domaine (404) et `cache.addAll` échoue : le SW ne s'installe plus (bug corrigé, gardé par `tests/static/sw-precache.test.js`). App shell (HTML, JS) → network-first ; CSS, images, vendor → cache-first. Firebase / open-meteo / Overpass → jamais mis en cache. **Bumper `CACHE`** à chaque changement d'asset précaché ; tout script ajouté à `index.html` doit être ajouté à `PRECACHE`.
+- **Service worker** : chemins PRECACHE **relatifs** (`'./js/…'`) — le site est sous `/France-Irlande/`, un chemin absolu vise la racine du domaine (404) et `cache.addAll` échoue : le SW ne s'installerait pas (gardé par `tests/static/sw-precache.test.js`). App shell (HTML, JS) → network-first ; CSS, images, vendor → cache-first. Firebase / open-meteo / Overpass → jamais mis en cache. **Bumper `CACHE`** à chaque changement d'asset précaché ; tout script ajouté à `index.html` doit être ajouté à `PRECACHE`.
 - **Admin** : déconnexion auto après 3 min d'inactivité.
 - **`TOTAL_KM` fixture ≠ prod** : la fixture de test (~2337 km) est sous-échantillonnée, la prod fait ~2978 km. Ne pas confondre dans les assertions.
 
 ## Mode archive (vraie version)
 
 - `ARCHIVED = !window.DEMO_MODE` (`state.js`) ; `visitorWritesDisabled()` = archivé et non admin.
-- Visiteurs : pas de formulaire de commentaire/réponse, bravos en compteur seul, plus aucun tracking d'`activity` (admin compris) ni de `visitorProfiles`. Gate : mot de passe seul, sans prénom. Note « Voyage terminé » en tête du carnet. L'admin garde tous ses droits (modération).
+- Visiteurs : pas de formulaire de commentaire/réponse, bravos en compteur seul, aucun tracking d'`activity` (admin compris) ni de `visitorProfiles`. Gate : mot de passe seul, sans prénom. Note « Voyage terminé » en tête du carnet. L'admin garde tous ses droits (modération).
 - `firebase/database.rules.json` : **toutes** les règles `.write` sont `auth != null` ; `tests/static/security-check.js` échoue sur toute écriture anonyme. ⚠️ Les règles se publient **à la main** dans la console Firebase.
 - Le gate visiteur (mot de passe partagé, hash SHA-256 lisible dans `/visitorAuth`) est **cosmétique** : les données sont en lecture publique via l'API RTDB. Assumé pour un carnet familial.
 
@@ -256,7 +256,7 @@ Version publique pour lien CV : mêmes fonctionnalités, données 100 % fictives
 
 ## RGPD — ne jamais casser
 
-Registre, audit et actions manuelles : `docs/rgpd.md`. Page publique : `confidentialite.html`.
+Registre des traitements : `docs/rgpd.md`. Page publique : `confidentialite.html`.
 
 - **Aucune donnée personnelle dans un nœud en lecture publique** (email, auteur, `updatedBy`…) : `tests/static/security-check.js` échoue sur toute clé `mail`/`updatedBy` sous un nœud `.read: true`.
 - **Identifiant visiteur** : `getVisitorId()` (crée `ev1_visitor_id`) uniquement dans une action d'écriture (bravo, like, réponse) ; tout rendu passe par `peekVisitorId()`. Retiré au démarrage en archive (`purgeArchivedVisitorId`, `purgeArchivedVisitorName`).

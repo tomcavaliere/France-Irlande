@@ -643,7 +643,7 @@ body.demo-mode .content{top:calc(var(--header-height) + env(safe-area-inset-top,
 .visitor-demo-sep::before,.visitor-demo-sep::after{content:'';flex:1;height:1px;background:#e0dcd2}
 @media (max-width:480px){.demo-banner-label-long{display:none}}
 
-/* Le zoom n'est plus bloqué (accessibilité, WCAG 1.4.4). iOS Safari zoome
+/* Le zoom reste autorisé (accessibilité, WCAG 1.4.4). iOS Safari zoome
    automatiquement sur tout champ < 16px au focus : sur écran tactile, les
    champs passent donc à 16px. */
 @media (pointer:coarse){

@@ -1,7 +1,7 @@
 # Extraction métier — `journal-core`, `stages-core`, `visitor-auth-core`
 
 **Date :** 2026-04-20
-**Contexte :** Item #4 du rapport d'audit (`/Users/tomcavaliere/.claude/plans/analyse-les-faiblesses-de-curried-gem.md`).
+**Contexte :** lot « couverture de tests » de la roadmap.
 Les modules `journal.js`, `stages.js` et `visitor-auth.js` contiennent des bouts de métier pur (validations, calculs, formatage) noyés dans le code DOM/Firebase. Ce spec extrait ces helpers vers trois nouveaux modules purs `-core.js` testés, dans la lignée des 6 modules purs existants (`gps-core`, `utils`, `campings-core`, `weather-core`, `offline-core`, `events-core`).
 
 ## Objectif

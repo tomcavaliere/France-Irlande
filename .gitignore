@@ -7,3 +7,5 @@ test-results/
 playwright-report/
 # Clé admin Firebase (scripts/migrate-photos.js) : ne jamais commiter
 serviceAccountKey*.json
+# Notes locales non publiées
+*.local.md

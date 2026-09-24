@@ -246,7 +246,7 @@ function updateVisitorPassword(){
   if(saveBtn)saveBtn.disabled=true;
   _hashPassword(password).then(function(hash){
     // visitorAuth est en lecture publique : n'y écrire aucune donnée
-    // personnelle (l'email de l'admin y était exposé via updatedBy).
+    // personnelle (hash et date uniquement).
     var payload={
       passwordHash:hash,
       updatedAt:Date.now()
