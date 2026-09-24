@@ -152,6 +152,18 @@ test.describe('demo mode (service worker bloqué, réseau intercepté)', () => {
     await expect(page.locator('.j-bravo-btn')).toHaveCount(0);
     await expect(page.locator('textarea[id^="ctxt-"]')).toHaveCount(0);
   });
+
+  test('archive gate asks only for the password, never for a name', async ({ page }) => {
+    await page.goto(DEMO_URL);
+    await page.evaluate(() => {
+      window.ARCHIVED = true;
+      window.showVisitorGate();
+    });
+
+    await expect(page.locator('#visitorGate')).toHaveClass(/\bvis\b/);
+    await expect(page.locator('#visitorPwInput')).toBeVisible();
+    await expect(page.locator('#visitorNameInput')).toBeHidden();
+  });
 });
 
 test.describe('PWA', () => {

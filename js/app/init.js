@@ -63,6 +63,7 @@ document.addEventListener('DOMContentLoaded',function(){
   initEventDelegation();
   _subscribeEvents();
   purgeArchivedVisitorId();
+  purgeArchivedVisitorName();
   loadLocalCache();
   loadExpensesCache();
   loadAllCommentsCache();

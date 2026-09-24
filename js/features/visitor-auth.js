@@ -46,7 +46,17 @@ function getVisitorName(){
 function _setVisitorSession(name){
   if(window.DEMO_MODE)return;
   localStorage.setItem(VISITOR_AUTH_KEY,'1');
-  localStorage.setItem(VISITOR_NAME_KEY,name);
+  if(name)localStorage.setItem(VISITOR_NAME_KEY,name);
+}
+
+/**
+ * Carnet archivé : le prénom saisi au gate pendant le voyage ne sert plus
+ * (plus de commentaires ni de suivi) — on le retire des appareils.
+ */
+function purgeArchivedVisitorName(){
+  if(!ARCHIVED)return;
+  try{localStorage.removeItem(VISITOR_NAME_KEY);}
+  catch(e){console.error('[purgeArchivedVisitorName]',e);}
 }
 
 function clearVisitorSession(){
@@ -100,8 +110,12 @@ function showVisitorGate(opts){
   // Afficher le bouton de fermeture uniquement si déjà authentifié (changement de profil)
   var alreadyAuth=isVisitorAuthenticated()||isAdmin;
   gate.classList.toggle('can-close',!!alreadyAuth);
-  // Pré-remplir le nom si déjà connu
+  // Carnet archivé : mot de passe seul, le prénom n'a plus d'usage (minimisation).
   var nameEl=document.getElementById('visitorNameInput');
+  var nameField=nameEl?nameEl.closest('.visitor-field'):null;
+  if(nameField)nameField.hidden=ARCHIVED;
+  if(ARCHIVED)nameEl=null;
+  // Pré-remplir le nom si déjà connu
   if(nameEl&&getVisitorName())nameEl.value=getVisitorName();
   var pwEl=document.getElementById('visitorPwInput');
   if(pwEl)pwEl.value='';
@@ -151,13 +165,13 @@ function checkVisitorPw(){
   var nameEl=document.getElementById('visitorNameInput');
   var pwEl=document.getElementById('visitorPwInput');
   var errEl=document.getElementById('visitorGateErr');
-  var name=nameEl?nameEl.value.trim():'';
+  var name=nameEl&&!ARCHIVED?nameEl.value.trim():'';
   var password=pwEl?pwEl.value:'';
 
   if(errEl)errEl.classList.remove('vis');
 
-  // Valider le nom en premier
-  var nameV=Utils.validateVisitorName(name);
+  // Valider le nom en premier (sauf carnet archivé : mot de passe seul)
+  var nameV=ARCHIVED?{ok:true}:Utils.validateVisitorName(name);
   if(!nameV.ok){
     _trackSuspiciousVisitorAttempt('invalid_name',name);
     if(errEl){errEl.textContent=nameV.error;errEl.classList.add('vis');}
@@ -185,7 +199,7 @@ function checkVisitorPw(){
       if(gate)gate.classList.remove('vis');
       _visitorGateHardLock=false;
       document.body.classList.remove('visitor-lock');
-      showToast('Bienvenue, '+escHtml(name)+' \uD83D\uDEB4','success');
+      showToast((name?'Bienvenue, '+escHtml(name):'Bienvenue')+' \uD83D\uDEB4','success');
       // Rafraîchir les formulaires de commentaire ouverts
       if(typeof patchStageComments==='function'){
         document.querySelectorAll('.comment-form-visitor').forEach(function(form){

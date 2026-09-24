@@ -47,6 +47,15 @@ test('visitor views have no WCAG A/AA violations', async ({ page }) => {
   await expectNoViolations(page, 'connexion admin');
 });
 
+test('archive visitor gate has no WCAG A/AA violations', async ({ page }) => {
+  await page.evaluate(() => {
+    window.ARCHIVED = true;
+    window.showVisitorGate();
+  });
+  await expect(page.locator('#visitorGate')).toHaveClass(/\bvis\b/);
+  await expectNoViolations(page, 'gate visiteur (archive)');
+});
+
 test('admin views have no WCAG A/AA violations', async ({ page }) => {
   await enterDemoAdmin(page);
   for (const tab of ['stages', 'journal', 'depenses', 'info', 'activity']) {
