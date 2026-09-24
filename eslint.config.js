@@ -5,15 +5,14 @@ import globals from 'globals';
 /**
  * Globales partagées entre les scripts classiques de js/ (chargés via <script>,
  * sans modules) : fonctions et var de premier niveau, namespaces window.Xxx,
- * const du tracé et données Campspace. Générées à chaque lint : une nouvelle
+ * const du tracé et données Campspace (js/data/). Générées à chaque lint : une nouvelle
  * fonction est reconnue d'office, une faute de frappe devient une erreur no-undef.
  * @returns {Object<string, 'writable'>}
  */
 function collectAppGlobals(){
-  const files = fs.readdirSync('js')
+  const files = fs.readdirSync('js', { recursive: true })
     .filter((f) => f.endsWith('.js'))
-    .map((f) => path.join('js', f))
-    .concat(['campspace-data.js']);
+    .map((f) => path.join('js', f));
   const names = new Set(['L']); // Leaflet (vendor/leaflet/leaflet.js)
   files.forEach((file) => {
     const src = fs.readFileSync(file, 'utf8');
@@ -33,14 +32,13 @@ export default [
     ignores: [
       'node_modules/',
       'coverage/',
-      'js/route-data.js',
-      'campspace-data.js',
+      'js/data/',
       'sw.js',
       'vendor/',
     ],
   },
   {
-    files: ['js/firebase-init.js'],
+    files: ['js/services/firebase-init.js'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
@@ -54,7 +52,7 @@ export default [
   },
   {
     files: ['js/**/*.js'],
-    ignores: ['js/firebase-init.js'],
+    ignores: ['js/services/firebase-init.js'],
     languageOptions: {
       ecmaVersion: 2020,
       sourceType: 'script',
@@ -69,22 +67,8 @@ export default [
     },
   },
   {
-    files: [
-      'js/gps-core.js',
-      'js/activity-core.js',
-      'js/dashboard-core.js',
-      'js/comments-core.js',
-      'js/demo-core.js',
-      'js/db.js',
-      'js/offline-core.js',
-      'js/weather-core.js',
-      'js/campings-core.js',
-      'js/events-core.js',
-      'js/journal-core.js',
-      'js/stages-core.js',
-      'js/visitor-auth-core.js',
-      'js/utils.js',
-    ],
+    // Modules à double export (window.Xxx + module.exports pour Vitest).
+    files: ['js/core/**/*.js', 'js/services/db.js'],
     languageOptions: {
       ecmaVersion: 2020,
       sourceType: 'script',

@@ -1,7 +1,7 @@
 // activity.js
 // Admin-only activity dashboard + connection event tracking.
 
-// Logique pure (normalisation, filtres, séries, classement) : js/activity-core.js.
+// Logique pure (normalisation, filtres, séries, classement) : js/core/activity-core.js.
 
 function _activityRandomToken(){
   if(window.crypto&&typeof window.crypto.randomUUID==='function')return window.crypto.randomUUID();

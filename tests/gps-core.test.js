@@ -1,11 +1,11 @@
-// Tests unitaires pour js/gps-core.js
+// Tests unitaires pour js/core/gps-core.js
 // Lancer avec : npm test
 //
 // On utilise une fixture sous-échantillonnée du vrai tracé biketrip
 // (25 points en France + 25 en Irlande) pour rester déterministe et rapide.
 
 import { describe, it, expect } from 'vitest';
-import gpsCore from '../js/gps-core.js';
+import gpsCore from '../js/core/gps-core.js';
 import fixture from './fixtures/route-sample.js';
 
 const { snapToRoute, routePointsAhead, ptsBbox, computeStageInfo, campingDist,

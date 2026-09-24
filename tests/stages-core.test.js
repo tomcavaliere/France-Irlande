@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import StagesCore from '../js/stages-core.js';
+import StagesCore from '../js/core/stages-core.js';
 
 const {
   countryFlag, formatStageDateLabel, computeRecapTotals, isValidStageDate, buildManualStage,

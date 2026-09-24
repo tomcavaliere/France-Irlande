@@ -1,6 +1,6 @@
 // firebase-init.js
 // En mode démo (window.DEMO_MODE), Firebase n'est JAMAIS chargé : les stubs
-// _fb* sont installés par js/demo-mode.js et aucune requête réseau ne part.
+// _fb* sont installés par js/demo/demo-mode.js et aucune requête réseau ne part.
 // Sinon, imports dynamiques + top-level await : le module reste "en cours"
 // tant que Firebase n'est pas chargé, donc DOMContentLoaded (et le timer
 // 800 ms de init.js qui appelle initFirebase) attend les globales — même

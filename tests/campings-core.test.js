@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import campingsCore from '../js/campings-core.js';
+import campingsCore from '../js/core/campings-core.js';
 
 const { nearTrace, normalizeWebsite, campingTags, mapCampingFeature } = campingsCore;
 

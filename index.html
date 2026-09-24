@@ -13,46 +13,49 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <title>biketrip — Annecy → Sligo</title>
 <!-- Flag démo évalué au parse (sans defer) — la CSP interdit les scripts inline -->
-<script src="js/demo-core.js"></script>
-<script src="js/demo-flag.js"></script>
-<script type="module" src="js/firebase-init.js"></script>
+<script src="js/core/demo-core.js"></script>
+<script src="js/demo/demo-flag.js"></script>
+<script type="module" src="js/services/firebase-init.js"></script>
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <!-- Leaflet 1.9.4 auto-hébergé (vendor/leaflet, hash identique à la release officielle) -->
 <script defer src="vendor/leaflet/leaflet.js"></script>
-<script defer src="js/gps-core.js"></script>
-<script defer src="js/utils.js"></script>
-<script defer src="js/offline-core.js"></script>
-<script defer src="js/weather-core.js"></script>
-<script defer src="js/campings-core.js"></script>
-<script defer src="js/events-core.js"></script>
-<script defer src="js/journal-core.js"></script>
-<script defer src="js/stages-core.js"></script>
-<script defer src="js/visitor-auth-core.js"></script>
-<script defer src="js/activity-core.js"></script>
-<script defer src="js/dashboard-core.js"></script>
-<script defer src="js/comments-core.js"></script>
-<script defer src="js/route-data.js"></script>
-<script defer src="js/state.js"></script>
-<script defer src="js/demo-data.js"></script>
-<script defer src="js/demo-mode.js"></script>
-<script defer src="js/db.js"></script>
-<script defer src="js/ui.js"></script>
-<script defer src="js/offline.js"></script>
-<script defer src="js/admin.js"></script>
-<script defer src="js/visitor-auth.js"></script>
-<script defer src="js/map-core.js"></script>
-<script defer src="js/campings.js"></script>
-<script defer src="js/stages.js"></script>
-<script defer src="js/photos.js"></script>
-<script defer src="js/videos.js"></script>
-<script defer src="js/comments.js"></script>
-<script defer src="js/expenses.js"></script>
-<script defer src="js/training.js"></script>
-<script defer src="js/health.js"></script>
-<script defer src="js/activity.js"></script>
-<script defer src="js/weather.js"></script>
-<script defer src="js/journal.js"></script>
-<script defer src="js/init.js"></script>
+<!-- Scripts différés : ils s'exécutent dans l'ordre du document, ne pas le changer.
+     core/ : logique pure testée · data/ : données statiques · app/ : état et UI communs
+     demo/ : bascule démo · services/ : I/O · features/ : fonctionnalités · app/init.js en dernier -->
+<script defer src="js/core/gps-core.js"></script>
+<script defer src="js/core/utils.js"></script>
+<script defer src="js/core/offline-core.js"></script>
+<script defer src="js/core/weather-core.js"></script>
+<script defer src="js/core/campings-core.js"></script>
+<script defer src="js/core/events-core.js"></script>
+<script defer src="js/core/journal-core.js"></script>
+<script defer src="js/core/stages-core.js"></script>
+<script defer src="js/core/visitor-auth-core.js"></script>
+<script defer src="js/core/activity-core.js"></script>
+<script defer src="js/core/dashboard-core.js"></script>
+<script defer src="js/core/comments-core.js"></script>
+<script defer src="js/data/route-data.js"></script>
+<script defer src="js/app/state.js"></script>
+<script defer src="js/demo/demo-data.js"></script>
+<script defer src="js/demo/demo-mode.js"></script>
+<script defer src="js/services/db.js"></script>
+<script defer src="js/app/ui.js"></script>
+<script defer src="js/services/offline.js"></script>
+<script defer src="js/features/admin.js"></script>
+<script defer src="js/features/visitor-auth.js"></script>
+<script defer src="js/features/map.js"></script>
+<script defer src="js/features/campings.js"></script>
+<script defer src="js/features/stages.js"></script>
+<script defer src="js/features/photos.js"></script>
+<script defer src="js/features/videos.js"></script>
+<script defer src="js/features/comments.js"></script>
+<script defer src="js/features/expenses.js"></script>
+<script defer src="js/features/training.js"></script>
+<script defer src="js/features/health.js"></script>
+<script defer src="js/features/activity.js"></script>
+<script defer src="js/features/weather.js"></script>
+<script defer src="js/features/journal.js"></script>
+<script defer src="js/app/init.js"></script>
 <link rel="stylesheet" href="styles.css">
 
 </head>

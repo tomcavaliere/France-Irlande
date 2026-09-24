@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import eventsCore from '../js/events-core.js';
+import eventsCore from '../js/core/events-core.js';
 
 const { createBus } = eventsCore;
 

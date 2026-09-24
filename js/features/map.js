@@ -1,8 +1,8 @@
-// map-core.js
+// map.js
 // Map initialization (Leaflet), route display, position tracking,
 // GPS wrapper functions delegating to gps-core.js.
 
-// Fonctions GPS pures déléguées à js/gps-core.js (testé via Vitest).
+// Fonctions GPS pures déléguées à js/core/gps-core.js (testé via Vitest).
 
 // Le tracé est statique : un snap (parcours des ~5 000 points) ne dépend que de
 // lat/lon. Mémoïsé car appelé à chaque rendu d'étape et, via getCurrentPos(),

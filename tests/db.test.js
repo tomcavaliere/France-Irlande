@@ -1,7 +1,7 @@
-// Tests de la façade js/db.js avec des globales window._fb* simulées
+// Tests de la façade js/services/db.js avec des globales window._fb* simulées
 // (aucun appel Firebase réel).
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import Db from '../js/db.js';
+import Db from '../js/services/db.js';
 
 function installFakeFirebase(){
   const fake = {

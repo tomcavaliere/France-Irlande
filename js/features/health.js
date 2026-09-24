@@ -13,7 +13,7 @@ var HEALTH_METRICS=[
   {key:'tempAvg',label:'Température moy',unit:' °C',min:-30,max:60,step:0.1}
 ];
 
-// Normalisation, séries et tracé des courbes : js/dashboard-core.js.
+// Normalisation, séries et tracé des courbes : js/core/dashboard-core.js.
 function _normalizeHealthEntry(raw){ return DashboardCore.normalizeHealthEntry(raw,HEALTH_METRICS); }
 function _clampMetric(def,v){ return DashboardCore.clampMetric(def,v); }
 function _fmtHealthValue(def,val){ return DashboardCore.formatHealthValue(def,val); }

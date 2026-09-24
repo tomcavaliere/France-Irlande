@@ -127,7 +127,7 @@ function toggleCampspace(){
   loadCampspace();
 }
 
-// campspace-data.js (~520 KB) ne sert qu'à l'admin : chargé à la première
+// js/data/campspace-data.js (~520 KB) ne sert qu'à l'admin : chargé à la première
 // activation du calque plutôt qu'au démarrage pour tous les visiteurs.
 var _campspaceDataPromise=null;
 
@@ -136,7 +136,7 @@ function _ensureCampspaceData(){
   if(_campspaceDataPromise)return _campspaceDataPromise;
   _campspaceDataPromise=new Promise(function(resolve,reject){
     var script=document.createElement('script');
-    script.src='campspace-data.js';
+    script.src='js/data/campspace-data.js';
     script.onload=function(){resolve();};
     script.onerror=function(){
       _campspaceDataPromise=null;

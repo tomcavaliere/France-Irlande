@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import CommentsCore from '../js/comments-core.js';
+import CommentsCore from '../js/core/comments-core.js';
 
 const { normalizeAdminReplyAuthorName, normalizeCommentReply, DEFAULT_ADMIN_REPLY_AUTHOR } = CommentsCore;
 

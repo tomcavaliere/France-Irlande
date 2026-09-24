@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import VisitorAuthCore from '../js/visitor-auth-core.js';
+import VisitorAuthCore from '../js/core/visitor-auth-core.js';
 
 const { normalizeHash, extractPasswordHash, validatePasswordChange } = VisitorAuthCore;
 

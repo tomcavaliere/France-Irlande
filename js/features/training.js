@@ -8,7 +8,7 @@ var TRAINING_EXERCISES=[
   {key:'runKm',label:'Course',goal:5,unit:' km'}
 ];
 
-// Normalisation, semaines, séries et tracé des courbes : js/dashboard-core.js.
+// Normalisation, semaines, séries et tracé des courbes : js/core/dashboard-core.js.
 function _toNumber(v){ return DashboardCore.positiveNumber(v); }
 function _normalizeTrainingEntry(raw){ return DashboardCore.normalizeTrainingEntry(raw); }
 function _fmtTrainingValue(ex,val){ return DashboardCore.formatTrainingValue(ex.key,val); }
