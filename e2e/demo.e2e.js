@@ -161,6 +161,11 @@ test.describe('PWA', () => {
     expect(swState.state).toBe('activated');
     expect(new URL(swState.scope).pathname).toBe('/France-Irlande/');
 
+    // Critères d'installation évalués par Chromium lui-même (manifest, icônes, SW).
+    const cdp = await context.newCDPSession(page);
+    const { installabilityErrors } = await cdp.send('Page.getInstallabilityErrors');
+    expect(installabilityErrors).toEqual([]);
+
     await context.setOffline(true);
     await page.reload();
 
