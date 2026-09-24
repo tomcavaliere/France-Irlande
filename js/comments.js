@@ -90,7 +90,7 @@ function _renderReplyThreadRepliesHtml(date,id,reply){
         '<div class="comment-reply-thread-head">'+
           '<span class="comment-reply-thread-name">'+escHtml(item.name||'Visiteur')+'</span>'+
           '<span class="comment-reply-thread-time">'+formatTime(item.ts)+'</span>'+
-          (isAdmin?'<button class="comment-reply-thread-del" data-action="deleteReplyThreadItem" data-arg="'+escAttr(date)+'" data-arg2="'+escAttr(id)+'" data-arg3="'+escAttr(replyId)+'" title="Supprimer la réponse visiteur">&#x1f5d1;</button>':'')+
+          (isAdmin?'<button class="comment-reply-thread-del" data-action="deleteReplyThreadItem" data-arg="'+escAttr(date)+'" data-arg2="'+escAttr(id)+'" data-arg3="'+escAttr(replyId)+'" title="Supprimer la réponse visiteur" aria-label="Supprimer la réponse visiteur">&#x1f5d1;</button>':'')+
         '</div>'+
         '<div class="comment-reply-thread-text">'+escHtml(item.text||'')+'</div>'+
         '</div>';
@@ -143,7 +143,7 @@ function renderStageCommentsHtml(i){
           '<div class="comment-reply">'+
             '<span class="comment-reply-label">&#x21b3; '+escHtml(reply.authorName)+'\u00a0:</span> '+
             '<span class="comment-reply-text">'+escHtml(reply.text)+'</span>'+
-            (isAdmin?'<button class="comment-reply-del" data-action="deleteReply" data-arg="'+ei+'" data-arg2="'+eid+'" title="Supprimer la r\u00e9ponse">&#x1f5d1;</button>':'')+
+            (isAdmin?'<button class="comment-reply-del" data-action="deleteReply" data-arg="'+ei+'" data-arg2="'+eid+'" title="Supprimer la r\u00e9ponse" aria-label="Supprimer la r\u00e9ponse">&#x1f5d1;</button>':'')+
             '<div class="comment-reply-meta">'+
               (replyLikeCount?'<span class="comment-reply-like-count">❤️ '+replyLikeCount+'</span>':'')+
               (replyRepliesCount?'<span class="comment-reply-thread-count">&#x1f4ac; '+replyRepliesCount+'</span>':'')+
@@ -176,7 +176,7 @@ function renderStageCommentsHtml(i){
       html+='<div class="comment-card">'+
         '<span class="comment-name">'+escHtml(c.name)+'</span>'+
         '<span class="comment-time">'+formatTime(c.ts)+(c._pending?' ⏳':'')+'</span>'+
-        (isAdmin?'<button class="comment-del" data-action="deleteComment" data-arg="'+ei+'" data-arg2="'+eid+'">&#x1f5d1;</button>':'')+
+        (isAdmin?'<button class="comment-del" data-action="deleteComment" data-arg="'+ei+'" data-arg2="'+eid+'" aria-label="Supprimer le commentaire">&#x1f5d1;</button>':'')+
         '<div class="comment-text">'+escHtml(c.text)+'</div>'+
         likeBadgeHtml+
         adminExtraHtml+

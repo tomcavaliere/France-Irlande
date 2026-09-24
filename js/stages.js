@@ -36,11 +36,11 @@ function renderStages(){
     if(isAdmin){
       gpxHtml=hasTrack
         ?'<button class="s-gpx s-gpx-ok" data-action="uploadGPX" data-arg="'+edate+'" data-stop="1" title="Re-uploader le tracé GPX">&#x1f4ce; GPX &#x2713;</button>'+
-          '<button class="s-gpx-del" data-action="deleteGPX" data-arg="'+edate+'" data-stop="1" title="Supprimer le tracé GPX">&#x1f5d1;&#xfe0f;</button>'
+          '<button class="s-gpx-del" data-action="deleteGPX" data-arg="'+edate+'" data-stop="1" title="Supprimer le tracé GPX" aria-label="Supprimer le tracé GPX">&#x1f5d1;&#xfe0f;</button>'
         :'<button class="s-gpx" data-action="uploadGPX" data-arg="'+edate+'" data-stop="1" title="Uploader le tracé GPX">&#x1f4ce; GPX</button>';
     }
     var adminStageHtml=isAdmin?
-      '<button class="s-del" data-action="deleteStage" data-arg="'+edate+'" data-stop="1">&#x2715;</button>'+
+      '<button class="s-del" data-action="deleteStage" data-arg="'+edate+'" data-stop="1" aria-label="Supprimer l\'étape">&#x2715;</button>'+
       '<button class="s-write" data-action="openJournalEntry" data-arg="'+edate+'" data-stop="1">&#x1f4dd; Écrire</button>'+
       gpxHtml
       :'';
@@ -278,7 +278,7 @@ function openManualStageModal(){
   var nowTs=Date.now();
   var todayISO=Utils.localISODate(nowTs);
   body.innerHTML=
-    '<div class="m-title">Créer une étape</div>'+
+    '<div class="m-title" id="stageModalTitle">Créer une étape</div>'+
     '<div class="m-sub">Ajoute une étape manquante en choisissant sa date. Si une entrée existe déjà, la création est annulée.</div>'+
     '<div class="stage-modal-form">'+
       '<label class="stage-modal-label" for="manualStageDate">Date de l\'étape</label>'+

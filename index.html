@@ -77,9 +77,9 @@
   <button data-action="logoutAdmin" role="menuitem">🚪 Déconnexion</button>
 </div>
 
-<div id="profileModal" data-close-on-self="closeProfileModal">
+<div id="profileModal" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle" data-close-on-self="closeProfileModal">
   <div class="profile-box">
-    <h2>Profil admin <button data-action="closeProfileModal" aria-label="Fermer">✕</button></h2>
+    <h2 id="profileModalTitle">Profil admin <button data-action="closeProfileModal" aria-label="Fermer">✕</button></h2>
 
     <div class="profile-section">
       <h3>Compte</h3>
@@ -133,12 +133,12 @@
   </div>
 </div>
 
-<div class="pw-modal" id="pwModal" data-close-on-self="closePwModal">
+<div class="pw-modal" id="pwModal" role="dialog" aria-modal="true" aria-labelledby="pwModalTitle" data-close-on-self="closePwModal">
   <div class="pw-box">
-    <h3>Connexion admin <button data-action="closePwModal" aria-label="Fermer">✕</button></h3>
+    <h3 id="pwModalTitle">Connexion admin <button data-action="closePwModal" aria-label="Fermer">✕</button></h3>
     <p>Connecte-toi avec ton compte Firebase</p>
-    <input type="email" class="pw-input pw-email mb-8" id="pwEmail" placeholder="Email">
-    <input type="password" class="pw-input" id="pwInput" placeholder="••••••">
+    <input type="email" class="pw-input pw-email mb-8" id="pwEmail" placeholder="Email" aria-label="Email" autocomplete="username">
+    <input type="password" class="pw-input" id="pwInput" placeholder="••••••" aria-label="Mot de passe" autocomplete="current-password">
     <div class="pw-err" id="pwErr">Email ou mot de passe incorrect</div>
     <button class="btn btn-p w-full" data-action="checkPw">Se connecter</button>
   </div>
@@ -166,8 +166,9 @@
   </div>
 </div>
 
+<!-- Pages défilantes : focusables (tabindex=0) pour pouvoir défiler au clavier. -->
 <div class="content">
-  <div class="page map-page active" id="page-map">
+  <div class="page map-page active" id="page-map" tabindex="0" role="region" aria-label="Carte">
     <div id="map"></div>
     <div class="map-stats">
       <div class="map-stat"><div class="map-stat-v" id="mapKmD">0</div><div class="map-stat-l">km faits</div></div>
@@ -179,7 +180,7 @@
         <button class="camp-toggle" id="campToggle" data-action="toggleCampings">&#x1f3d5; Campings</button>
         <button class="camp-toggle camp-toggle-cs" id="campspaceToggle" data-action="toggleCampspace">&#x1f3e1; Campspace</button>
         <button class="camp-toggle camp-toggle-water" id="waterToggle" data-action="toggleWater">&#x1f4a7; Eau</button>
-        <select id="campRange" class="camp-range-select" data-action="onCampRangeChange" data-event="change">
+        <select id="campRange" class="camp-range-select" aria-label="Distance de recherche devant la position" data-action="onCampRangeChange" data-event="change">
           <option value="50">50 km</option>
           <option value="100">100 km</option>
           <option value="150" selected>150 km</option>
@@ -202,7 +203,7 @@
     </div>
   </div>
 
-  <div class="page" id="page-stages">
+  <div class="page" id="page-stages" tabindex="0" role="region" aria-label="Étapes">
     <div class="sec-title">Étapes</div>
     <div class="recap" id="recapBox">
       <div class="recap-t">Progression globale</div>
@@ -220,13 +221,13 @@
     <div class="spacer"></div>
   </div>
 
-  <div class="page" id="page-journal">
+  <div class="page" id="page-journal" tabindex="0" role="region" aria-label="Carnet de voyage">
     <div class="sec-title">Carnet de voyage</div>
     <div id="journalList"></div>
     <div class="spacer"></div>
   </div>
 
-  <div class="page" id="page-info">
+  <div class="page" id="page-info" tabindex="0" role="region" aria-label="Infos pratiques">
     <div class="sec-title">Infos pratiques</div>
     <div class="info-card"><h3>Bivouac en Irlande</h3><p>Le camping sauvage n'est pas officiellement autorise en Irlande, mais il est largement tolere si vous etes discret et ne laissez aucune trace. Regles d'or : arriver tard, partir tot, ne rien laisser, demander la permission au proprietaire si possible. Les zones cotieres sous la ligne de maree haute sont generalement du domaine public.</p></div>
     <div class="info-card"><h3>Meteo printemps</h3><p>Avril-Mai : 8-15°C, pluie frequente. Vent d'ouest dominant, souvent fort sur la cote. Journees longues (lever ~6h, coucher ~21h en mai). Impermeable INDISPENSABLE.</p></div>
@@ -238,18 +239,18 @@
     <div class="spacer"></div>
   </div>
 
-  <div class="page" id="page-depenses">
+  <div class="page" id="page-depenses" tabindex="0" role="region" aria-label="Dépenses">
     <div class="sec-title">Dépenses</div>
     <div id="depSummary"></div>
     <div class="dep-form">
       <div class="dep-row">
-        <input type="date" id="depDate">
-        <select id="depCat"></select>
-        <select id="depPaidBy"></select>
+        <input type="date" id="depDate" aria-label="Date de la dépense">
+        <select id="depCat" aria-label="Catégorie"></select>
+        <select id="depPaidBy" aria-label="Payé par"></select>
       </div>
       <div class="dep-row">
-        <input type="number" id="depAmount" placeholder="Montant (€)" min="0" step="0.01">
-        <input type="text" id="depDesc" placeholder="Description">
+        <input type="number" id="depAmount" aria-label="Montant en euros" placeholder="Montant (€)" min="0" step="0.01">
+        <input type="text" id="depDesc" aria-label="Description" placeholder="Description">
       </div>
       <button class="btn btn-p w-full" data-action="addExpense">+ Ajouter</button>
     </div>
@@ -257,13 +258,13 @@
     <div class="spacer"></div>
   </div>
 
-  <div class="page" id="page-training">
+  <div class="page" id="page-training" tabindex="0" role="region" aria-label="Training">
     <div class="sec-title">Training</div>
     <div class="training-note">Objectifs hebdo : 100 squats · 100 pompes · 10 min abdos · 5 km course.</div>
     <div id="trainingWeek"></div>
     <div class="training-form">
       <div class="training-row">
-        <input type="date" id="trainingDate">
+        <input type="date" id="trainingDate" aria-label="Date de la séance">
         <button class="btn btn-p" data-action="addTrainingEntry">+ Ajouter séance</button>
       </div>
       <div class="training-row">
@@ -279,12 +280,12 @@
     <div class="spacer"></div>
   </div>
 
-  <div class="page" id="page-health">
+  <div class="page" id="page-health" tabindex="0" role="region" aria-label="Santé">
     <div class="sec-title">Santé</div>
     <div class="health-note">Scores 0 à 10 : sommeil, forme, repas, courbatures. + FC vélo et températures.</div>
     <div class="health-form">
       <div class="health-row">
-        <input type="date" id="healthDate">
+        <input type="date" id="healthDate" aria-label="Date du relevé santé">
         <button class="btn btn-p" data-action="addHealthEntry">+ Enregistrer</button>
       </div>
       <div class="health-row">
@@ -312,7 +313,7 @@
     <div class="spacer"></div>
   </div>
 
-  <div class="page" id="page-activity">
+  <div class="page" id="page-activity" tabindex="0" role="region" aria-label="Activité">
     <div class="sec-title">Activité</div>
     <div id="activitySummary"></div>
     <div id="activityTimeline"></div>
@@ -333,13 +334,13 @@
   <button class="tab tab-admin-only" data-page="activity" id="tabActivity" data-action="switchTab" data-arg="activity"><span class="tab-icon">&#x1f4ca;</span><span>Activité</span></button>
 </div>
 
-<div class="lightbox" id="lightbox" data-close-on-self="closeLightbox">
-  <button class="lightbox-close" data-action="closeLightbox">&#x2715;</button>
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Visionneuse photo et vidéo" data-close-on-self="closeLightbox">
+  <button class="lightbox-close" data-action="closeLightbox" aria-label="Fermer">&#x2715;</button>
   <img id="lightboxImg" src="" alt="">
   <video id="lightboxVideo" controls autoplay playsinline></video>
 </div>
 
-<div class="modal-overlay" id="stageModal" data-close-on-self="closeModal">
+<div class="modal-overlay" id="stageModal" role="dialog" aria-modal="true" aria-labelledby="stageModalTitle" data-close-on-self="closeModal">
   <div class="modal"><div class="modal-h"></div><div id="modalBody"></div></div>
 </div>
 

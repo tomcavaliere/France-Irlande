@@ -55,8 +55,9 @@ function initMap(){
     html:'<div class="marker-n st">&#x1f6a9;</div>'});
   var mkEnd=L.divIcon({className:'',iconSize:[24,24],iconAnchor:[12,12],
     html:'<div class="marker-n en">&#x1f3c1;</div>'});
-  L.marker(FULL_ROUTE_FR[0],{icon:mkStart}).addTo(map);
-  L.marker(FULL_ROUTE_IRE[FULL_ROUTE_IRE.length-1],{icon:mkEnd}).addTo(map);
+  // title : nom accessible des marqueurs (Leaflet leur donne role="button").
+  L.marker(FULL_ROUTE_FR[0],{icon:mkStart,title:'Départ — Annecy'}).addTo(map);
+  L.marker(FULL_ROUTE_IRE[FULL_ROUTE_IRE.length-1],{icon:mkEnd,title:'Arrivée — Sligo'}).addTo(map);
   // Ferry Roscoff → Cork : surlignage bleu en vague + bateau au milieu
   var ferryStart=FULL_ROUTE_FR[FULL_ROUTE_FR.length-1];
   var ferryEnd=FULL_ROUTE_IRE[0];
@@ -93,7 +94,7 @@ function initMap(){
   }
   var mkFerry=L.divIcon({className:'',iconSize:[30,30],iconAnchor:[15,15],
     html:'<div class="marker-ferry">&#x26f4;</div>'});
-  L.marker(ferryMid,{icon:mkFerry})
+  L.marker(ferryMid,{icon:mkFerry,title:'Traversée ferry Roscoff → Cork'})
     .bindPopup('<b>Traversée ferry</b><br>Roscoff → Cork').addTo(map);
 
   // Trace complétée (orange)
@@ -101,6 +102,7 @@ function initMap(){
 
   // Marqueur position actuelle
   posMarker=L.marker([0,0],{
+    title:'Position actuelle',
     icon:L.divIcon({className:'',html:'<div class="marker-pos"></div>',iconSize:[16,16],iconAnchor:[8,8]}),
     pane:'markerPane'
   });
@@ -182,7 +184,7 @@ function initChateaux(){
   ];
 
   chateaux.forEach(function(c){
-    L.marker([c.lat,c.lon],{icon:icon})
+    L.marker([c.lat,c.lon],{icon:icon,title:c.name})
       .bindPopup('<div class="chateau-popup"><b>'+c.name+'</b></div>')
       .addTo(map);
   });
@@ -212,7 +214,7 @@ function initIrelandSites(){
   ];
 
   sites.forEach(function(s){
-    L.marker([s.lat,s.lon],{icon:icon})
+    L.marker([s.lat,s.lon],{icon:icon,title:s.name})
       .bindPopup('<div class="ireland-popup"><b>'+s.name+'</b><span>'+s.desc+'</span></div>')
       .addTo(map);
   });
@@ -307,7 +309,7 @@ function renderTrackPolylines(){
     var lastPt=t.coords[t.coords.length-1];
     var mkStageEnd=L.divIcon({className:'',iconSize:[20,20],iconAnchor:[10,10],
       html:'<div class="marker-stage-end">⛺</div>'});
-    L.marker(lastPt,{icon:mkStageEnd,pane:'markerPane'}).addTo(tracksLayer)
+    L.marker(lastPt,{icon:mkStageEnd,pane:'markerPane',title:'Fin d\'étape — '+JournalCore.formatJournalDateLabel(date)}).addTo(tracksLayer)
       .on('click',function(){
         L.popup({maxWidth:280}).setLatLng(lastPt).setContent(_buildTrackPopupHtml(date)).openOn(map);
       });

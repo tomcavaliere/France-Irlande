@@ -207,6 +207,7 @@ function renderMediaHtml(date){
   var stagePhotos=photos[date]||{};
   var stageVideos=videos[date]||{};
   var ed=escAttr(date);
+  var dayLabel=JournalCore.formatJournalDateLabel(date);
   var items=[];
   Object.keys(stagePhotos).forEach(function(id){
     var src=Utils.getPhotoUrl(stagePhotos[id]);
@@ -221,21 +222,21 @@ function renderMediaHtml(date){
     var eid=escAttr(item.id);
     if(item.type==='photo'){
       html+='<div class="j-photo-wrap">'+
-        '<img src="'+escAttr(item.src)+'" data-action="openLightbox" data-arg="'+eid+'" data-arg2="'+ed+'">'+
-        (isAdmin?'<button class="j-photo-del" data-action="deletePhoto" data-arg="'+ed+'" data-arg2="'+eid+'">&#x2715;</button>':'')+
+        '<img src="'+escAttr(item.src)+'" alt="'+escAttr('Photo du '+dayLabel)+'" role="button" tabindex="0" data-action="openLightbox" data-arg="'+eid+'" data-arg2="'+ed+'">'+
+        (isAdmin?'<button class="j-photo-del" data-action="deletePhoto" data-arg="'+ed+'" data-arg2="'+eid+'" aria-label="Supprimer la photo">&#x2715;</button>':'')+
         '</div>';
     }else{
       html+='<div class="j-photo-wrap j-video-wrap">'+
         '<video src="'+escAttr(item.src)+'#t=0.001" preload="metadata" muted playsinline></video>'+
-        '<button class="j-video-play" data-action="openLightbox" data-arg="'+eid+'" data-arg2="'+ed+'">&#x25B6;</button>'+
-        (isAdmin?'<button class="j-photo-del" data-action="deleteVideo" data-arg="'+ed+'" data-arg2="'+eid+'">&#x2715;</button>':'')+
+        '<button class="j-video-play" data-action="openLightbox" data-arg="'+eid+'" data-arg2="'+ed+'" aria-label="Lire la vidéo">&#x25B6;</button>'+
+        (isAdmin?'<button class="j-photo-del" data-action="deleteVideo" data-arg="'+ed+'" data-arg2="'+eid+'" aria-label="Supprimer la vidéo">&#x2715;</button>':'')+
         '</div>';
     }
   });
   if(isAdmin){
-    html+='<div class="j-photo-add" id="photos-add-'+ed+'" data-action="uploadPhoto" data-arg="'+ed+'">'+
+    html+='<div class="j-photo-add" id="photos-add-'+ed+'" role="button" tabindex="0" aria-label="Ajouter des photos" data-action="uploadPhoto" data-arg="'+ed+'">'+
       '<span class="j-photo-add-icon">&#x1f4f7;</span><span>Photo</span></div>';
-    html+='<div class="j-photo-add" id="videos-add-'+ed+'" data-action="uploadVideo" data-arg="'+ed+'">'+
+    html+='<div class="j-photo-add" id="videos-add-'+ed+'" role="button" tabindex="0" aria-label="Ajouter une vidéo" data-action="uploadVideo" data-arg="'+ed+'">'+
       '<span class="j-photo-add-icon">&#x1f3a5;</span><span>Vidéo</span></div>';
   }
   html+='</div>';

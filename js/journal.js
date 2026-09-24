@@ -535,7 +535,8 @@ function renderJournal(){
           '<button class="btn btn-danger" data-action="deleteJournalEntry" data-arg="'+edate+'">&#x1f5d1; Supprimer</button>'+
         '</div>';
     }
-    var taAttr=isAdmin?' data-action="onJournalInput" data-event="input" data-arg="'+edate+'"':' readonly';
+    var taAttr=' aria-label="'+escAttr('Récit du '+dateLabel)+'"'+
+      (isAdmin?' data-action="onJournalInput" data-event="input" data-arg="'+edate+'"':' readonly');
     var taHtml='';
     if(isAdmin){
       taHtml='<textarea class="j-ta" placeholder="Raconte ta journée..."'+taAttr+'>'+Utils.escHtml(txt)+'</textarea>';

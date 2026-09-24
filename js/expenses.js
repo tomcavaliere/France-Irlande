@@ -122,7 +122,7 @@ function renderExpenses(){
           '</div>'+
           '<div class="dep-meta">'+item.expense.cat+personTag+'</div>'+
         '</div>'+
-        '<button class="dep-del" data-action="deleteExpense" data-arg="'+escAttr(item.id)+'">🗑</button>'+
+        '<button class="dep-del" data-action="deleteExpense" data-arg="'+escAttr(item.id)+'" aria-label="Supprimer la dépense">🗑</button>'+
         '</div>';
     });
   });

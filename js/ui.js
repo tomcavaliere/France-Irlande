@@ -100,10 +100,41 @@ function _delegateEvent(e){
   invokeAction(el.dataset.action,[el.dataset.arg,el.dataset.arg2,el.dataset.arg3,el,e]);
 }
 
+// Éléments non-<button> déclarés role="button" (vignettes photo, pastille de
+// synchro…) : Entrée / Espace déclenchent la même action qu'un clic.
+function _delegateKeyActivation(e){
+  if(e.key!=='Enter'&&e.key!==' ')return;
+  var el=e.target.closest('[role="button"][data-action]');
+  if(!el||el.tagName==='BUTTON'||(el.dataset.event&&el.dataset.event!=='click'))return;
+  e.preventDefault();
+  if(el.dataset.stop)e.stopPropagation();
+  invokeAction(el.dataset.action,[el.dataset.arg,el.dataset.arg2,el.dataset.arg3,el,e]);
+}
+
+// Échap ferme la couche la plus haute (la lightbox gère sa propre touche).
+var _ESCAPE_OVERLAYS=[
+  {id:'confirmModal',close:function(){confirmCancel();}},
+  {id:'stageModal',close:function(){closeModal();}},
+  {id:'profileModal',close:function(){closeProfileModal();}},
+  {id:'pwModal',close:function(){closePwModal();}},
+  {id:'visitorGate',close:function(){closeVisitorGate();}}
+];
+function _onEscapeKey(e){
+  if(e.key!=='Escape')return;
+  var lb=document.getElementById('lightbox');
+  if(lb&&lb.classList.contains('vis'))return;
+  for(var i=0;i<_ESCAPE_OVERLAYS.length;i++){
+    var el=document.getElementById(_ESCAPE_OVERLAYS[i].id);
+    if(el&&el.classList.contains('vis')){_ESCAPE_OVERLAYS[i].close();return;}
+  }
+}
+
 function initEventDelegation(){
   ['click','change','input'].forEach(function(ev){
     document.addEventListener(ev,_delegateEvent);
   });
+  document.addEventListener('keydown',_delegateKeyActivation);
+  document.addEventListener('keydown',_onEscapeKey);
   initLightboxNavigation();
 }
 
@@ -208,6 +239,7 @@ function _renderLightboxCurrent(){
     vid.classList.remove('hidden');
   }else{
     img.src=item.src||item.id;
+    img.alt=_lightboxDate?'Photo du '+JournalCore.formatJournalDateLabel(_lightboxDate):'Photo';
     img.classList.remove('hidden');
     vid.classList.add('hidden');
     if(vid){vid.pause();vid.src='';}

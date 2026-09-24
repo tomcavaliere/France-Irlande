@@ -105,7 +105,7 @@ function renderCampings(geojson,aheadPts){
       campingDistHtml(mapped.lat,mapped.lon)+
       (mapped.website?'<a href="'+escAttr(mapped.website)+'" target="_blank" class="camp-link camp-link-green">Site web</a>':'')+
       '</div>';
-    var m=L.marker([mapped.lat,mapped.lon],{icon:campIcon}).bindPopup(popup);
+    var m=L.marker([mapped.lat,mapped.lon],{icon:campIcon,title:mapped.name||'Camping'}).bindPopup(popup);
     markers.push(m);
   });
 
@@ -194,7 +194,7 @@ function _renderCampspace(){
       campingDistHtml(lat,lng)+
       (href?'<a href="'+escAttr(href)+'" target="_blank" class="camp-link camp-link-orange">Voir sur Campspace</a>':'')+
       '</div>';
-    markers.push(L.marker([lat,lng],{icon:csIcon}).bindPopup(popup));
+    markers.push(L.marker([lat,lng],{icon:csIcon,title:title}).bindPopup(popup));
   }
 
   campspaceLayer=L.layerGroup(markers).addTo(map);
@@ -289,7 +289,7 @@ function renderWater(elements,aheadPts){
       (name?'<span class="camp-popup-muted">'+escHtml(type)+'</span><br>':'')+
       (tags.length?'<div class="camp-tags">'+tags.map(function(t){return'<span class="camp-tag camp-tag-blue">'+t+'</span>';}).join('')+'</div>':'')+
       dist+'</div>';
-    markers.push(L.marker([el.lat,el.lon],{icon:waterIcon}).bindPopup(popup));
+    markers.push(L.marker([el.lat,el.lon],{icon:waterIcon,title:name||type}).bindPopup(popup));
   });
 
   waterLayer=L.layerGroup(markers).addTo(map);
