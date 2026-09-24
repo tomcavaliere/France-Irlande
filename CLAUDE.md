@@ -10,7 +10,7 @@ Tracé complet : France (Annecy → Roscoff) + Irlande (Cork → Sligo).
 - **Carte** : Leaflet 1.9.4 **auto-hébergé** dans `vendor/leaflet/` (hash identique à la release officielle ; plus aucun CDN tiers hors Firebase).
 - **Backend** : Firebase RTDB `france-irlande-bike`, région `europe-west1`. Lecture publique sauf `expenses`, `activity`, `visitorProfiles` (auth uniquement). Écriture : auth uniquement partout (mode archive).
 - **Deploy** : GitHub Pages → `https://tomcavaliere.github.io/France-Irlande/` (site servi sous le sous-chemin `/France-Irlande/`).
-- **PWA** : service worker `sw.js` (cache `ev1-v44`), `manifest.json`, icônes PNG dans `icons/`.
+- **PWA** : service worker `sw.js` (cache `ev1-v45`), `manifest.json`, icônes PNG dans `icons/`.
 - **Mode démo** : lien CV public (`…/#demo` ou bouton du gate) — backend Firebase remplacé par des stubs en mémoire, données 100 % fictives (voir section « Mode démo »).
 - **Tests** : Vitest (`npm test`) pour la logique pure — Node pur, aucun jsdom. Playwright (`npm run test:e2e`) pour les parcours de la démo + audit d'accessibilité axe-core.
 - **Lint/CI** : ESLint 9 flat config + GitHub Actions (`.github/workflows/ci.yml`) : job `test` (`lint`, `test`, `security:test`) et job `e2e` (Playwright Chromium) sur chaque push/PR.
@@ -20,6 +20,7 @@ Tracé complet : France (Annecy → Roscoff) + Irlande (Cork → Sligo).
 ```
 index.html                  — shell HTML + bootstrap (~350 lignes) — racine obligatoire (GitHub Pages)
 sw.js                       — service worker — racine obligatoire (son scope doit couvrir tout le site)
+confidentialite.html        — page statique Confidentialité et mentions légales (précachée, sans JS)
 manifest.json               — PWA manifest
 css/styles.css              — styles globaux (~690 lignes, tokens de couleur dans :root)
 icons/                      — icône SVG originale + PNG 192/512/maskable/apple-touch
@@ -86,13 +87,14 @@ docs/
   superpowers/specs/        — design technique détaillé de chaque feature (source de vérité)
   superpowers/plans/        — plans d'implémentation step-by-step (checkbox) pour agents
   media/                    — captures d'écran du README
+  rgpd.md                   — registre des traitements RGPD, audit, actions manuelles
 eslint.config.js            — ESLint 9 flat config (globales de l'app générées au lint)
 playwright.config.js        — config E2E (Chromium, viewport Pixel 7, serveur scripts/serve.mjs)
 .github/workflows/ci.yml    — CI : job test (lint + unit + sécurité) + job e2e
 package.json                — scripts npm : test, test:e2e, lint, security:test, serve
 ```
 
-Total : 356 tests Vitest (15 fichiers) + 12 tests E2E Playwright (2 fichiers).
+Total : 357 tests Vitest (15 fichiers) + 18 tests E2E Playwright (2 fichiers).
 
 ## Architecture JS — séparation stricte des responsabilités
 
@@ -237,7 +239,7 @@ Mini event-bus : `Events.on(name, fn)`, `Events.off(name, fn)`, `Events.emit(nam
 ## Mode archive (vraie version)
 
 - `ARCHIVED = !window.DEMO_MODE` (`state.js`) ; `visitorWritesDisabled()` = archivé et non admin.
-- Visiteurs : pas de formulaire de commentaire/réponse, bravos en compteur seul, plus de tracking `visitor_login`/`visitor_suspicious` ni de `visitorProfiles`. Note « Voyage terminé » en tête du carnet. L'admin garde tous ses droits (modération).
+- Visiteurs : pas de formulaire de commentaire/réponse, bravos en compteur seul, plus aucun tracking d'`activity` (admin compris) ni de `visitorProfiles`. Gate : mot de passe seul, sans prénom. Note « Voyage terminé » en tête du carnet. L'admin garde tous ses droits (modération).
 - `firebase/database.rules.json` : **toutes** les règles `.write` sont `auth != null` ; `tests/static/security-check.js` échoue sur toute écriture anonyme. ⚠️ Les règles se publient **à la main** dans la console Firebase.
 - Le gate visiteur (mot de passe partagé, hash SHA-256 lisible dans `/visitorAuth`) est **cosmétique** : les données sont en lecture publique via l'API RTDB. Assumé pour un carnet familial.
 
@@ -249,8 +251,18 @@ Version publique pour lien CV : mêmes fonctionnalités, données 100 % fictives
 - **Bascule unique** : en démo, `firebase-init.js` n'importe pas Firebase ; `js/demo/demo-mode.js` installe des stubs `window._fb*` (RTDB, Auth, Storage) alimentés par un arbre en mémoire cloné depuis `DEMO_DATA`. Les ~30 sites d'appel sont inchangés. Écritures fonctionnelles mais volatiles : recharger réinitialise la démo.
 - **Admin démo** : bouton « Tester le mode admin » du bandeau — faux `signIn` sans mot de passe, tout le flux admin existant fonctionne (auto-déconnexion 3 min comprise).
 - **Uploads démo** : photos/vidéos passent par un faux uploadTask, l'URL retournée est un `URL.createObjectURL(blob)` (d'où la directive CSP `media-src blob:`).
-- **Isolation stricte** : en démo, ne jamais lire/écrire les caches `ev1-*`, `offlineQueue` ni la session visiteur (`isVisitorAuthenticated()` retourne `true` sans toucher localStorage). Guards dans `offline.js`, `state.js`, `visitor-auth.js`. Ne pas les retirer : un visiteur démo pourrait sinon déverrouiller la vraie version ou corrompre/vider la vraie queue offline.
+- **Isolation stricte** : en démo, ne jamais lire/écrire les caches `ev1-*`, `offlineQueue`, `ev1_visitor_id` ni la session visiteur (`isVisitorAuthenticated()` retourne `true` et `peekVisitorId()` un identifiant constant, sans toucher localStorage). Guards dans `offline.js`, `state.js`, `visitor-auth.js`. Ne pas les retirer : un visiteur démo pourrait sinon déverrouiller la vraie version ou corrompre/vider la vraie queue offline.
 - La vraie version reste strictement inchangée quand `DEMO_MODE` est falsy.
+
+## RGPD — ne jamais casser
+
+Registre, audit et actions manuelles : `docs/rgpd.md`. Page publique : `confidentialite.html`.
+
+- **Aucune donnée personnelle dans un nœud en lecture publique** (email, auteur, `updatedBy`…) : `tests/static/security-check.js` échoue sur toute clé `mail`/`updatedBy` sous un nœud `.read: true`.
+- **Identifiant visiteur** : `getVisitorId()` (crée `ev1_visitor_id`) uniquement dans une action d'écriture (bravo, like, réponse) ; tout rendu passe par `peekVisitorId()`. Retiré au démarrage en archive (`purgeArchivedVisitorId`, `purgeArchivedVisitorName`).
+- **Tiers** : pas d'appel tiers superflu pour les visiteurs (la météo n'est chargée qu'à l'ouverture de l'onglet Étapes, admin).
+- **Tout nouveau tiers, nouvelle donnée ou nouvelle clé `localStorage`** → mettre à jour `confidentialite.html` et `docs/rgpd.md`.
+- **Tracé** : le départ réel (adresse privée) est masqué dans un rayon de 1,5 km dans `gpx/` et `js/data/route-data.js` ; ne jamais réintroduire les points d'origine.
 
 ## Firebase RTDB — règles d'accès
 

@@ -67,6 +67,10 @@ flowchart LR
   - Règles Firebase versionnées (`firebase/`) et vérifiées en CI : lecture seule
     publique, aucune écriture anonyme depuis l'archivage.
   - Un script de contrôle interdit `eval`, `document.write` et tout `fetch()` direct.
+- **Confidentialité (RGPD).** Page [Confidentialité et mentions légales](https://tomcavaliere.github.io/France-Irlande/confidentialite.html),
+  aucun cookie ni mesure d'audience, collecte minimale (plus aucun suivi depuis
+  l'archivage, point de départ du tracé masqué). Registre des traitements et audit dans
+  [`docs/rgpd.md`](docs/rgpd.md).
 
 ### Choix et compromis
 
@@ -80,10 +84,10 @@ flowchart LR
 
 | | |
 |---|---|
-| Tests unitaires | **356** tests Vitest (15 fichiers) sur les modules purs, sans DOM ni réseau |
-| Tests E2E | **12** tests Playwright (Chromium, viewport mobile) sur la démo : parcours visiteur et admin, mode archive, installation du service worker sous `/France-Irlande/` puis rechargement hors-ligne |
+| Tests unitaires | **357** tests Vitest (15 fichiers) sur les modules purs, sans DOM ni réseau |
+| Tests E2E | **18** tests Playwright (Chromium, viewport mobile) sur la démo : parcours visiteur et admin, mode archive, installation du service worker sous `/France-Irlande/` puis rechargement hors-ligne |
 | Accessibilité | Audit axe-core **WCAG 2 A/AA** sur toutes les vues, navigation clavier, zoom autorisé |
-| Sécurité | `npm run security:test` : règles Firebase, CSP, motifs JS interdits |
+| Sécurité | `npm run security:test` : règles Firebase (aucune écriture anonyme, aucun email en lecture publique), CSP, motifs JS interdits |
 | CI | GitHub Actions : un job lint + tests + contrôle sécurité, un job E2E en parallèle |
 
 ## Lancer en local
@@ -104,6 +108,7 @@ service worker fonctionne avec les chemins de production.
 
 ```
 index.html · sw.js · manifest.json   points d'entrée (racine imposée par GitHub Pages et le service worker)
+confidentialite.html                 page Confidentialité et mentions légales
 css/ · icons/ · vendor/              styles, icônes PWA, Leaflet 1.9.4 auto-hébergé
 js/core/        logique pure et testée : GPS, validation, statistiques, fusion des brouillons…
 js/services/    I/O : initialisation Firebase, façade Db, file hors-ligne
@@ -115,7 +120,7 @@ tests/          unit/ (Vitest) · static/ (garde-fous, sécurité) · e2e/ (Play
 firebase/       règles de sécurité RTDB et Storage versionnées
 gpx/            traces GPX sources du tracé
 scripts/        serveur local, migration de données
-docs/           specs et plans de chaque fonctionnalité, captures
+docs/           specs et plans de chaque fonctionnalité, captures, registre RGPD
 ```
 
 Les dossiers de `js/` correspondent aux couches de l'architecture ; l'ordre de chargement

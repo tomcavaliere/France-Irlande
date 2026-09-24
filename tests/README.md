@@ -28,7 +28,7 @@ vit dans un module pur de `js/core/` à **double export** :
 Les modules DOM/I/O n'y délèguent que par des wrappers d'une ligne
 (`function escAttr(s){ return Utils.escAttr(s); }`) : aucune copie de logique.
 
-## Fichiers Vitest (356 tests)
+## Fichiers Vitest (357 tests)
 
 | Fichier | Tests | Couvre |
 |---|---|---|
@@ -45,7 +45,7 @@ Les modules DOM/I/O n'y délèguent que par des wrappers d'une ligne
 | `unit/campings-core.test.js` | 8 | mapping des POI, proximité du tracé |
 | `unit/comments-core.test.js` | 7 | nom d'auteur admin, normalisation des réponses |
 | `unit/weather-core.test.js` | 6 | parsing open-meteo |
-| `static/sw-precache.test.js` | 5 | `PRECACHE` couvre les assets d'`index.html`, chemins relatifs, fichiers existants |
+| `static/sw-precache.test.js` | 6 | `PRECACHE` couvre les assets et pages liées d'`index.html`, chemins relatifs, fichiers existants |
 | `static/index-html.test.js` | 5 | viewport zoomable, manifest et dimensions des icônes |
 
 Les tests de dates construisent leurs horloges en heure **locale**
@@ -53,7 +53,7 @@ Les tests de dates construisent leurs horloges en heure **locale**
 (vérifié avec `TZ` = America/Los_Angeles, UTC, Europe/Paris, Pacific/Auckland,
 Pacific/Kiritimati).
 
-## E2E (12 tests)
+## E2E (18 tests)
 
 `playwright.config.js` démarre `scripts/serve.mjs`, qui sert le dépôt sous
 `/France-Irlande/` comme GitHub Pages : le service worker tourne avec les chemins de prod.
@@ -63,9 +63,12 @@ interceptées.
 - `e2e/demo.e2e.js` : démarrage sans aucune requête vers Firebase/Google, compteur de
   jours, commentaire visiteur, admin démo (publier/dépublier, onglets, sortie), Campspace
   chargé à la demande, tableau de bord d'activité, rendu lecture seule du mode archive, SW activé
-  + installabilité + rechargement **hors-ligne**.
-- `e2e/a11y.e2e.js` : audit axe WCAG 2 A/AA de toutes les vues visiteur et admin et
-  des dialogues, ouverture d'une photo au clavier, Échap.
+  + installabilité + rechargement **hors-ligne** (page de confidentialité comprise).
+  Garde-fous RGPD : aucun appel open-meteo pour un visiteur, aucun `ev1_visitor_id`
+  stocké en démo, gate de l'archive sans prénom, liens vers la page de confidentialité.
+- `e2e/a11y.e2e.js` : audit axe WCAG 2 A/AA de toutes les vues visiteur et admin, des
+  dialogues, du gate de l'archive et de `confidentialite.html`, ouverture d'une photo au
+  clavier, Échap.
 
 Première exécution locale : `npx playwright install chromium`.
 
